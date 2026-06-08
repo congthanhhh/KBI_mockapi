@@ -1,39 +1,21 @@
 import express from "express";
 import cors from "cors";
-import importTaxLinesRouter from "./routes/importTaxLines.routes.js";
-import { query } from "./db/pool.js";
+import { env } from "./config/env.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import { notFound } from "./middlewares/notFound.js";
+import apiRouter from "./routes/index.js";
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 app.use(cors({
-    origin: CORS_ORIGIN
+    origin: env.corsOrigin
 }));
 
 app.use(express.json());
 
-app.get("/api/health", async (req, res) => {
-    try {
-        await query("SELECT 1");
+app.use("/api", apiRouter);
 
-        res.json({
-            status: "ok",
-            service: "eFMS API",
-            database: "connected"
-        });
-    } catch (error) {
-        res.status(503).json({
-            status: "error",
-            service: "eFMS API",
-            database: "disconnected",
-            message: error.message
-        });
-    }
-});
+app.use(notFound);
+app.use(errorHandler);
 
-app.use("/api/import-tax-lines", importTaxLinesRouter);
-
-app.listen(PORT, () => {
-    console.log(`eFMS API is running on port ${PORT}`);
-});
+export default app;

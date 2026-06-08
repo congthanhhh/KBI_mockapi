@@ -1,23 +1,21 @@
-import dotenv from "dotenv";
 import pg from "pg";
+import { env } from "../config/env.js";
 
 const { Pool } = pg;
 
-dotenv.config({ override: true });
+const ssl = env.pgSsl ? { rejectUnauthorized: false } : false;
 
-const ssl = process.env.PGSSL === "true" ? { rejectUnauthorized: false } : false;
-
-const poolConfig = process.env.DATABASE_URL
+const poolConfig = env.databaseUrl
     ? {
-        connectionString: process.env.DATABASE_URL,
+        connectionString: env.databaseUrl,
         ssl
     }
     : {
-        host: process.env.PGHOST || "localhost",
-        port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
-        database: process.env.PGDATABASE,
-        user: process.env.PGUSER,
-        password: process.env.PGPASSWORD,
+        host: env.pgHost,
+        port: env.pgPort,
+        database: env.pgDatabase,
+        user: env.pgUser,
+        password: env.pgPassword,
         ssl
     };
 

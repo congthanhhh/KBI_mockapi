@@ -9,17 +9,19 @@ try {
             inet_server_port() AS port
     `);
 
-    const table = await pool.query(`
+    const tables = await pool.query(`
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-          AND table_name = 'import_tax_lines'
+          AND table_name IN ('master_items', 'item_tax_profiles')
     `);
+    const existingTables = tables.rows.map((row) => row.table_name);
 
     console.log(JSON.stringify({
         connected: true,
         ...connection.rows[0],
-        importTaxLinesTableExists: table.rowCount > 0
+        masterItemsTableExists: existingTables.includes("master_items"),
+        itemTaxProfilesTableExists: existingTables.includes("item_tax_profiles")
     }, null, 2));
 } finally {
     await pool.end();
