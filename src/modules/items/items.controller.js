@@ -13,6 +13,7 @@ export async function getItems(req, res) {
     const pagination = parsePagination(req.query);
     const result = await listItems({
         q: req.query.q,
+        itemGroupId: req.query.item_group_id,
         ...pagination
     });
 

@@ -5,7 +5,7 @@ function fieldsToData(fields) {
 }
 
 export async function updateTaxProfile(id, fields) {
-    const profile = await prisma.itemTaxProfile.findFirst({
+    const profile = await prisma.itemCustomsProfile.findFirst({
         where: {
             id,
             is_delete: false
@@ -16,14 +16,14 @@ export async function updateTaxProfile(id, fields) {
         return null;
     }
 
-    return prisma.itemTaxProfile.update({
+    return prisma.itemCustomsProfile.update({
         where: { id },
         data: fieldsToData(fields)
     });
 }
 
 export async function softDeleteTaxProfile(id) {
-    const profile = await prisma.itemTaxProfile.findFirst({
+    const profile = await prisma.itemCustomsProfile.findFirst({
         where: {
             id,
             is_delete: false
@@ -34,7 +34,7 @@ export async function softDeleteTaxProfile(id) {
         return null;
     }
 
-    return prisma.itemTaxProfile.update({
+    return prisma.itemCustomsProfile.update({
         where: { id },
         data: {
             is_delete: true,

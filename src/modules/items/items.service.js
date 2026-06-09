@@ -12,8 +12,8 @@ import {
     updateItem
 } from "./items.repository.js";
 
-export async function listItems({ q, page, limit, offset }) {
-    const { items, total } = await findItems({ q, limit, offset });
+export async function listItems({ q, itemGroupId, page, limit, offset }) {
+    const { items, total } = await findItems({ q, itemGroupId, limit, offset });
 
     return {
         data: items,
@@ -33,8 +33,12 @@ export async function getItem(id) {
 }
 
 export async function addItem(body) {
-    if (!Object.hasOwn(body, "description")) {
-        throw httpError(400, "description is required");
+    if (!Object.hasOwn(body, "item_code")) {
+        throw httpError(400, "item_code is required");
+    }
+
+    if (!Object.hasOwn(body, "item_name")) {
+        throw httpError(400, "item_name is required");
     }
 
     return createItem(pickAllowedFields(body, itemColumns));

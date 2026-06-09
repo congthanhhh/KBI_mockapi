@@ -1,23 +1,23 @@
 export const itemColumns = [
     "item_code",
-    "item_group_name",
-    "item_name_vi",
-    "item_name_en",
-    "model",
-    "description",
-    "normalized_description",
-    "default_hs_code",
-    "classification_code",
-    "note"
+    "item_name",
+    "item_description",
+    "item_group_id",
+    "unit",
+    "item_type",
+    "origin_country",
+    "lead_time_days",
+    "moq",
+    "is_active"
 ];
 
 export const taxProfileColumns = [
     "hs_code",
-    "import_tax_rate",
+    "import_duty_rate",
     "vat_rate",
-    "tariff_code",
-    "classification_code",
-    "co_note",
-    "preferential_tax_rate",
-    "tax_note"
+    "co_form",
+    "co_tax_note",
+    "customs_type",
+    "customs_note",
+    "is_default"
 ];

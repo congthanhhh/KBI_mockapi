@@ -4,10 +4,14 @@ function fieldsToData(fields) {
     return Object.fromEntries(fields);
 }
 
-function buildItemWhere(q) {
+function buildItemWhere({ q, itemGroupId }) {
     const where = {
         is_delete: false
     };
+
+    if (itemGroupId) {
+        where.item_group_id = itemGroupId;
+    }
 
     if (!q) {
         return where;
@@ -15,14 +19,11 @@ function buildItemWhere(q) {
 
     const searchableColumns = [
         "item_code",
-        "item_group_name",
-        "item_name_vi",
-        "item_name_en",
-        "model",
-        "description",
-        "default_hs_code",
-        "classification_code",
-        "note"
+        "item_name",
+        "item_description",
+        "unit",
+        "item_type",
+        "origin_country"
     ];
 
     where.OR = searchableColumns.map((column) => ({
@@ -35,20 +36,23 @@ function buildItemWhere(q) {
     return where;
 }
 
-export async function findItems({ q, limit, offset }) {
-    const where = buildItemWhere(q);
+export async function findItems({ q, itemGroupId, limit, offset }) {
+    const where = buildItemWhere({ q, itemGroupId });
 
     const [items, total] = await Promise.all([
-        prisma.masterItem.findMany({
+        prisma.itemMaster.findMany({
             where,
             take: limit,
             skip: offset,
+            include: {
+                item_group: true
+            },
             orderBy: [
                 { create_at: "desc" },
                 { id: "desc" }
             ]
         }),
-        prisma.masterItem.count({ where })
+        prisma.itemMaster.count({ where })
     ]);
 
     return {
@@ -58,16 +62,19 @@ export async function findItems({ q, limit, offset }) {
 }
 
 export async function findItemById(id) {
-    return prisma.masterItem.findFirst({
+    return prisma.itemMaster.findFirst({
         where: {
             id,
             is_delete: false
+        },
+        include: {
+            item_group: true
         }
     });
 }
 
 export async function createItem(fields) {
-    return prisma.masterItem.create({
+    return prisma.itemMaster.create({
         data: fieldsToData(fields)
     });
 }
@@ -79,7 +86,7 @@ export async function updateItem(id, fields) {
         return null;
     }
 
-    return prisma.masterItem.update({
+    return prisma.itemMaster.update({
         where: { id },
         data: fieldsToData(fields)
     });
@@ -87,7 +94,7 @@ export async function updateItem(id, fields) {
 
 export async function softDeleteItem(id) {
     return prisma.$transaction(async (tx) => {
-        const item = await tx.masterItem.findFirst({
+        const item = await tx.itemMaster.findFirst({
             where: {
                 id,
                 is_delete: false
@@ -98,7 +105,7 @@ export async function softDeleteItem(id) {
             return null;
         }
 
-        const deletedItem = await tx.masterItem.update({
+        const deletedItem = await tx.itemMaster.update({
             where: { id },
             data: {
                 is_delete: true,
@@ -106,7 +113,7 @@ export async function softDeleteItem(id) {
             }
         });
 
-        const deletedProfiles = await tx.itemTaxProfile.updateMany({
+        const deletedProfiles = await tx.itemCustomsProfile.updateMany({
             where: {
                 item_id: id,
                 is_delete: false
@@ -125,7 +132,7 @@ export async function softDeleteItem(id) {
 }
 
 export async function findTaxProfilesByItemId(itemId) {
-    return prisma.itemTaxProfile.findMany({
+    return prisma.itemCustomsProfile.findMany({
         where: {
             item_id: itemId,
             is_delete: false
@@ -138,7 +145,7 @@ export async function findTaxProfilesByItemId(itemId) {
 }
 
 export async function createTaxProfileForItem(itemId, fields) {
-    return prisma.itemTaxProfile.create({
+    return prisma.itemCustomsProfile.create({
         data: {
             item_id: itemId,
             ...fieldsToData(fields)

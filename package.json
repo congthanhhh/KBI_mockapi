@@ -4,8 +4,6 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "db:check": "node scripts/check-db.js",
-    "db:init": "node scripts/init-db.js",
     "postinstall": "prisma generate",
     "prisma:check": "node scripts/check-prisma.js",
     "prisma:generate": "prisma generate",
