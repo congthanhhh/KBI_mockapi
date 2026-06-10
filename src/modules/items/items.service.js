@@ -71,6 +71,8 @@ export async function removeItem(id) {
 }
 
 export async function listItemTaxProfiles(itemId) {
+    await getItem(itemId);
+
     return findTaxProfilesByItemId(itemId);
 }
 

@@ -16,7 +16,8 @@ function buildItemGroupWhere(q) {
     const searchableColumns = [
         "group_code",
         "group_name",
-        "description"
+        "description",
+        "default_hs_code"
     ];
 
     where.OR = searchableColumns.map((column) => ({

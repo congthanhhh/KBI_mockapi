@@ -4,6 +4,29 @@ function fieldsToData(fields) {
     return Object.fromEntries(fields);
 }
 
+function searchCondition(column, q) {
+    return {
+        [column]: {
+            contains: q,
+            mode: "insensitive"
+        }
+    };
+}
+
+const activeItemRelations = {
+    item_group: true,
+    customs_profiles: {
+        where: {
+            is_delete: false
+        },
+        orderBy: [
+            { is_default: "desc" },
+            { create_at: "desc" },
+            { id: "desc" }
+        ]
+    }
+};
+
 function buildItemWhere({ q, itemGroupId }) {
     const where = {
         is_delete: false
@@ -23,15 +46,33 @@ function buildItemWhere({ q, itemGroupId }) {
         "item_description",
         "unit",
         "item_type",
-        "origin_country"
+        "origin_country",
+        "brand",
+        "model"
     ];
 
-    where.OR = searchableColumns.map((column) => ({
-        [column]: {
-            contains: q,
-            mode: "insensitive"
+    const searchableTaxProfileColumns = [
+        "hs_code",
+        "co_form",
+        "co_tax_note",
+        "customs_type",
+        "customs_note",
+        "reference_doc_no",
+        "location_code",
+        "tax_note"
+    ];
+
+    where.OR = [
+        ...searchableColumns.map((column) => searchCondition(column, q)),
+        {
+            customs_profiles: {
+                some: {
+                    is_delete: false,
+                    OR: searchableTaxProfileColumns.map((column) => searchCondition(column, q))
+                }
+            }
         }
-    }));
+    ];
 
     return where;
 }
@@ -44,9 +85,7 @@ export async function findItems({ q, itemGroupId, limit, offset }) {
             where,
             take: limit,
             skip: offset,
-            include: {
-                item_group: true
-            },
+            include: activeItemRelations,
             orderBy: [
                 { create_at: "desc" },
                 { id: "desc" }
@@ -67,15 +106,14 @@ export async function findItemById(id) {
             id,
             is_delete: false
         },
-        include: {
-            item_group: true
-        }
+        include: activeItemRelations
     });
 }
 
 export async function createItem(fields) {
     return prisma.itemMaster.create({
-        data: fieldsToData(fields)
+        data: fieldsToData(fields),
+        include: activeItemRelations
     });
 }
 
@@ -88,7 +126,8 @@ export async function updateItem(id, fields) {
 
     return prisma.itemMaster.update({
         where: { id },
-        data: fieldsToData(fields)
+        data: fieldsToData(fields),
+        include: activeItemRelations
     });
 }
 

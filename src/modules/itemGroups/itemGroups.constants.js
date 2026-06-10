@@ -1,5 +1,6 @@
 export const itemGroupColumns = [
     "group_code",
     "group_name",
-    "description"
+    "description",
+    "default_hs_code"
 ];
