@@ -48,6 +48,69 @@
 }
 ```
 
+## Pagination
+
+- List endpoints support pagination with query parameters.
+- Default `page` is `1`.
+- Default `limit` is `20`.
+- Maximum `limit` is `100`.
+- Invalid or missing values fall back to defaults.
+
+### Supported Endpoints
+
+- `GET /api/item-groups`
+- `GET /api/item-groups/:id/items`
+- `GET /api/items`
+
+### Query Parameters
+
+| Query | Type | Default | Description |
+| --- | --- | --- | --- |
+| `page` | `number` | `1` | Current page number |
+| `limit` | `number` | `20` | Items per page, max `100` |
+
+### Examples
+
+```http
+GET /api/items?page=1&limit=20
+```
+
+```http
+GET /api/item-groups?page=2&limit=10
+```
+
+```http
+GET /api/item-groups/f99139ff-119a-4d2a-b654-71427c4167ed/items?page=1&limit=10
+```
+
+### Response Shape
+
+```json
+{
+    "data": [],
+    "total": 0,
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 0,
+        "totalPages": 0,
+        "hasNextPage": false,
+        "hasPreviousPage": false
+    }
+}
+```
+
+### Pagination Fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `page` | `number` | Current page number |
+| `limit` | `number` | Items per page |
+| `total` | `number` | Total matched records |
+| `totalPages` | `number` | Total pages |
+| `hasNextPage` | `boolean` | Whether a next page exists |
+| `hasPreviousPage` | `boolean` | Whether a previous page exists |
+
 ## Health
 
 ### GET `/api/health`
