@@ -30,10 +30,14 @@ export async function getItemGroup(id) {
     return itemGroup;
 }
 
-export async function addItemGroup(body) {
-    if (!Object.hasOwn(body, "group_name")) {
-        throw httpError(400, "group_name is required");
+function requireField(body, field) {
+    if (!Object.hasOwn(body, field) || body[field] === null || body[field] === "") {
+        throw httpError(400, `${field} is required`);
     }
+}
+
+export async function addItemGroup(body) {
+    requireField(body, "group_name");
 
     return createItemGroup(pickAllowedFields(body, itemGroupColumns));
 }
@@ -43,6 +47,10 @@ export async function editItemGroup(id, body) {
 
     if (!fields.length) {
         throw httpError(400, "No valid fields to update");
+    }
+
+    if (Object.hasOwn(body, "group_name")) {
+        requireField(body, "group_name");
     }
 
     const itemGroup = await updateItemGroup(id, fields);
