@@ -1,0 +1,42 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "grp_engine",
+    "group_code": "ENGINE",
+    "group_name": "Engine Parts",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "grp_electrical",
+    "group_code": "ELECTRICAL",
+    "group_name": "Electrical Control Parts",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "grp_hydraulic",
+    "group_code": "HYDRAULIC",
+    "group_name": "Hydraulic Parts",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "grp_consumables",
+    "group_code": "CONSUMABLE",
+    "group_name": "Consumables",
+    "is_active": true
+  }
+]

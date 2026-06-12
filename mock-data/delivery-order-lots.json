@@ -1,0 +1,142 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_001",
+    "delivery_order_id": "do_001",
+    "po_lot_id": "lot_003",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_002",
+    "delivery_order_id": "do_002",
+    "po_lot_id": "lot_004",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": "2026-06-11T00:00:00.000Z",
+    "is_delete": true,
+    "id": "do_lot_003",
+    "delivery_order_id": "do_003",
+    "po_lot_id": "lot_001",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_004",
+    "delivery_order_id": "do_004",
+    "po_lot_id": "lot_010",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_005",
+    "delivery_order_id": "do_005",
+    "po_lot_id": "lot_005",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_006",
+    "delivery_order_id": "do_006",
+    "po_lot_id": "lot_006",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_007",
+    "delivery_order_id": "do_007",
+    "po_lot_id": "lot_007",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_008",
+    "delivery_order_id": "do_008",
+    "po_lot_id": "lot_008",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_009",
+    "delivery_order_id": "do_009",
+    "po_lot_id": "lot_009",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_010",
+    "delivery_order_id": "do_010",
+    "po_lot_id": "lot_011",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_011",
+    "delivery_order_id": "do_011",
+    "po_lot_id": "lot_012",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_012",
+    "delivery_order_id": "do_012",
+    "po_lot_id": "lot_013",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_013",
+    "delivery_order_id": "do_013",
+    "po_lot_id": "lot_014",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_014",
+    "delivery_order_id": "do_014",
+    "po_lot_id": "lot_015",
+    "sort_order": 1
+  }
+]

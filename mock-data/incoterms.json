@@ -1,0 +1,46 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "inc_exw",
+    "incoterm_code": "EXW",
+    "incoterm_name": "Ex Works",
+    "description": "Supplier makes goods available at origin.",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "inc_fob",
+    "incoterm_code": "FOB",
+    "incoterm_name": "Free On Board",
+    "description": "Supplier loads goods at port of loading.",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "inc_cif",
+    "incoterm_code": "CIF",
+    "incoterm_name": "Cost Insurance Freight",
+    "description": "Supplier arranges freight and insurance.",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "inc_ddp",
+    "incoterm_code": "DDP",
+    "incoterm_name": "Delivered Duty Paid",
+    "description": "Supplier delivers duty paid.",
+    "is_active": true
+  }
+]

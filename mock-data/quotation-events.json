@@ -1,0 +1,156 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_001",
+    "quotation_id": "qt_001",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-10T04:00:00.000Z",
+    "note": "Confirmed by KBI."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_002",
+    "quotation_id": "qt_002",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-18T04:00:00.000Z",
+    "note": "Confirmed by KBI."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_003",
+    "quotation_id": "qt_003",
+    "event_code": "RECEIVED",
+    "event_at": "2026-06-20T04:00:00.000Z",
+    "note": "Waiting approval."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_004",
+    "quotation_id": "qt_004",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-21T04:00:00.000Z",
+    "note": "Truck quote final."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_005",
+    "quotation_id": "qt_005",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-22T04:00:00.000Z",
+    "note": "FCL quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_006",
+    "quotation_id": "qt_006",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-23T04:00:00.000Z",
+    "note": "Air quote accepted due to stockout risk."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_007",
+    "quotation_id": "qt_007",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-19T04:00:00.000Z",
+    "note": "LCL quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_008",
+    "quotation_id": "qt_008",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-24T04:00:00.000Z",
+    "note": "FCL quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_009",
+    "quotation_id": "qt_009",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-25T04:00:00.000Z",
+    "note": "Cross-border truck quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_010",
+    "quotation_id": "qt_010",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-07-18T04:00:00.000Z",
+    "note": "LCL quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_011",
+    "quotation_id": "qt_011",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-07-21T04:00:00.000Z",
+    "note": "Air freight quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_012",
+    "quotation_id": "qt_012",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-07-25T04:00:00.000Z",
+    "note": "Breakbulk quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_013",
+    "quotation_id": "qt_013",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-07-12T04:00:00.000Z",
+    "note": "CIF shipment tracked for local execution."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_014",
+    "quotation_id": "qt_014",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-07-26T04:00:00.000Z",
+    "note": "High-value air quote accepted."
+  }
+]

@@ -1,0 +1,52 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "tm_sea_fcl",
+    "mode_code": "SEA_FCL",
+    "mode_name": "Sea FCL",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "tm_sea_lcl",
+    "mode_code": "SEA_LCL",
+    "mode_name": "Sea LCL",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "tm_air",
+    "mode_code": "AIR",
+    "mode_name": "Air Freight",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "tm_trucking",
+    "mode_code": "TRUCKING",
+    "mode_name": "Domestic Trucking",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "tm_sea_breakbulk",
+    "mode_code": "SEA_BREAKBULK",
+    "mode_name": "Sea Breakbulk",
+    "is_active": true
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "stm_001",
+    "supplier_id": "sup_fds_forwarder",
+    "transport_mode_id": "tm_sea_fcl",
+    "service_level": "STANDARD",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "stm_002",
+    "supplier_id": "sup_fds_forwarder",
+    "transport_mode_id": "tm_sea_lcl",
+    "service_level": "STANDARD",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "stm_003",
+    "supplier_id": "sup_fds_forwarder",
+    "transport_mode_id": "tm_air",
+    "service_level": "EXPRESS",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "stm_004",
+    "supplier_id": "sup_vn_trucking",
+    "transport_mode_id": "tm_trucking",
+    "service_level": "LOCAL",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "stm_005",
+    "supplier_id": "sup_fds_forwarder",
+    "transport_mode_id": "tm_sea_breakbulk",
+    "service_level": "OVERSIZED",
+    "is_active": true
+  }
+]

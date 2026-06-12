@@ -5,8 +5,9 @@ export function notFound(req, res) {
             meta: {},
             errors: [
                 {
-                    code: "NOT_FOUND",
-                    message: "Route not found"
+                    error_code: "NOT_FOUND",
+                    message: "Route not found",
+                    details: {}
                 }
             ]
         });

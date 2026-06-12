@@ -3,7 +3,7 @@ import cors from "cors";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { notFound } from "./middlewares/notFound.js";
-import apiRouter from "./routes/index.js";
+import apiRouter from "./routes/mock.js";
 
 const app = express();
 

@@ -1,0 +1,113 @@
+import * as service from "./mockMasterData.service.js";
+
+export async function getOptions(req, res) {
+    res.json({ data: await service.getOptions(req.query) });
+}
+
+export const listCurrencies = list("currencies");
+export const getCurrency = detail("currencies");
+export const createCurrency = create("currencies", "cur");
+export const updateCurrency = update("currencies");
+export const deleteCurrency = remove("currencies");
+
+export const listIncoterms = list("incoterms");
+export const getIncoterm = detail("incoterms");
+export const createIncoterm = create("incoterms", "inc");
+export const updateIncoterm = update("incoterms");
+export const deleteIncoterm = remove("incoterms");
+
+export const listTransportModes = list("transport-modes");
+export const getTransportMode = detail("transport-modes");
+export const createTransportMode = create("transport-modes", "tm");
+export const updateTransportMode = update("transport-modes");
+export const deleteTransportMode = remove("transport-modes");
+
+export const listSuppliers = list("suppliers");
+export const getSupplier = detail("suppliers");
+export const createSupplier = create("suppliers", "sup");
+export const updateSupplier = update("suppliers");
+export const deleteSupplier = remove("suppliers");
+
+export const listItemGroups = list("item-groups");
+export const getItemGroup = detail("item-groups");
+export const createItemGroup = create("item-groups", "grp");
+export const updateItemGroup = update("item-groups");
+export const deleteItemGroup = remove("item-groups");
+
+export async function listItemsByGroup(req, res) {
+    res.json(await service.listCollection("item-master", {
+        ...req.query,
+        item_group_id: req.params.id
+    }));
+}
+
+export const listItems = list("item-master");
+export const getItem = detail("item-master");
+export const createItem = create("item-master", "item");
+export const updateItem = update("item-master");
+
+export async function deleteItem(req, res) {
+    res.json({
+        data: await service.deleteItem(req.params.id),
+        message: "Item deleted"
+    });
+}
+
+export async function listItemTaxProfiles(req, res) {
+    const data = await service.listItemTaxProfiles(req.params.id);
+    res.json({
+        data,
+        total: data.length
+    });
+}
+
+export async function createItemTaxProfile(req, res) {
+    res.status(201).json({
+        data: await service.createItemTaxProfile(req.params.id, req.body),
+        message: "Item tax profile created"
+    });
+}
+
+export const updateItemTaxProfile = update("item-customs-profiles");
+export const deleteItemTaxProfile = remove("item-customs-profiles");
+
+function list(collectionName) {
+    return async (req, res) => {
+        res.json(await service.listCollection(collectionName, req.query));
+    };
+}
+
+function detail(collectionName) {
+    return async (req, res) => {
+        res.json({
+            data: await service.getRecord(collectionName, req.params.id)
+        });
+    };
+}
+
+function create(collectionName, idPrefix) {
+    return async (req, res) => {
+        res.status(201).json({
+            data: await service.createRecord(collectionName, idPrefix, req.body),
+            message: "Record created"
+        });
+    };
+}
+
+function update(collectionName) {
+    return async (req, res) => {
+        res.json({
+            data: await service.updateRecord(collectionName, req.params.id, req.body),
+            message: "Record updated"
+        });
+    };
+}
+
+function remove(collectionName) {
+    return async (req, res) => {
+        res.json({
+            data: await service.deleteRecord(collectionName, req.params.id),
+            message: "Record deleted"
+        });
+    };
+}

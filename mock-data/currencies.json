@@ -1,0 +1,50 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cur_vnd",
+    "currency_code": "VND",
+    "currency_name": "Vietnam Dong",
+    "symbol": "d",
+    "exchange_rate_to_vnd": 1,
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cur_usd",
+    "currency_code": "USD",
+    "currency_name": "US Dollar",
+    "symbol": "$",
+    "exchange_rate_to_vnd": 25000,
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cur_cny",
+    "currency_code": "CNY",
+    "currency_name": "Chinese Yuan",
+    "symbol": "CNY",
+    "exchange_rate_to_vnd": 3500,
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cur_eur",
+    "currency_code": "EUR",
+    "currency_name": "Euro",
+    "symbol": "EUR",
+    "exchange_rate_to_vnd": 27000,
+    "is_active": true
+  }
+]

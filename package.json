@@ -4,27 +4,21 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "postinstall": "prisma generate",
-    "prisma:check": "node scripts/check-prisma.js",
-    "prisma:generate": "prisma generate",
-    "prisma:studio": "prisma studio",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "mock:seed": "node scripts/seed-mock-data.js",
+    "mock:smoke": "node scripts/smoke-mock-api.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "pg": "^8.21.0"
+    "express": "^5.2.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "prisma": "^7.8.0"
+    "nodemon": "^3.1.14"
   }
 }

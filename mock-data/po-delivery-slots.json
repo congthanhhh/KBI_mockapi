@@ -1,0 +1,62 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "slot_001",
+    "purchase_order_id": "po_001",
+    "slot_no": "SLOT-001",
+    "slot_name": "Legacy slot 1",
+    "status": "DEPRECATED",
+    "planned_cargo_ready_date": "2026-07-01",
+    "planned_etd": "2026-07-03",
+    "planned_eta": "2026-07-10",
+    "note": "Legacy table coverage only. Active LOT Planning ignores slots."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "slot_002",
+    "purchase_order_id": "po_002",
+    "slot_no": "SLOT-002",
+    "slot_name": "Legacy slot 2",
+    "status": "DEPRECATED",
+    "planned_cargo_ready_date": "2026-07-06",
+    "planned_etd": "2026-07-08",
+    "planned_eta": "2026-07-16",
+    "note": "Legacy table coverage only. Active LOT Planning ignores slots."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "slot_003",
+    "purchase_order_id": "po_003",
+    "slot_no": "SLOT-003",
+    "slot_name": "Legacy slot 3",
+    "status": "DEPRECATED",
+    "planned_cargo_ready_date": "2026-06-20",
+    "planned_etd": "2026-06-24",
+    "planned_eta": "2026-07-02",
+    "note": "Legacy table coverage only. Active LOT Planning ignores slots."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "slot_004",
+    "purchase_order_id": "po_004",
+    "slot_no": "SLOT-004",
+    "slot_name": "Legacy slot 4",
+    "status": "DEPRECATED",
+    "planned_cargo_ready_date": "2026-07-15",
+    "planned_etd": "2026-07-18",
+    "planned_eta": "2026-07-26",
+    "note": "Legacy table coverage only. Active LOT Planning ignores slots."
+  }
+]

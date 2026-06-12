@@ -1,0 +1,87 @@
+@baseUrl = http://localhost:3001/api/v1
+
+### 1. Mock health
+GET {{baseUrl}}/mock/health
+
+### 2. Purchase orders
+GET {{baseUrl}}/purchase-orders
+
+### 3. LOT planning
+GET {{baseUrl}}/purchase-orders/po_001/lot-planning
+
+### 4. Split LOT line
+POST {{baseUrl}}/po-lot-lines/lot_line_001/split
+Content-Type: application/json
+
+{
+  "target_lot_id": "lot_002",
+  "split_qty": 10
+}
+
+### 5. Move LOT line
+POST {{baseUrl}}/po-lot-lines/lot_line_002/move
+Content-Type: application/json
+
+{
+  "target_lot_id": "lot_001"
+}
+
+### 6. Create delivery order from LOTs
+POST {{baseUrl}}/delivery-orders/from-lots
+Content-Type: application/json
+
+{
+  "lot_ids": ["lot_002"]
+}
+
+### 7. Create quotation
+POST {{baseUrl}}/delivery-orders/do_001/quotations
+Content-Type: application/json
+
+{
+  "quotation_type": "FREIGHT"
+}
+
+### 8. Mark quotation final
+POST {{baseUrl}}/quotations/qt_001/mark-final
+Content-Type: application/json
+
+{}
+
+### 9. Create shipment
+POST {{baseUrl}}/shipments/from-delivery-order
+Content-Type: application/json
+
+{
+  "delivery_order_id": "do_001"
+}
+
+### 10. Mark customs-cleared milestone
+POST {{baseUrl}}/shipments/shp_001/milestones/CUSTOMS_CLEARED/done
+Content-Type: application/json
+
+{}
+
+### 11. Create customs declaration
+POST {{baseUrl}}/shipments/shp_001/customs-declarations
+Content-Type: application/json
+
+{}
+
+### 12. Clear customs declaration
+POST {{baseUrl}}/customs-declarations/cd_001/clear
+Content-Type: application/json
+
+{}
+
+### 13. Create carrier delivery order
+POST {{baseUrl}}/shipments/shp_001/carrier-delivery-orders
+Content-Type: application/json
+
+{}
+
+### 14. Create domestic transport order
+POST {{baseUrl}}/shipments/shp_001/domestic-transport-orders
+Content-Type: application/json
+
+{}
