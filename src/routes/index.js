@@ -1,4 +1,5 @@
 import express from "express";
+import customsDeclarationsRouter from "../modules/customsDeclarations/customsDeclarations.routes.js";
 import currenciesRouter from "../modules/currencies/currencies.routes.js";
 import deliveryOrdersRouter from "../modules/deliveryOrders/deliveryOrders.routes.js";
 import healthRouter from "../modules/health/health.routes.js";
@@ -28,5 +29,6 @@ router.use("/v1", purchaseOrdersRouter);
 router.use("/v1", deliveryOrdersRouter);
 router.use("/v1", quotationsRouter);
 router.use("/v1", shipmentsRouter);
+router.use("/v1", customsDeclarationsRouter);
 
 export default router;

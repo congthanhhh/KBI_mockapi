@@ -124,6 +124,18 @@
 | `POST` | `/api/v1/shipments/:id/documents` | Create shipment document |
 | `PATCH` | `/api/v1/shipment-documents/:documentId` | Update shipment document |
 | `DELETE` | `/api/v1/shipment-documents/:documentId` | Soft delete shipment document |
+| `GET` | `/api/v1/shipments/:shipmentId/customs-declarations` | List customs declarations for shipment |
+| `POST` | `/api/v1/shipments/:shipmentId/customs-declarations` | Create customs declaration from shipment lines |
+| `GET` | `/api/v1/customs-declarations/:id` | Get customs declaration detail |
+| `PATCH` | `/api/v1/customs-declarations/:id` | Update unlocked customs declaration |
+| `GET` | `/api/v1/customs-declarations/:id/lines` | List customs declaration lines |
+| `POST` | `/api/v1/customs-declarations/:id/lines` | Create customs declaration line |
+| `PATCH` | `/api/v1/customs-declaration-lines/:lineId` | Update customs declaration line |
+| `DELETE` | `/api/v1/customs-declaration-lines/:lineId` | Soft delete customs declaration line |
+| `POST` | `/api/v1/customs-declarations/:id/open-draft` | Open customs draft declaration |
+| `POST` | `/api/v1/customs-declarations/:id/open-official` | Open official customs declaration |
+| `POST` | `/api/v1/customs-declarations/:id/clear` | Clear customs declaration |
+| `POST` | `/api/v1/customs-declarations/:id/cancel` | Cancel customs declaration |
 
 ## Common Response Shapes
 
@@ -1992,3 +2004,150 @@ Document statuses:
 `DELETE /api/v1/shipment-documents/:documentId`
 
 - Soft deletes a shipment document.
+
+---
+
+## Customs Declarations V1
+
+Database tables: `customs_declarations`, `customs_declaration_lines`.
+
+### Business Rules
+
+- Create customs declaration only when shipment is active and not `CANCELLED`.
+- Creating customs declaration calls `fn_create_customs_declaration_from_shipment`.
+- The create function copies active `shipment_lines` to `customs_declaration_lines`, resolves item customs profile data, updates shipment status to `CUSTOMS_DRAFT`, and marks shipment milestone `CUSTOMS_DRAFT` as `DONE`.
+- Declaration lines cannot be created, updated, or deleted when declaration status is `CLEARED` or `CANCELLED`.
+- Clearing declaration calls `fn_clear_customs_declaration`, sets declaration status to `CLEARED`, sets shipment status to `CUSTOMS_CLEARED`, and marks milestone `CUSTOMS_CLEARED` as `DONE`.
+- Carrier DO / DTO should only be created after shipment reaches `CUSTOMS_CLEARED`.
+
+### Statuses
+
+`DRAFT`, `DRAFT_OPENED`, `OFFICIAL_OPENED`, `SUBMITTED`, `INSPECTION`, `CLEARED`, `CANCELLED`.
+
+### Types And Channels
+
+Customs types:
+
+`IMPORT`, `TEMP_IMPORT`, `RE_IMPORT`, `OTHER`.
+
+Customs channels:
+
+`GREEN`, `YELLOW`, `RED`.
+
+### `GET /api/v1/shipments/:shipmentId/customs-declarations`
+
+- Lists active customs declarations for a shipment.
+- Response includes declaration lines, shipment, and broker.
+
+### `POST /api/v1/shipments/:shipmentId/customs-declarations`
+
+Creates declaration from active shipment lines.
+
+```json
+{
+    "declaration_no": null,
+    "customs_type": "IMPORT",
+    "customs_channel": null,
+    "broker_id": "uuid",
+    "note": "Create draft customs declaration from shipment lines"
+}
+```
+
+- `customs_type` defaults to `IMPORT`.
+- `broker_id` must reference an active supplier when provided.
+
+### `GET /api/v1/customs-declarations/:id`
+
+- Gets declaration detail with active lines.
+
+### `PATCH /api/v1/customs-declarations/:id`
+
+Editable fields:
+
+`declaration_no`, `customs_type`, `customs_channel`, `broker_id`, `submitted_at`, `note`, `cancel_reason`.
+
+- Not allowed when declaration is `CLEARED` or `CANCELLED`.
+
+### Lines
+
+`GET /api/v1/customs-declarations/:id/lines`
+
+- Lists active declaration lines ordered by `line_no`.
+
+`POST /api/v1/customs-declarations/:id/lines`
+
+```json
+{
+    "shipment_line_id": "uuid",
+    "line_no": 1,
+    "quantity": 10,
+    "customs_value": 12500,
+    "currency_id": "uuid",
+    "note": "Manual adjustment"
+}
+```
+
+- Required: `line_no`.
+- If `shipment_line_id` is provided, API fills `purchase_order_line_id`, `item_id`, `quantity`, `unit`, and `item_description` from shipment line when omitted.
+- If `shipment_line_id` is omitted, required: `purchase_order_line_id`, `item_id`, `quantity`, `unit`.
+- Rates must be between 0 and 100.
+- `customs_value` must be greater than or equal to 0.
+
+`PATCH /api/v1/customs-declaration-lines/:lineId`
+
+- Updates customs line metadata, values, rates, quantity, and note.
+- `line_no` must remain unique in the declaration.
+
+`DELETE /api/v1/customs-declaration-lines/:lineId`
+
+- Soft deletes a customs line.
+
+### Actions
+
+`POST /api/v1/customs-declarations/:id/open-draft`
+
+```json
+{
+    "opened_at": "2026-07-05T09:00:00.000Z"
+}
+```
+
+- Requires status `DRAFT`.
+- Calls `fn_open_customs_draft`.
+
+`POST /api/v1/customs-declarations/:id/open-official`
+
+```json
+{
+    "declaration_no": "105987654321",
+    "customs_channel": "YELLOW",
+    "opened_at": "2026-07-05T09:00:00.000Z"
+}
+```
+
+- Requires status `DRAFT` or `DRAFT_OPENED`.
+- Calls `fn_open_customs_official`.
+
+`POST /api/v1/customs-declarations/:id/clear`
+
+```json
+{
+    "cleared_at": "2026-07-06T15:30:00.000Z",
+    "note": "Customs cleared successfully"
+}
+```
+
+- Requires status `OFFICIAL_OPENED`, `SUBMITTED`, or `INSPECTION`.
+- Requires at least one active declaration line.
+- Calls `fn_clear_customs_declaration`.
+
+`POST /api/v1/customs-declarations/:id/cancel`
+
+```json
+{
+    "cancel_reason": "Declaration opened by mistake",
+    "note": "Cancelled by customs broker"
+}
+```
+
+- Not allowed when declaration is `CLEARED` or already `CANCELLED`.

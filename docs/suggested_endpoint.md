@@ -1,86 +1,121 @@
-Table tiếp theo nên implement là **Shipment module**, không nên chỉ tạo mỗi `shipments`, vì Shipment cần quản lý:
+**Customs module**:
 
 ```txt
-Shipment header
-→ Shipment lines
-→ 10 milestones
-→ Shipping documents
+customs_declarations
+customs_declaration_lines
 ```
 
-Technical requirement cũng yêu cầu Shipment tracking theo **10 milestone từ Booking đến EDO & Delivery**, kèm document upload theo milestone. 
-SOP ban đầu cũng xác định sau **Quotation Versioning** là **Shipment Booking → Cargo Ready → International Transport → Shipping Documents**. 
+Trong `database.sql` hiện tại mình thấy đã có nhóm `shipments`, `shipment_lines`, `shipment_milestones`, `shipment_documents` và các function liên quan Shipment rồi. 
+Theo SOP, sau **Shipping Documents** sẽ tới **Import Customs Declaration → Customs Clearance**, và sau khi clear customs mới được tạo **Carrier DO / DTO**. 
 
 ---
 
-# 1. Thứ tự table cần tạo tiếp theo
+---
+
+# 5. API nên implement cho Customs
+
+Theo tài liệu GD1, Shipment API có cập nhật milestone, upload document và theo dõi customs trong shipment tracking. 
+Trong Excel mapping, phần `Docs-custom` cũng nên map sang `shipment_documents`, `customs_declarations`, và `shipment_milestones`. 
 
 ```txt
-1. shipments
-2. shipment_lines
-3. shipment_milestones
-4. shipment_documents
+GET  /api/v1/shipments/:shipmentId/customs-declarations
+POST /api/v1/shipments/:shipmentId/customs-declarations
+
+GET  /api/v1/customs-declarations/:id
+PATCH /api/v1/customs-declarations/:id
+
+GET  /api/v1/customs-declarations/:id/lines
+POST /api/v1/customs-declarations/:id/lines
+PATCH /api/v1/customs-declaration-lines/:lineId
+DELETE /api/v1/customs-declaration-lines/:lineId
+
+POST /api/v1/customs-declarations/:id/open-draft
+POST /api/v1/customs-declarations/:id/open-official
+POST /api/v1/customs-declarations/:id/clear
+POST /api/v1/customs-declarations/:id/cancel
 ```
 
-Sau 4 table này, bạn đủ để implement đoạn:
+Request tạo customs declaration:
 
-```txt
-Internal DO
-→ Quotation final
-→ Shipment Booking
-→ Cargo Ready
-→ International Transport
-→ Shipping Documents
+```json
+{
+  "declaration_no": null,
+  "customs_type": "IMPORT",
+  "customs_channel": null,
+  "broker_id": "uuid",
+  "note": "Create draft customs declaration from shipment lines"
+}
+```
+
+Service nên gọi:
+
+```sql
+SELECT fn_create_customs_declaration_from_shipment(
+    $1::UUID,     -- shipment_id
+    $2::VARCHAR,  -- declaration_no
+    $3::VARCHAR,  -- customs_type
+    $4::VARCHAR,  -- customs_channel
+    $5::UUID,     -- broker_id
+    $6::TEXT      -- note
+) AS customs_declaration_id;
+```
+
+Request mở tờ khai chính thức:
+
+```json
+{
+  "declaration_no": "105987654321",
+  "customs_channel": "YELLOW",
+  "opened_at": "2026-07-05T09:00:00Z"
+}
+```
+
+Request thông quan:
+
+```json
+{
+  "cleared_at": "2026-07-06T15:30:00Z",
+  "note": "Customs cleared successfully"
+}
 ```
 
 ---
 
-# 8. Endpoint nên implement sau khi có table
+# 6. Business rule cần giữ ở service layer
 
 ```txt
-POST   /api/v1/shipments/from-delivery-order
-GET    /api/v1/shipments
-GET    /api/v1/shipments/:id
-PATCH  /api/v1/shipments/:id
-POST   /api/v1/shipments/:id/cancel
+1. Chỉ tạo customs_declaration khi shipment chưa CANCELLED.
 
-GET    /api/v1/shipments/:id/lines
+2. Khi tạo customs declaration:
+   - insert customs_declarations
+   - copy shipment_lines sang customs_declaration_lines
+   - lấy HS code / thuế / CO từ item_customs_profiles
+   - update shipment.status = CUSTOMS_DRAFT
+   - mark milestone CUSTOMS_DRAFT = DONE
 
-GET    /api/v1/shipments/:id/milestones
-POST   /api/v1/shipments/:id/milestones/:milestoneCode/done
+3. Không cho sửa customs_declaration_lines nếu declaration đã CLEARED hoặc CANCELLED.
 
-GET    /api/v1/shipments/:id/documents
-POST   /api/v1/shipments/:id/documents
-PATCH  /api/v1/shipment-documents/:documentId
-DELETE /api/v1/shipment-documents/:documentId
-```
-
----
-
-# 9. Rule service layer cần giữ
-
-```txt
-1. Chỉ tạo Shipment khi delivery_orders.status = QUOTATION_CONFIRMED.
-
-2. Khi tạo Shipment:
-   - insert shipments
-   - copy delivery_order_lines sang shipment_lines
-   - auto tạo 10 shipment_milestones
-   - update delivery_orders.status = ASSIGNED_TO_SHIPMENT
-
-3. Không cho sửa shipment_lines khi Shipment đã DELIVERED hoặc CANCELLED.
-
-4. Update milestone nào thì update Shipment status tương ứng.
-
-5. Khi milestone CUSTOMS_CLEARED done:
+4. Khi clear customs:
+   - customs_declarations.status = CLEARED
    - shipments.status = CUSTOMS_CLEARED
-   - bước tiếp theo mới cho tạo Customs / Carrier DO / DTO.
+   - shipment_milestones.CUSTOMS_CLEARED.actual_at = now()
+
+5. Chỉ sau CUSTOMS_CLEARED mới cho tạo:
+   - carrier_delivery_orders
+   - domestic_transport_orders
 ```
 
 ---
 
-# 10. Sau Shipment module sẽ làm gì?
+## Sau bước này làm gì?
 
-Sau khi xong 4 table này, flow của bạn sẽ đạt tới:
+Sau khi chạy xong Customs module, table tiếp theo là:
+
+```txt
+7. carrier_delivery_orders
+```
+
+Tức là flow của bạn sẽ đạt tới:
 
 ```txt
 PO
@@ -89,6 +124,13 @@ PO
 → Internal DO
 → Quotation
 → Shipment
-→ Milestones
-→ Documents
+→ Customs Declaration
+→ Customs Clearance
+```
+
+Tiếp theo mới tới:
+
+```txt
+Carrier DO / Cargo Release
+→ DTO
 ```

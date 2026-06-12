@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict dDSFrmqxB6qdRPX6Mbp3ERwTVQYCfR7NSoCwReKhsoPXNc2StTh43F1YFsuGzJ9
+\restrict ZLu7aDKePCZYNbTvcELnNYtmEuZsOrcVYIhUM6FTbEyfojSGH5W8A0ZXaGNuHje
 
 -- Dumped from database version 18.4 (6e15e70)
 -- Dumped by pg_dump version 18.3
 
--- Started on 2026-06-11 23:09:40
+-- Started on 2026-06-12 10:29:03
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -32,7 +32,7 @@ CREATE SCHEMA public;
 ALTER SCHEMA public OWNER TO neondb_owner;
 
 --
--- TOC entry 269 (class 1255 OID 59639)
+-- TOC entry 271 (class 1255 OID 59639)
 -- Name: fn_after_po_confirmation_line_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -60,7 +60,7 @@ $$;
 ALTER FUNCTION public.fn_after_po_confirmation_line_change() OWNER TO neondb_owner;
 
 --
--- TOC entry 273 (class 1255 OID 59646)
+-- TOC entry 275 (class 1255 OID 59646)
 -- Name: fn_after_po_lot_line_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -88,7 +88,7 @@ $$;
 ALTER FUNCTION public.fn_after_po_lot_line_change() OWNER TO neondb_owner;
 
 --
--- TOC entry 281 (class 1255 OID 59796)
+-- TOC entry 283 (class 1255 OID 59796)
 -- Name: fn_after_quotation_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -131,7 +131,7 @@ $$;
 ALTER FUNCTION public.fn_after_quotation_change() OWNER TO neondb_owner;
 
 --
--- TOC entry 284 (class 1255 OID 59801)
+-- TOC entry 286 (class 1255 OID 59801)
 -- Name: fn_after_quotation_charge_line_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -171,7 +171,7 @@ $$;
 ALTER FUNCTION public.fn_after_quotation_charge_line_change() OWNER TO neondb_owner;
 
 --
--- TOC entry 289 (class 1255 OID 73913)
+-- TOC entry 291 (class 1255 OID 73913)
 -- Name: fn_after_shipment_created(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -188,7 +188,7 @@ $$;
 ALTER FUNCTION public.fn_after_shipment_created() OWNER TO neondb_owner;
 
 --
--- TOC entry 292 (class 1255 OID 73917)
+-- TOC entry 294 (class 1255 OID 73917)
 -- Name: fn_after_shipment_line_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -216,7 +216,7 @@ $$;
 ALTER FUNCTION public.fn_after_shipment_line_change() OWNER TO neondb_owner;
 
 --
--- TOC entry 282 (class 1255 OID 59798)
+-- TOC entry 284 (class 1255 OID 59798)
 -- Name: fn_before_quotation_charge_line_change(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -258,7 +258,218 @@ $$;
 ALTER FUNCTION public.fn_before_quotation_charge_line_change() OWNER TO neondb_owner;
 
 --
--- TOC entry 278 (class 1255 OID 59656)
+-- TOC entry 302 (class 1255 OID 82037)
+-- Name: fn_clear_customs_declaration(uuid, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: neondb_owner
+--
+
+CREATE FUNCTION public.fn_clear_customs_declaration(p_customs_declaration_id uuid, p_cleared_at timestamp with time zone DEFAULT now(), p_note text DEFAULT NULL::text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_shipment_id UUID;
+    v_line_count INT;
+BEGIN
+    SELECT shipment_id
+    INTO v_shipment_id
+    FROM customs_declarations
+    WHERE id = p_customs_declaration_id
+      AND is_delete = FALSE
+      AND status NOT IN ('CLEARED', 'CANCELLED');
+
+    IF v_shipment_id IS NULL THEN
+        RAISE EXCEPTION 'Customs declaration not found or already locked';
+    END IF;
+
+    SELECT COUNT(*)
+    INTO v_line_count
+    FROM customs_declaration_lines
+    WHERE customs_declaration_id = p_customs_declaration_id
+      AND is_delete = FALSE;
+
+    IF v_line_count = 0 THEN
+        RAISE EXCEPTION 'Cannot clear customs declaration without lines';
+    END IF;
+
+    UPDATE customs_declarations
+    SET
+        status = 'CLEARED',
+        cleared_at = COALESCE(cleared_at, p_cleared_at),
+        note = COALESCE(p_note, note),
+        update_at = NOW()
+    WHERE id = p_customs_declaration_id;
+
+    UPDATE shipments
+    SET
+        status = 'CUSTOMS_CLEARED',
+        update_at = NOW()
+    WHERE id = v_shipment_id
+      AND is_delete = FALSE
+      AND status <> 'CANCELLED';
+
+    UPDATE shipment_milestones
+    SET
+        status = 'DONE',
+        actual_at = COALESCE(actual_at, p_cleared_at),
+        notes = COALESCE(p_note, notes),
+        update_at = NOW()
+    WHERE shipment_id = v_shipment_id
+      AND milestone_code = 'CUSTOMS_CLEARED'
+      AND is_delete = FALSE;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_clear_customs_declaration(p_customs_declaration_id uuid, p_cleared_at timestamp with time zone, p_note text) OWNER TO neondb_owner;
+
+--
+-- TOC entry 299 (class 1255 OID 82033)
+-- Name: fn_create_customs_declaration_from_shipment(uuid, character varying, character varying, character varying, uuid, text); Type: FUNCTION; Schema: public; Owner: neondb_owner
+--
+
+CREATE FUNCTION public.fn_create_customs_declaration_from_shipment(p_shipment_id uuid, p_declaration_no character varying DEFAULT NULL::character varying, p_customs_type character varying DEFAULT 'IMPORT'::character varying, p_customs_channel character varying DEFAULT NULL::character varying, p_broker_id uuid DEFAULT NULL::uuid, p_note text DEFAULT NULL::text) RETURNS uuid
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_customs_declaration_id UUID;
+    v_currency_id UUID;
+    r_line RECORD;
+BEGIN
+    SELECT po.currency_id
+    INTO v_currency_id
+    FROM shipments s
+    JOIN purchase_orders po
+        ON po.id = s.purchase_order_id
+    WHERE s.id = p_shipment_id
+      AND s.is_delete = FALSE
+      AND po.is_delete = FALSE;
+
+    IF v_currency_id IS NULL THEN
+        RAISE EXCEPTION 'Shipment or purchase order currency not found';
+    END IF;
+
+    INSERT INTO customs_declarations (
+        shipment_id,
+        declaration_no,
+        customs_type,
+        customs_channel,
+        broker_id,
+        status,
+        note
+    )
+    VALUES (
+        p_shipment_id,
+        p_declaration_no,
+        COALESCE(p_customs_type, 'IMPORT'),
+        p_customs_channel,
+        p_broker_id,
+        'DRAFT',
+        p_note
+    )
+    RETURNING id INTO v_customs_declaration_id;
+
+    FOR r_line IN
+        SELECT
+            ROW_NUMBER() OVER (ORDER BY sl.create_at, sl.id) AS line_no,
+            sl.id AS shipment_line_id,
+            sl.purchase_order_line_id,
+            sl.item_id,
+            COALESCE(sl.item_description, pol.item_description, im.item_description) AS item_description,
+            sl.qty_shipped AS quantity,
+            sl.unit,
+            COALESCE(pol.unit_price, 0) AS unit_price,
+            icp.id AS item_customs_profile_id,
+            icp.hs_code,
+            icp.import_duty_rate,
+            icp.preferential_import_duty_rate,
+            icp.vat_rate,
+            icp.co_form
+        FROM shipment_lines sl
+        JOIN purchase_order_lines pol
+            ON pol.id = sl.purchase_order_line_id
+        JOIN item_master im
+            ON im.id = sl.item_id
+        LEFT JOIN LATERAL (
+            SELECT icp2.*
+            FROM item_customs_profiles icp2
+            WHERE icp2.item_id = sl.item_id
+              AND icp2.is_delete = FALSE
+            ORDER BY
+                CASE WHEN icp2.id = pol.item_customs_profile_id THEN 0 ELSE 1 END,
+                icp2.is_default DESC
+            LIMIT 1
+        ) icp ON TRUE
+        WHERE sl.shipment_id = p_shipment_id
+          AND sl.is_delete = FALSE
+          AND pol.is_delete = FALSE
+    LOOP
+        INSERT INTO customs_declaration_lines (
+            customs_declaration_id,
+            shipment_line_id,
+            purchase_order_line_id,
+            item_id,
+            item_customs_profile_id,
+            line_no,
+            hs_code,
+            item_description,
+            quantity,
+            unit,
+            customs_value,
+            currency_id,
+            import_duty_rate,
+            preferential_tax_rate,
+            vat_rate,
+            co_form
+        )
+        VALUES (
+            v_customs_declaration_id,
+            r_line.shipment_line_id,
+            r_line.purchase_order_line_id,
+            r_line.item_id,
+            r_line.item_customs_profile_id,
+            r_line.line_no,
+            r_line.hs_code,
+            r_line.item_description,
+            r_line.quantity,
+            r_line.unit,
+            ROUND((r_line.quantity * r_line.unit_price)::NUMERIC, 4),
+            v_currency_id,
+            COALESCE(r_line.import_duty_rate, 0),
+            r_line.preferential_import_duty_rate,
+            COALESCE(r_line.vat_rate, 0),
+            r_line.co_form
+        );
+    END LOOP;
+
+    UPDATE shipments
+    SET
+        status = CASE
+            WHEN status IN ('BOOKING_PENDING', 'BOOKING_CONFIRMED', 'CARGO_READY', 'PICKED_UP', 'BL_ISSUED', 'GATE_IN_POL', 'IN_TRANSIT', 'ARRIVED')
+            THEN 'CUSTOMS_DRAFT'
+            ELSE status
+        END,
+        update_at = NOW()
+    WHERE id = p_shipment_id
+      AND is_delete = FALSE
+      AND status <> 'CANCELLED';
+
+    UPDATE shipment_milestones
+    SET
+        status = 'DONE',
+        actual_at = COALESCE(actual_at, NOW()),
+        update_at = NOW()
+    WHERE shipment_id = p_shipment_id
+      AND milestone_code = 'CUSTOMS_DRAFT'
+      AND is_delete = FALSE;
+
+    RETURN v_customs_declaration_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_create_customs_declaration_from_shipment(p_shipment_id uuid, p_declaration_no character varying, p_customs_type character varying, p_customs_channel character varying, p_broker_id uuid, p_note text) OWNER TO neondb_owner;
+
+--
+-- TOC entry 280 (class 1255 OID 59656)
 -- Name: fn_create_delivery_order_from_lots(character varying, uuid, uuid[], uuid, date, date, date, text, text, character varying, character varying, character varying, text); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -377,7 +588,7 @@ $$;
 ALTER FUNCTION public.fn_create_delivery_order_from_lots(p_do_no character varying, p_purchase_order_id uuid, p_lot_ids uuid[], p_transport_mode_id uuid, p_planned_cargo_ready_date date, p_planned_etd date, p_planned_eta date, p_origin_address text, p_destination_address text, p_warehouse_name character varying, p_requested_by character varying, p_handled_by character varying, p_notes text) OWNER TO neondb_owner;
 
 --
--- TOC entry 285 (class 1255 OID 59803)
+-- TOC entry 287 (class 1255 OID 59803)
 -- Name: fn_create_quotation_version(uuid, character varying, character varying, text); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -504,7 +715,7 @@ $$;
 ALTER FUNCTION public.fn_create_quotation_version(p_source_quotation_id uuid, p_new_quotation_no character varying, p_actor_name character varying, p_note text) OWNER TO neondb_owner;
 
 --
--- TOC entry 293 (class 1255 OID 73920)
+-- TOC entry 295 (class 1255 OID 73920)
 -- Name: fn_create_shipment_from_delivery_order(character varying, uuid, uuid, uuid, uuid, character varying, character varying, character varying, character varying, character varying, jsonb, character varying, character varying, date, date, text); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -625,7 +836,7 @@ $$;
 ALTER FUNCTION public.fn_create_shipment_from_delivery_order(p_shipment_no character varying, p_delivery_order_id uuid, p_final_quotation_id uuid, p_transport_mode_id uuid, p_forwarder_id uuid, p_carrier character varying, p_mode character varying, p_vessel_flight character varying, p_voyage_no character varying, p_bl_awb_no character varying, p_container_no jsonb, p_pol character varying, p_pod character varying, p_etd date, p_eta date, p_notes text) OWNER TO neondb_owner;
 
 --
--- TOC entry 274 (class 1255 OID 59649)
+-- TOC entry 276 (class 1255 OID 59649)
 -- Name: fn_init_default_po_slot_lot(uuid); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -736,7 +947,7 @@ $$;
 ALTER FUNCTION public.fn_init_default_po_slot_lot(p_purchase_order_id uuid) OWNER TO neondb_owner;
 
 --
--- TOC entry 288 (class 1255 OID 73912)
+-- TOC entry 290 (class 1255 OID 73912)
 -- Name: fn_init_shipment_milestones(uuid); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -769,7 +980,7 @@ $$;
 ALTER FUNCTION public.fn_init_shipment_milestones(p_shipment_id uuid) OWNER TO neondb_owner;
 
 --
--- TOC entry 279 (class 1255 OID 59793)
+-- TOC entry 281 (class 1255 OID 59793)
 -- Name: fn_log_quotation_event(uuid, character varying, character varying, character varying, character varying, text, jsonb); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -802,7 +1013,7 @@ $$;
 ALTER FUNCTION public.fn_log_quotation_event(p_quotation_id uuid, p_event_type character varying, p_old_status character varying, p_new_status character varying, p_actor_name character varying, p_note text, p_payload jsonb) OWNER TO neondb_owner;
 
 --
--- TOC entry 286 (class 1255 OID 59804)
+-- TOC entry 288 (class 1255 OID 59804)
 -- Name: fn_mark_quotation_final(uuid, character varying, text); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -880,7 +1091,7 @@ $$;
 ALTER FUNCTION public.fn_mark_quotation_final(p_quotation_id uuid, p_actor_name character varying, p_note text) OWNER TO neondb_owner;
 
 --
--- TOC entry 294 (class 1255 OID 73921)
+-- TOC entry 296 (class 1255 OID 73921)
 -- Name: fn_mark_shipment_milestone_done(uuid, character varying, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -952,7 +1163,71 @@ $$;
 ALTER FUNCTION public.fn_mark_shipment_milestone_done(p_shipment_id uuid, p_milestone_code character varying, p_actual_at timestamp with time zone, p_notes text) OWNER TO neondb_owner;
 
 --
--- TOC entry 255 (class 1255 OID 59637)
+-- TOC entry 300 (class 1255 OID 82035)
+-- Name: fn_open_customs_draft(uuid, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: neondb_owner
+--
+
+CREATE FUNCTION public.fn_open_customs_draft(p_customs_declaration_id uuid, p_opened_at timestamp with time zone DEFAULT now()) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE customs_declarations
+    SET
+        status = 'DRAFT_OPENED',
+        draft_opened_at = COALESCE(draft_opened_at, p_opened_at),
+        update_at = NOW()
+    WHERE id = p_customs_declaration_id
+      AND is_delete = FALSE
+      AND status IN ('DRAFT');
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Cannot open customs draft in current status';
+    END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_open_customs_draft(p_customs_declaration_id uuid, p_opened_at timestamp with time zone) OWNER TO neondb_owner;
+
+--
+-- TOC entry 301 (class 1255 OID 82036)
+-- Name: fn_open_customs_official(uuid, character varying, character varying, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: neondb_owner
+--
+
+CREATE FUNCTION public.fn_open_customs_official(p_customs_declaration_id uuid, p_declaration_no character varying, p_customs_channel character varying, p_opened_at timestamp with time zone DEFAULT now()) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF p_declaration_no IS NULL OR p_declaration_no = '' THEN
+        RAISE EXCEPTION 'declaration_no is required';
+    END IF;
+
+    IF p_customs_channel NOT IN ('GREEN', 'YELLOW', 'RED') THEN
+        RAISE EXCEPTION 'Invalid customs_channel %', p_customs_channel;
+    END IF;
+
+    UPDATE customs_declarations
+    SET
+        declaration_no = p_declaration_no,
+        customs_channel = p_customs_channel,
+        status = 'OFFICIAL_OPENED',
+        official_opened_at = COALESCE(official_opened_at, p_opened_at),
+        update_at = NOW()
+    WHERE id = p_customs_declaration_id
+      AND is_delete = FALSE
+      AND status IN ('DRAFT', 'DRAFT_OPENED');
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Cannot open customs official in current status';
+    END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_open_customs_official(p_customs_declaration_id uuid, p_declaration_no character varying, p_customs_channel character varying, p_opened_at timestamp with time zone) OWNER TO neondb_owner;
+
+--
+-- TOC entry 257 (class 1255 OID 59637)
 -- Name: fn_refresh_po_line_qty_confirmed(uuid); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -980,7 +1255,7 @@ $$;
 ALTER FUNCTION public.fn_refresh_po_line_qty_confirmed(p_purchase_order_line_id uuid) OWNER TO neondb_owner;
 
 --
--- TOC entry 270 (class 1255 OID 59642)
+-- TOC entry 272 (class 1255 OID 59642)
 -- Name: fn_refresh_po_line_qty_lotted(uuid); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1009,7 +1284,7 @@ $$;
 ALTER FUNCTION public.fn_refresh_po_line_qty_lotted(p_purchase_order_line_id uuid) OWNER TO neondb_owner;
 
 --
--- TOC entry 290 (class 1255 OID 73915)
+-- TOC entry 292 (class 1255 OID 73915)
 -- Name: fn_refresh_po_line_qty_shipped(uuid); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1038,7 +1313,7 @@ $$;
 ALTER FUNCTION public.fn_refresh_po_line_qty_shipped(p_purchase_order_line_id uuid) OWNER TO neondb_owner;
 
 --
--- TOC entry 283 (class 1255 OID 59800)
+-- TOC entry 285 (class 1255 OID 59800)
 -- Name: fn_refresh_quotation_totals(uuid); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1075,7 +1350,7 @@ $$;
 ALTER FUNCTION public.fn_refresh_quotation_totals(p_quotation_id uuid) OWNER TO neondb_owner;
 
 --
--- TOC entry 256 (class 1255 OID 59018)
+-- TOC entry 258 (class 1255 OID 59018)
 -- Name: fn_set_update_at(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1092,7 +1367,208 @@ $$;
 ALTER FUNCTION public.fn_set_update_at() OWNER TO neondb_owner;
 
 --
--- TOC entry 275 (class 1255 OID 59650)
+-- TOC entry 297 (class 1255 OID 82029)
+-- Name: fn_validate_customs_declaration(); Type: FUNCTION; Schema: public; Owner: neondb_owner
+--
+
+CREATE FUNCTION public.fn_validate_customs_declaration() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_shipment_status TEXT;
+BEGIN
+    SELECT status::TEXT
+    INTO v_shipment_status
+    FROM shipments
+    WHERE id = NEW.shipment_id
+      AND is_delete = FALSE;
+
+    IF v_shipment_status IS NULL THEN
+        RAISE EXCEPTION 'Shipment not found';
+    END IF;
+
+    IF v_shipment_status = 'CANCELLED' THEN
+        RAISE EXCEPTION 'Cannot create customs declaration for cancelled shipment';
+    END IF;
+
+    IF TG_OP = 'UPDATE'
+       AND OLD.status IN ('CLEARED', 'CANCELLED')
+       AND (
+            OLD.shipment_id IS DISTINCT FROM NEW.shipment_id
+            OR OLD.declaration_no IS DISTINCT FROM NEW.declaration_no
+            OR OLD.is_delete IS DISTINCT FROM NEW.is_delete
+       ) THEN
+        RAISE EXCEPTION 'Cannot change locked customs declaration';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_validate_customs_declaration() OWNER TO neondb_owner;
+
+--
+-- TOC entry 298 (class 1255 OID 82031)
+-- Name: fn_validate_customs_declaration_line(); Type: FUNCTION; Schema: public; Owner: neondb_owner
+--
+
+CREATE FUNCTION public.fn_validate_customs_declaration_line() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_declaration_shipment_id UUID;
+    v_declaration_status TEXT;
+
+    v_shipment_line_shipment_id UUID;
+    v_shipment_line_po_line_id UUID;
+    v_shipment_line_item_id UUID;
+    v_shipment_line_qty NUMERIC(18,4);
+    v_shipment_line_unit VARCHAR(50);
+    v_shipment_line_desc TEXT;
+
+    v_profile RECORD;
+
+    v_existing_qty NUMERIC(18,4);
+    v_total_qty NUMERIC(18,4);
+    v_effective_duty_rate NUMERIC(5,2);
+BEGIN
+    SELECT shipment_id, status::TEXT
+    INTO v_declaration_shipment_id, v_declaration_status
+    FROM customs_declarations
+    WHERE id = NEW.customs_declaration_id
+      AND is_delete = FALSE;
+
+    IF v_declaration_shipment_id IS NULL THEN
+        RAISE EXCEPTION 'Customs declaration not found';
+    END IF;
+
+    IF v_declaration_status IN ('CLEARED', 'CANCELLED') THEN
+        RAISE EXCEPTION 'Cannot change lines of customs declaration when status is %', v_declaration_status;
+    END IF;
+
+    IF NEW.shipment_line_id IS NOT NULL THEN
+        SELECT
+            sl.shipment_id,
+            sl.purchase_order_line_id,
+            sl.item_id,
+            sl.qty_shipped,
+            sl.unit,
+            sl.item_description
+        INTO
+            v_shipment_line_shipment_id,
+            v_shipment_line_po_line_id,
+            v_shipment_line_item_id,
+            v_shipment_line_qty,
+            v_shipment_line_unit,
+            v_shipment_line_desc
+        FROM shipment_lines sl
+        WHERE sl.id = NEW.shipment_line_id
+          AND sl.is_delete = FALSE;
+
+        IF v_shipment_line_shipment_id IS NULL THEN
+            RAISE EXCEPTION 'Shipment line not found';
+        END IF;
+
+        IF v_shipment_line_shipment_id <> v_declaration_shipment_id THEN
+            RAISE EXCEPTION 'Customs line shipment_line does not belong to declaration shipment';
+        END IF;
+
+        IF NEW.purchase_order_line_id <> v_shipment_line_po_line_id THEN
+            RAISE EXCEPTION 'purchase_order_line_id must match shipment_line';
+        END IF;
+
+        IF NEW.item_id <> v_shipment_line_item_id THEN
+            RAISE EXCEPTION 'item_id must match shipment_line';
+        END IF;
+
+        IF NEW.unit IS NULL OR NEW.unit = '' THEN
+            NEW.unit := v_shipment_line_unit;
+        END IF;
+
+        IF NEW.item_description IS NULL THEN
+            NEW.item_description := v_shipment_line_desc;
+        END IF;
+
+        SELECT COALESCE(SUM(quantity), 0)
+        INTO v_existing_qty
+        FROM customs_declaration_lines
+        WHERE shipment_line_id = NEW.shipment_line_id
+          AND id <> NEW.id
+          AND is_delete = FALSE;
+
+        v_total_qty := v_existing_qty + CASE
+            WHEN NEW.is_delete = TRUE THEN 0
+            ELSE NEW.quantity
+        END;
+
+        IF v_total_qty > v_shipment_line_qty THEN
+            RAISE EXCEPTION
+                'Customs quantity exceeds shipment line quantity. customs_qty=%, shipment_qty=%',
+                v_total_qty,
+                v_shipment_line_qty;
+        END IF;
+    END IF;
+
+    SELECT *
+    INTO v_profile
+    FROM item_customs_profiles icp
+    WHERE icp.item_id = NEW.item_id
+      AND icp.is_delete = FALSE
+    ORDER BY
+        CASE WHEN icp.id = NEW.item_customs_profile_id THEN 0 ELSE 1 END,
+        icp.is_default DESC
+    LIMIT 1;
+
+    IF NEW.item_customs_profile_id IS NULL AND v_profile.id IS NOT NULL THEN
+        NEW.item_customs_profile_id := v_profile.id;
+    END IF;
+
+    IF NEW.hs_code IS NULL AND v_profile.hs_code IS NOT NULL THEN
+        NEW.hs_code := v_profile.hs_code;
+    END IF;
+
+    IF NEW.import_duty_rate IS NULL AND v_profile.import_duty_rate IS NOT NULL THEN
+        NEW.import_duty_rate := v_profile.import_duty_rate;
+    END IF;
+
+    IF NEW.preferential_tax_rate IS NULL
+       AND v_profile.preferential_import_duty_rate IS NOT NULL THEN
+        NEW.preferential_tax_rate := v_profile.preferential_import_duty_rate;
+    END IF;
+
+    IF NEW.vat_rate IS NULL AND v_profile.vat_rate IS NOT NULL THEN
+        NEW.vat_rate := v_profile.vat_rate;
+    END IF;
+
+    IF NEW.co_form IS NULL AND v_profile.co_form IS NOT NULL THEN
+        NEW.co_form := v_profile.co_form;
+    END IF;
+
+    v_effective_duty_rate := COALESCE(
+        NEW.preferential_tax_rate,
+        NEW.import_duty_rate,
+        0
+    );
+
+    NEW.import_duty_amount :=
+        ROUND((NEW.customs_value * v_effective_duty_rate / 100)::NUMERIC, 4);
+
+    NEW.vat_amount :=
+        ROUND(((NEW.customs_value + NEW.import_duty_amount) * COALESCE(NEW.vat_rate, 0) / 100)::NUMERIC, 4);
+
+    NEW.total_tax_amount :=
+        NEW.import_duty_amount + NEW.vat_amount;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_validate_customs_declaration_line() OWNER TO neondb_owner;
+
+--
+-- TOC entry 277 (class 1255 OID 59650)
 -- Name: fn_validate_delivery_order(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1134,7 +1610,7 @@ $$;
 ALTER FUNCTION public.fn_validate_delivery_order() OWNER TO neondb_owner;
 
 --
--- TOC entry 277 (class 1255 OID 59654)
+-- TOC entry 279 (class 1255 OID 59654)
 -- Name: fn_validate_delivery_order_line(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1247,7 +1723,7 @@ $$;
 ALTER FUNCTION public.fn_validate_delivery_order_line() OWNER TO neondb_owner;
 
 --
--- TOC entry 276 (class 1255 OID 59652)
+-- TOC entry 278 (class 1255 OID 59652)
 -- Name: fn_validate_delivery_order_lot(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1311,7 +1787,7 @@ $$;
 ALTER FUNCTION public.fn_validate_delivery_order_lot() OWNER TO neondb_owner;
 
 --
--- TOC entry 268 (class 1255 OID 59638)
+-- TOC entry 270 (class 1255 OID 59638)
 -- Name: fn_validate_po_confirmation_line(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1378,7 +1854,7 @@ $$;
 ALTER FUNCTION public.fn_validate_po_confirmation_line() OWNER TO neondb_owner;
 
 --
--- TOC entry 271 (class 1255 OID 59643)
+-- TOC entry 273 (class 1255 OID 59643)
 -- Name: fn_validate_po_lot(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1420,7 +1896,7 @@ $$;
 ALTER FUNCTION public.fn_validate_po_lot() OWNER TO neondb_owner;
 
 --
--- TOC entry 272 (class 1255 OID 59645)
+-- TOC entry 274 (class 1255 OID 59645)
 -- Name: fn_validate_po_lot_line(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1524,7 +2000,7 @@ $$;
 ALTER FUNCTION public.fn_validate_po_lot_line() OWNER TO neondb_owner;
 
 --
--- TOC entry 280 (class 1255 OID 59794)
+-- TOC entry 282 (class 1255 OID 59794)
 -- Name: fn_validate_quotation(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1571,7 +2047,7 @@ $$;
 ALTER FUNCTION public.fn_validate_quotation() OWNER TO neondb_owner;
 
 --
--- TOC entry 287 (class 1255 OID 73910)
+-- TOC entry 289 (class 1255 OID 73910)
 -- Name: fn_validate_shipment(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1653,7 +2129,7 @@ $$;
 ALTER FUNCTION public.fn_validate_shipment() OWNER TO neondb_owner;
 
 --
--- TOC entry 291 (class 1255 OID 73916)
+-- TOC entry 293 (class 1255 OID 73916)
 -- Name: fn_validate_shipment_line(); Type: FUNCTION; Schema: public; Owner: neondb_owner
 --
 
@@ -1795,6 +2271,77 @@ CREATE TABLE public.currencies (
 
 
 ALTER TABLE public.currencies OWNER TO neondb_owner;
+
+--
+-- TOC entry 246 (class 1259 OID 81958)
+-- Name: customs_declaration_lines; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customs_declaration_lines (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    customs_declaration_id uuid NOT NULL,
+    shipment_line_id uuid,
+    purchase_order_line_id uuid NOT NULL,
+    item_id uuid NOT NULL,
+    item_customs_profile_id uuid,
+    line_no integer NOT NULL,
+    hs_code character varying(30),
+    item_description text,
+    quantity numeric(18,4) NOT NULL,
+    unit character varying(50) NOT NULL,
+    customs_value numeric(18,4) DEFAULT 0 NOT NULL,
+    currency_id uuid,
+    import_duty_rate numeric(5,2) DEFAULT 0,
+    preferential_tax_rate numeric(5,2),
+    vat_rate numeric(5,2) DEFAULT 0,
+    import_duty_amount numeric(18,4) DEFAULT 0 NOT NULL,
+    vat_amount numeric(18,4) DEFAULT 0 NOT NULL,
+    total_tax_amount numeric(18,4) DEFAULT 0 NOT NULL,
+    co_form character varying(50),
+    note text,
+    create_at timestamp with time zone DEFAULT now() NOT NULL,
+    update_at timestamp with time zone DEFAULT now() NOT NULL,
+    delete_at timestamp with time zone,
+    is_delete boolean DEFAULT false NOT NULL,
+    CONSTRAINT chk_customs_declaration_lines_qty CHECK (((is_delete = true) OR (quantity > (0)::numeric))),
+    CONSTRAINT chk_customs_declaration_lines_rates CHECK ((((import_duty_rate IS NULL) OR ((import_duty_rate >= (0)::numeric) AND (import_duty_rate <= (100)::numeric))) AND ((preferential_tax_rate IS NULL) OR ((preferential_tax_rate >= (0)::numeric) AND (preferential_tax_rate <= (100)::numeric))) AND ((vat_rate IS NULL) OR ((vat_rate >= (0)::numeric) AND (vat_rate <= (100)::numeric))))),
+    CONSTRAINT chk_customs_declaration_lines_value CHECK (((customs_value >= (0)::numeric) AND (import_duty_amount >= (0)::numeric) AND (vat_amount >= (0)::numeric) AND (total_tax_amount >= (0)::numeric)))
+);
+
+
+ALTER TABLE public.customs_declaration_lines OWNER TO neondb_owner;
+
+--
+-- TOC entry 245 (class 1259 OID 81920)
+-- Name: customs_declarations; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
+CREATE TABLE public.customs_declarations (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    shipment_id uuid NOT NULL,
+    declaration_no character varying(100),
+    customs_type character varying(50) DEFAULT 'IMPORT'::character varying NOT NULL,
+    customs_channel character varying(20),
+    broker_id uuid,
+    status character varying(30) DEFAULT 'DRAFT'::character varying NOT NULL,
+    draft_opened_at timestamp with time zone,
+    official_opened_at timestamp with time zone,
+    submitted_at timestamp with time zone,
+    cleared_at timestamp with time zone,
+    cancelled_at timestamp with time zone,
+    cancel_reason text,
+    note text,
+    create_at timestamp with time zone DEFAULT now() NOT NULL,
+    update_at timestamp with time zone DEFAULT now() NOT NULL,
+    delete_at timestamp with time zone,
+    is_delete boolean DEFAULT false NOT NULL,
+    CONSTRAINT chk_customs_declarations_channel CHECK (((customs_channel IS NULL) OR ((customs_channel)::text = ANY ((ARRAY['GREEN'::character varying, 'YELLOW'::character varying, 'RED'::character varying])::text[])))),
+    CONSTRAINT chk_customs_declarations_status CHECK (((status)::text = ANY ((ARRAY['DRAFT'::character varying, 'DRAFT_OPENED'::character varying, 'OFFICIAL_OPENED'::character varying, 'SUBMITTED'::character varying, 'INSPECTION'::character varying, 'CLEARED'::character varying, 'CANCELLED'::character varying])::text[]))),
+    CONSTRAINT chk_customs_declarations_type CHECK (((customs_type)::text = ANY ((ARRAY['IMPORT'::character varying, 'TEMP_IMPORT'::character varying, 'RE_IMPORT'::character varying, 'OTHER'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.customs_declarations OWNER TO neondb_owner;
 
 --
 -- TOC entry 237 (class 1259 OID 59590)
@@ -2481,7 +3028,7 @@ CREATE TABLE public.transport_modes (
 ALTER TABLE public.transport_modes OWNER TO neondb_owner;
 
 --
--- TOC entry 3615 (class 2606 OID 59120)
+-- TOC entry 3651 (class 2606 OID 59120)
 -- Name: currencies currencies_currency_code_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2490,7 +3037,7 @@ ALTER TABLE ONLY public.currencies
 
 
 --
--- TOC entry 3617 (class 2606 OID 59118)
+-- TOC entry 3653 (class 2606 OID 59118)
 -- Name: currencies currencies_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2499,7 +3046,25 @@ ALTER TABLE ONLY public.currencies
 
 
 --
--- TOC entry 3680 (class 2606 OID 59611)
+-- TOC entry 3771 (class 2606 OID 81991)
+-- Name: customs_declaration_lines customs_declaration_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declaration_lines
+    ADD CONSTRAINT customs_declaration_lines_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3765 (class 2606 OID 81942)
+-- Name: customs_declarations customs_declarations_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declarations
+    ADD CONSTRAINT customs_declarations_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3716 (class 2606 OID 59611)
 -- Name: delivery_order_lines delivery_order_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2508,7 +3073,7 @@ ALTER TABLE ONLY public.delivery_order_lines
 
 
 --
--- TOC entry 3674 (class 2606 OID 59574)
+-- TOC entry 3710 (class 2606 OID 59574)
 -- Name: delivery_order_lots delivery_order_lots_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2517,7 +3082,7 @@ ALTER TABLE ONLY public.delivery_order_lots
 
 
 --
--- TOC entry 3669 (class 2606 OID 59542)
+-- TOC entry 3705 (class 2606 OID 59542)
 -- Name: delivery_orders delivery_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2526,7 +3091,7 @@ ALTER TABLE ONLY public.delivery_orders
 
 
 --
--- TOC entry 3620 (class 2606 OID 59143)
+-- TOC entry 3656 (class 2606 OID 59143)
 -- Name: incoterms incoterms_incoterm_code_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2535,7 +3100,7 @@ ALTER TABLE ONLY public.incoterms
 
 
 --
--- TOC entry 3622 (class 2606 OID 59141)
+-- TOC entry 3658 (class 2606 OID 59141)
 -- Name: incoterms incoterms_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2544,7 +3109,7 @@ ALTER TABLE ONLY public.incoterms
 
 
 --
--- TOC entry 3613 (class 2606 OID 59090)
+-- TOC entry 3649 (class 2606 OID 59090)
 -- Name: item_customs_profiles item_customs_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2553,7 +3118,7 @@ ALTER TABLE ONLY public.item_customs_profiles
 
 
 --
--- TOC entry 3604 (class 2606 OID 59034)
+-- TOC entry 3640 (class 2606 OID 59034)
 -- Name: item_groups item_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2562,7 +3127,7 @@ ALTER TABLE ONLY public.item_groups
 
 
 --
--- TOC entry 3608 (class 2606 OID 59063)
+-- TOC entry 3644 (class 2606 OID 59063)
 -- Name: item_master item_master_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2571,7 +3136,7 @@ ALTER TABLE ONLY public.item_master
 
 
 --
--- TOC entry 3656 (class 2606 OID 59436)
+-- TOC entry 3692 (class 2606 OID 59436)
 -- Name: po_delivery_slots po_delivery_slots_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2580,7 +3145,7 @@ ALTER TABLE ONLY public.po_delivery_slots
 
 
 --
--- TOC entry 3666 (class 2606 OID 59503)
+-- TOC entry 3702 (class 2606 OID 59503)
 -- Name: po_lot_lines po_lot_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2589,7 +3154,7 @@ ALTER TABLE ONLY public.po_lot_lines
 
 
 --
--- TOC entry 3661 (class 2606 OID 59468)
+-- TOC entry 3697 (class 2606 OID 59468)
 -- Name: po_lots po_lots_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2598,7 +3163,7 @@ ALTER TABLE ONLY public.po_lots
 
 
 --
--- TOC entry 3652 (class 2606 OID 59400)
+-- TOC entry 3688 (class 2606 OID 59400)
 -- Name: purchase_order_confirmation_lines purchase_order_confirmation_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2607,7 +3172,7 @@ ALTER TABLE ONLY public.purchase_order_confirmation_lines
 
 
 --
--- TOC entry 3649 (class 2606 OID 59368)
+-- TOC entry 3685 (class 2606 OID 59368)
 -- Name: purchase_order_confirmations purchase_order_confirmations_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2616,7 +3181,7 @@ ALTER TABLE ONLY public.purchase_order_confirmations
 
 
 --
--- TOC entry 3645 (class 2606 OID 59327)
+-- TOC entry 3681 (class 2606 OID 59327)
 -- Name: purchase_order_lines purchase_order_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2625,7 +3190,7 @@ ALTER TABLE ONLY public.purchase_order_lines
 
 
 --
--- TOC entry 3640 (class 2606 OID 59265)
+-- TOC entry 3676 (class 2606 OID 59265)
 -- Name: purchase_orders purchase_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2634,7 +3199,7 @@ ALTER TABLE ONLY public.purchase_orders
 
 
 --
--- TOC entry 3697 (class 2606 OID 59754)
+-- TOC entry 3733 (class 2606 OID 59754)
 -- Name: quotation_charge_lines quotation_charge_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2643,7 +3208,7 @@ ALTER TABLE ONLY public.quotation_charge_lines
 
 
 --
--- TOC entry 3703 (class 2606 OID 59783)
+-- TOC entry 3739 (class 2606 OID 59783)
 -- Name: quotation_events quotation_events_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2652,7 +3217,7 @@ ALTER TABLE ONLY public.quotation_events
 
 
 --
--- TOC entry 3690 (class 2606 OID 59701)
+-- TOC entry 3726 (class 2606 OID 59701)
 -- Name: quotations quotations_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2661,7 +3226,7 @@ ALTER TABLE ONLY public.quotations
 
 
 --
--- TOC entry 3727 (class 2606 OID 73895)
+-- TOC entry 3763 (class 2606 OID 73895)
 -- Name: shipment_documents shipment_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2670,7 +3235,7 @@ ALTER TABLE ONLY public.shipment_documents
 
 
 --
--- TOC entry 3715 (class 2606 OID 73805)
+-- TOC entry 3751 (class 2606 OID 73805)
 -- Name: shipment_lines shipment_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2679,7 +3244,7 @@ ALTER TABLE ONLY public.shipment_lines
 
 
 --
--- TOC entry 3720 (class 2606 OID 73864)
+-- TOC entry 3756 (class 2606 OID 73864)
 -- Name: shipment_milestones shipment_milestones_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2688,7 +3253,7 @@ ALTER TABLE ONLY public.shipment_milestones
 
 
 --
--- TOC entry 3708 (class 2606 OID 73752)
+-- TOC entry 3744 (class 2606 OID 73752)
 -- Name: shipments shipments_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2697,7 +3262,7 @@ ALTER TABLE ONLY public.shipments
 
 
 --
--- TOC entry 3635 (class 2606 OID 59225)
+-- TOC entry 3671 (class 2606 OID 59225)
 -- Name: supplier_transport_modes supplier_transport_modes_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2706,7 +3271,7 @@ ALTER TABLE ONLY public.supplier_transport_modes
 
 
 --
--- TOC entry 3630 (class 2606 OID 59194)
+-- TOC entry 3666 (class 2606 OID 59194)
 -- Name: suppliers suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2715,7 +3280,7 @@ ALTER TABLE ONLY public.suppliers
 
 
 --
--- TOC entry 3625 (class 2606 OID 59168)
+-- TOC entry 3661 (class 2606 OID 59168)
 -- Name: transport_modes transport_modes_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -2724,7 +3289,71 @@ ALTER TABLE ONLY public.transport_modes
 
 
 --
--- TOC entry 3681 (class 1259 OID 59633)
+-- TOC entry 3772 (class 1259 OID 82023)
+-- Name: idx_customs_declaration_lines_declaration; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declaration_lines_declaration ON public.customs_declaration_lines USING btree (customs_declaration_id) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3773 (class 1259 OID 82027)
+-- Name: idx_customs_declaration_lines_hs_code; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declaration_lines_hs_code ON public.customs_declaration_lines USING btree (hs_code) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3774 (class 1259 OID 82026)
+-- Name: idx_customs_declaration_lines_item; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declaration_lines_item ON public.customs_declaration_lines USING btree (item_id) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3775 (class 1259 OID 82025)
+-- Name: idx_customs_declaration_lines_po_line; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declaration_lines_po_line ON public.customs_declaration_lines USING btree (purchase_order_line_id) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3776 (class 1259 OID 82024)
+-- Name: idx_customs_declaration_lines_shipment_line; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declaration_lines_shipment_line ON public.customs_declaration_lines USING btree (shipment_line_id) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3766 (class 1259 OID 81956)
+-- Name: idx_customs_declarations_channel; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declarations_channel ON public.customs_declarations USING btree (customs_channel) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3767 (class 1259 OID 81954)
+-- Name: idx_customs_declarations_shipment; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declarations_shipment ON public.customs_declarations USING btree (shipment_id) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3768 (class 1259 OID 81955)
+-- Name: idx_customs_declarations_status; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE INDEX idx_customs_declarations_status ON public.customs_declarations USING btree (status) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3717 (class 1259 OID 59633)
 -- Name: idx_delivery_order_lines_do; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2732,7 +3361,7 @@ CREATE INDEX idx_delivery_order_lines_do ON public.delivery_order_lines USING bt
 
 
 --
--- TOC entry 3682 (class 1259 OID 59635)
+-- TOC entry 3718 (class 1259 OID 59635)
 -- Name: idx_delivery_order_lines_item; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2740,7 +3369,7 @@ CREATE INDEX idx_delivery_order_lines_item ON public.delivery_order_lines USING 
 
 
 --
--- TOC entry 3683 (class 1259 OID 59634)
+-- TOC entry 3719 (class 1259 OID 59634)
 -- Name: idx_delivery_order_lines_po_line; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2748,7 +3377,7 @@ CREATE INDEX idx_delivery_order_lines_po_line ON public.delivery_order_lines USI
 
 
 --
--- TOC entry 3675 (class 1259 OID 59587)
+-- TOC entry 3711 (class 1259 OID 59587)
 -- Name: idx_delivery_order_lots_do; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2756,7 +3385,7 @@ CREATE INDEX idx_delivery_order_lots_do ON public.delivery_order_lots USING btre
 
 
 --
--- TOC entry 3676 (class 1259 OID 59588)
+-- TOC entry 3712 (class 1259 OID 59588)
 -- Name: idx_delivery_order_lots_po_lot; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2764,7 +3393,7 @@ CREATE INDEX idx_delivery_order_lots_po_lot ON public.delivery_order_lots USING 
 
 
 --
--- TOC entry 3670 (class 1259 OID 59554)
+-- TOC entry 3706 (class 1259 OID 59554)
 -- Name: idx_delivery_orders_po; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2772,7 +3401,7 @@ CREATE INDEX idx_delivery_orders_po ON public.delivery_orders USING btree (purch
 
 
 --
--- TOC entry 3671 (class 1259 OID 59555)
+-- TOC entry 3707 (class 1259 OID 59555)
 -- Name: idx_delivery_orders_status; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2780,7 +3409,7 @@ CREATE INDEX idx_delivery_orders_status ON public.delivery_orders USING btree (s
 
 
 --
--- TOC entry 3610 (class 1259 OID 59097)
+-- TOC entry 3646 (class 1259 OID 59097)
 -- Name: idx_item_customs_profiles_hs_code; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2788,7 +3417,7 @@ CREATE INDEX idx_item_customs_profiles_hs_code ON public.item_customs_profiles U
 
 
 --
--- TOC entry 3611 (class 1259 OID 59096)
+-- TOC entry 3647 (class 1259 OID 59096)
 -- Name: idx_item_customs_profiles_item; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2796,7 +3425,7 @@ CREATE INDEX idx_item_customs_profiles_item ON public.item_customs_profiles USIN
 
 
 --
--- TOC entry 3606 (class 1259 OID 59070)
+-- TOC entry 3642 (class 1259 OID 59070)
 -- Name: idx_item_master_group; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2804,7 +3433,7 @@ CREATE INDEX idx_item_master_group ON public.item_master USING btree (item_group
 
 
 --
--- TOC entry 3650 (class 1259 OID 59412)
+-- TOC entry 3686 (class 1259 OID 59412)
 -- Name: idx_po_confirmation_lines_po_line; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2812,7 +3441,7 @@ CREATE INDEX idx_po_confirmation_lines_po_line ON public.purchase_order_confirma
 
 
 --
--- TOC entry 3647 (class 1259 OID 59374)
+-- TOC entry 3683 (class 1259 OID 59374)
 -- Name: idx_po_confirmations_po; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2820,7 +3449,7 @@ CREATE INDEX idx_po_confirmations_po ON public.purchase_order_confirmations USIN
 
 
 --
--- TOC entry 3654 (class 1259 OID 59443)
+-- TOC entry 3690 (class 1259 OID 59443)
 -- Name: idx_po_delivery_slots_po; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2828,7 +3457,7 @@ CREATE INDEX idx_po_delivery_slots_po ON public.po_delivery_slots USING btree (p
 
 
 --
--- TOC entry 3663 (class 1259 OID 59520)
+-- TOC entry 3699 (class 1259 OID 59520)
 -- Name: idx_po_lot_lines_lot; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2836,7 +3465,7 @@ CREATE INDEX idx_po_lot_lines_lot ON public.po_lot_lines USING btree (po_lot_id)
 
 
 --
--- TOC entry 3664 (class 1259 OID 59521)
+-- TOC entry 3700 (class 1259 OID 59521)
 -- Name: idx_po_lot_lines_po_line; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2844,7 +3473,7 @@ CREATE INDEX idx_po_lot_lines_po_line ON public.po_lot_lines USING btree (purcha
 
 
 --
--- TOC entry 3658 (class 1259 OID 59480)
+-- TOC entry 3694 (class 1259 OID 59480)
 -- Name: idx_po_lots_po; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2852,7 +3481,7 @@ CREATE INDEX idx_po_lots_po ON public.po_lots USING btree (purchase_order_id) WH
 
 
 --
--- TOC entry 3659 (class 1259 OID 59481)
+-- TOC entry 3695 (class 1259 OID 59481)
 -- Name: idx_po_lots_slot; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2860,7 +3489,7 @@ CREATE INDEX idx_po_lots_slot ON public.po_lots USING btree (delivery_slot_id) W
 
 
 --
--- TOC entry 3642 (class 1259 OID 59345)
+-- TOC entry 3678 (class 1259 OID 59345)
 -- Name: idx_purchase_order_lines_item; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2868,7 +3497,7 @@ CREATE INDEX idx_purchase_order_lines_item ON public.purchase_order_lines USING 
 
 
 --
--- TOC entry 3643 (class 1259 OID 59344)
+-- TOC entry 3679 (class 1259 OID 59344)
 -- Name: idx_purchase_order_lines_po; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2876,7 +3505,7 @@ CREATE INDEX idx_purchase_order_lines_po ON public.purchase_order_lines USING bt
 
 
 --
--- TOC entry 3637 (class 1259 OID 59288)
+-- TOC entry 3673 (class 1259 OID 59288)
 -- Name: idx_purchase_orders_status_eta; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2884,7 +3513,7 @@ CREATE INDEX idx_purchase_orders_status_eta ON public.purchase_orders USING btre
 
 
 --
--- TOC entry 3638 (class 1259 OID 59287)
+-- TOC entry 3674 (class 1259 OID 59287)
 -- Name: idx_purchase_orders_supplier; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2892,7 +3521,7 @@ CREATE INDEX idx_purchase_orders_supplier ON public.purchase_orders USING btree 
 
 
 --
--- TOC entry 3694 (class 1259 OID 59762)
+-- TOC entry 3730 (class 1259 OID 59762)
 -- Name: idx_quotation_charge_lines_charge_type; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2900,7 +3529,7 @@ CREATE INDEX idx_quotation_charge_lines_charge_type ON public.quotation_charge_l
 
 
 --
--- TOC entry 3695 (class 1259 OID 59761)
+-- TOC entry 3731 (class 1259 OID 59761)
 -- Name: idx_quotation_charge_lines_quotation; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2908,7 +3537,7 @@ CREATE INDEX idx_quotation_charge_lines_quotation ON public.quotation_charge_lin
 
 
 --
--- TOC entry 3699 (class 1259 OID 59791)
+-- TOC entry 3735 (class 1259 OID 59791)
 -- Name: idx_quotation_events_event_at; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2916,7 +3545,7 @@ CREATE INDEX idx_quotation_events_event_at ON public.quotation_events USING btre
 
 
 --
--- TOC entry 3700 (class 1259 OID 59789)
+-- TOC entry 3736 (class 1259 OID 59789)
 -- Name: idx_quotation_events_quotation; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2924,7 +3553,7 @@ CREATE INDEX idx_quotation_events_quotation ON public.quotation_events USING btr
 
 
 --
--- TOC entry 3701 (class 1259 OID 59790)
+-- TOC entry 3737 (class 1259 OID 59790)
 -- Name: idx_quotation_events_type; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2932,7 +3561,7 @@ CREATE INDEX idx_quotation_events_type ON public.quotation_events USING btree (e
 
 
 --
--- TOC entry 3685 (class 1259 OID 59718)
+-- TOC entry 3721 (class 1259 OID 59718)
 -- Name: idx_quotations_group; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2940,7 +3569,7 @@ CREATE INDEX idx_quotations_group ON public.quotations USING btree (quotation_gr
 
 
 --
--- TOC entry 3686 (class 1259 OID 59715)
+-- TOC entry 3722 (class 1259 OID 59715)
 -- Name: idx_quotations_ref; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2948,7 +3577,7 @@ CREATE INDEX idx_quotations_ref ON public.quotations USING btree (ref_type, ref_
 
 
 --
--- TOC entry 3687 (class 1259 OID 59717)
+-- TOC entry 3723 (class 1259 OID 59717)
 -- Name: idx_quotations_status; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2956,7 +3585,7 @@ CREATE INDEX idx_quotations_status ON public.quotations USING btree (status) WHE
 
 
 --
--- TOC entry 3688 (class 1259 OID 59716)
+-- TOC entry 3724 (class 1259 OID 59716)
 -- Name: idx_quotations_supplier; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2964,7 +3593,7 @@ CREATE INDEX idx_quotations_supplier ON public.quotations USING btree (supplier_
 
 
 --
--- TOC entry 3723 (class 1259 OID 73907)
+-- TOC entry 3759 (class 1259 OID 73907)
 -- Name: idx_shipment_documents_milestone; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2972,7 +3601,7 @@ CREATE INDEX idx_shipment_documents_milestone ON public.shipment_documents USING
 
 
 --
--- TOC entry 3724 (class 1259 OID 73906)
+-- TOC entry 3760 (class 1259 OID 73906)
 -- Name: idx_shipment_documents_shipment; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2980,7 +3609,7 @@ CREATE INDEX idx_shipment_documents_shipment ON public.shipment_documents USING 
 
 
 --
--- TOC entry 3725 (class 1259 OID 73908)
+-- TOC entry 3761 (class 1259 OID 73908)
 -- Name: idx_shipment_documents_type; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2988,7 +3617,7 @@ CREATE INDEX idx_shipment_documents_type ON public.shipment_documents USING btre
 
 
 --
--- TOC entry 3711 (class 1259 OID 73839)
+-- TOC entry 3747 (class 1259 OID 73839)
 -- Name: idx_shipment_lines_item; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2996,7 +3625,7 @@ CREATE INDEX idx_shipment_lines_item ON public.shipment_lines USING btree (item_
 
 
 --
--- TOC entry 3712 (class 1259 OID 73838)
+-- TOC entry 3748 (class 1259 OID 73838)
 -- Name: idx_shipment_lines_po_line; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3004,7 +3633,7 @@ CREATE INDEX idx_shipment_lines_po_line ON public.shipment_lines USING btree (pu
 
 
 --
--- TOC entry 3713 (class 1259 OID 73837)
+-- TOC entry 3749 (class 1259 OID 73837)
 -- Name: idx_shipment_lines_shipment; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3012,7 +3641,7 @@ CREATE INDEX idx_shipment_lines_shipment ON public.shipment_lines USING btree (s
 
 
 --
--- TOC entry 3717 (class 1259 OID 73872)
+-- TOC entry 3753 (class 1259 OID 73872)
 -- Name: idx_shipment_milestones_shipment; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3020,7 +3649,7 @@ CREATE INDEX idx_shipment_milestones_shipment ON public.shipment_milestones USIN
 
 
 --
--- TOC entry 3718 (class 1259 OID 73873)
+-- TOC entry 3754 (class 1259 OID 73873)
 -- Name: idx_shipment_milestones_status; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3028,7 +3657,7 @@ CREATE INDEX idx_shipment_milestones_status ON public.shipment_milestones USING 
 
 
 --
--- TOC entry 3704 (class 1259 OID 73781)
+-- TOC entry 3740 (class 1259 OID 73781)
 -- Name: idx_shipments_forwarder; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3036,7 +3665,7 @@ CREATE INDEX idx_shipments_forwarder ON public.shipments USING btree (forwarder_
 
 
 --
--- TOC entry 3705 (class 1259 OID 73780)
+-- TOC entry 3741 (class 1259 OID 73780)
 -- Name: idx_shipments_po; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3044,7 +3673,7 @@ CREATE INDEX idx_shipments_po ON public.shipments USING btree (purchase_order_id
 
 
 --
--- TOC entry 3706 (class 1259 OID 73782)
+-- TOC entry 3742 (class 1259 OID 73782)
 -- Name: idx_shipments_status_eta; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3052,7 +3681,7 @@ CREATE INDEX idx_shipments_status_eta ON public.shipments USING btree (status, e
 
 
 --
--- TOC entry 3632 (class 1259 OID 59238)
+-- TOC entry 3668 (class 1259 OID 59238)
 -- Name: idx_supplier_transport_modes_mode; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3060,7 +3689,7 @@ CREATE INDEX idx_supplier_transport_modes_mode ON public.supplier_transport_mode
 
 
 --
--- TOC entry 3633 (class 1259 OID 59237)
+-- TOC entry 3669 (class 1259 OID 59237)
 -- Name: idx_supplier_transport_modes_supplier; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3068,7 +3697,7 @@ CREATE INDEX idx_supplier_transport_modes_supplier ON public.supplier_transport_
 
 
 --
--- TOC entry 3627 (class 1259 OID 59206)
+-- TOC entry 3663 (class 1259 OID 59206)
 -- Name: idx_suppliers_currency; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3076,7 +3705,7 @@ CREATE INDEX idx_suppliers_currency ON public.suppliers USING btree (default_cur
 
 
 --
--- TOC entry 3628 (class 1259 OID 59207)
+-- TOC entry 3664 (class 1259 OID 59207)
 -- Name: idx_suppliers_incoterm; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3084,7 +3713,7 @@ CREATE INDEX idx_suppliers_incoterm ON public.suppliers USING btree (default_inc
 
 
 --
--- TOC entry 3618 (class 1259 OID 59121)
+-- TOC entry 3654 (class 1259 OID 59121)
 -- Name: uq_currencies_code_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3092,7 +3721,23 @@ CREATE UNIQUE INDEX uq_currencies_code_active ON public.currencies USING btree (
 
 
 --
--- TOC entry 3684 (class 1259 OID 59632)
+-- TOC entry 3777 (class 1259 OID 82022)
+-- Name: uq_customs_declaration_lines_line_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE UNIQUE INDEX uq_customs_declaration_lines_line_no_active ON public.customs_declaration_lines USING btree (customs_declaration_id, line_no) WHERE (is_delete = false);
+
+
+--
+-- TOC entry 3769 (class 1259 OID 81953)
+-- Name: uq_customs_declarations_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE UNIQUE INDEX uq_customs_declarations_no_active ON public.customs_declarations USING btree (declaration_no) WHERE ((is_delete = false) AND (declaration_no IS NOT NULL));
+
+
+--
+-- TOC entry 3720 (class 1259 OID 59632)
 -- Name: uq_delivery_order_lines_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3100,7 +3745,7 @@ CREATE UNIQUE INDEX uq_delivery_order_lines_active ON public.delivery_order_line
 
 
 --
--- TOC entry 3677 (class 1259 OID 59586)
+-- TOC entry 3713 (class 1259 OID 59586)
 -- Name: uq_delivery_order_lots_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3108,7 +3753,7 @@ CREATE UNIQUE INDEX uq_delivery_order_lots_active ON public.delivery_order_lots 
 
 
 --
--- TOC entry 3678 (class 1259 OID 59585)
+-- TOC entry 3714 (class 1259 OID 59585)
 -- Name: uq_delivery_order_lots_po_lot_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3116,7 +3761,7 @@ CREATE UNIQUE INDEX uq_delivery_order_lots_po_lot_active ON public.delivery_orde
 
 
 --
--- TOC entry 3672 (class 1259 OID 59553)
+-- TOC entry 3708 (class 1259 OID 59553)
 -- Name: uq_delivery_orders_do_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3124,7 +3769,7 @@ CREATE UNIQUE INDEX uq_delivery_orders_do_no_active ON public.delivery_orders US
 
 
 --
--- TOC entry 3623 (class 1259 OID 59144)
+-- TOC entry 3659 (class 1259 OID 59144)
 -- Name: uq_incoterms_code_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3132,7 +3777,7 @@ CREATE UNIQUE INDEX uq_incoterms_code_active ON public.incoterms USING btree (in
 
 
 --
--- TOC entry 3605 (class 1259 OID 59035)
+-- TOC entry 3641 (class 1259 OID 59035)
 -- Name: uq_item_groups_group_code_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3140,7 +3785,7 @@ CREATE UNIQUE INDEX uq_item_groups_group_code_active ON public.item_groups USING
 
 
 --
--- TOC entry 3609 (class 1259 OID 59069)
+-- TOC entry 3645 (class 1259 OID 59069)
 -- Name: uq_item_master_item_code_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3148,7 +3793,7 @@ CREATE UNIQUE INDEX uq_item_master_item_code_active ON public.item_master USING 
 
 
 --
--- TOC entry 3653 (class 1259 OID 59411)
+-- TOC entry 3689 (class 1259 OID 59411)
 -- Name: uq_po_confirmation_lines_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3156,7 +3801,7 @@ CREATE UNIQUE INDEX uq_po_confirmation_lines_active ON public.purchase_order_con
 
 
 --
--- TOC entry 3657 (class 1259 OID 59442)
+-- TOC entry 3693 (class 1259 OID 59442)
 -- Name: uq_po_delivery_slots_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3164,7 +3809,7 @@ CREATE UNIQUE INDEX uq_po_delivery_slots_no_active ON public.po_delivery_slots U
 
 
 --
--- TOC entry 3667 (class 1259 OID 59519)
+-- TOC entry 3703 (class 1259 OID 59519)
 -- Name: uq_po_lot_lines_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3172,7 +3817,7 @@ CREATE UNIQUE INDEX uq_po_lot_lines_active ON public.po_lot_lines USING btree (p
 
 
 --
--- TOC entry 3662 (class 1259 OID 59479)
+-- TOC entry 3698 (class 1259 OID 59479)
 -- Name: uq_po_lots_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3180,7 +3825,7 @@ CREATE UNIQUE INDEX uq_po_lots_no_active ON public.po_lots USING btree (purchase
 
 
 --
--- TOC entry 3646 (class 1259 OID 59343)
+-- TOC entry 3682 (class 1259 OID 59343)
 -- Name: uq_purchase_order_lines_line_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3188,7 +3833,7 @@ CREATE UNIQUE INDEX uq_purchase_order_lines_line_no_active ON public.purchase_or
 
 
 --
--- TOC entry 3641 (class 1259 OID 59286)
+-- TOC entry 3677 (class 1259 OID 59286)
 -- Name: uq_purchase_orders_po_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3196,7 +3841,7 @@ CREATE UNIQUE INDEX uq_purchase_orders_po_no_active ON public.purchase_orders US
 
 
 --
--- TOC entry 3698 (class 1259 OID 59760)
+-- TOC entry 3734 (class 1259 OID 59760)
 -- Name: uq_quotation_charge_lines_line_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3204,7 +3849,7 @@ CREATE UNIQUE INDEX uq_quotation_charge_lines_line_no_active ON public.quotation
 
 
 --
--- TOC entry 3691 (class 1259 OID 59713)
+-- TOC entry 3727 (class 1259 OID 59713)
 -- Name: uq_quotations_group_version_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3212,7 +3857,7 @@ CREATE UNIQUE INDEX uq_quotations_group_version_active ON public.quotations USIN
 
 
 --
--- TOC entry 3692 (class 1259 OID 59712)
+-- TOC entry 3728 (class 1259 OID 59712)
 -- Name: uq_quotations_no_version_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3220,7 +3865,7 @@ CREATE UNIQUE INDEX uq_quotations_no_version_active ON public.quotations USING b
 
 
 --
--- TOC entry 3693 (class 1259 OID 59714)
+-- TOC entry 3729 (class 1259 OID 59714)
 -- Name: uq_quotations_one_final_per_group_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3228,7 +3873,7 @@ CREATE UNIQUE INDEX uq_quotations_one_final_per_group_active ON public.quotation
 
 
 --
--- TOC entry 3716 (class 1259 OID 73836)
+-- TOC entry 3752 (class 1259 OID 73836)
 -- Name: uq_shipment_lines_do_line_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3236,7 +3881,7 @@ CREATE UNIQUE INDEX uq_shipment_lines_do_line_active ON public.shipment_lines US
 
 
 --
--- TOC entry 3721 (class 1259 OID 73870)
+-- TOC entry 3757 (class 1259 OID 73870)
 -- Name: uq_shipment_milestones_code_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3244,7 +3889,7 @@ CREATE UNIQUE INDEX uq_shipment_milestones_code_active ON public.shipment_milest
 
 
 --
--- TOC entry 3722 (class 1259 OID 73871)
+-- TOC entry 3758 (class 1259 OID 73871)
 -- Name: uq_shipment_milestones_sequence_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3252,7 +3897,7 @@ CREATE UNIQUE INDEX uq_shipment_milestones_sequence_active ON public.shipment_mi
 
 
 --
--- TOC entry 3709 (class 1259 OID 73778)
+-- TOC entry 3745 (class 1259 OID 73778)
 -- Name: uq_shipments_delivery_order_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3260,7 +3905,7 @@ CREATE UNIQUE INDEX uq_shipments_delivery_order_active ON public.shipments USING
 
 
 --
--- TOC entry 3710 (class 1259 OID 73779)
+-- TOC entry 3746 (class 1259 OID 73779)
 -- Name: uq_shipments_no_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3268,7 +3913,7 @@ CREATE UNIQUE INDEX uq_shipments_no_active ON public.shipments USING btree (ship
 
 
 --
--- TOC entry 3636 (class 1259 OID 59236)
+-- TOC entry 3672 (class 1259 OID 59236)
 -- Name: uq_supplier_transport_modes_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3276,7 +3921,7 @@ CREATE UNIQUE INDEX uq_supplier_transport_modes_active ON public.supplier_transp
 
 
 --
--- TOC entry 3631 (class 1259 OID 59205)
+-- TOC entry 3667 (class 1259 OID 59205)
 -- Name: uq_suppliers_code_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3284,7 +3929,7 @@ CREATE UNIQUE INDEX uq_suppliers_code_active ON public.suppliers USING btree (su
 
 
 --
--- TOC entry 3626 (class 1259 OID 59169)
+-- TOC entry 3662 (class 1259 OID 59169)
 -- Name: uq_transport_modes_code_active; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -3292,7 +3937,7 @@ CREATE UNIQUE INDEX uq_transport_modes_code_active ON public.transport_modes USI
 
 
 --
--- TOC entry 3787 (class 2620 OID 59641)
+-- TOC entry 3845 (class 2620 OID 59641)
 -- Name: purchase_order_confirmation_lines trg_after_po_confirmation_line_change; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3300,7 +3945,7 @@ CREATE TRIGGER trg_after_po_confirmation_line_change AFTER INSERT OR DELETE OR U
 
 
 --
--- TOC entry 3793 (class 2620 OID 59648)
+-- TOC entry 3851 (class 2620 OID 59648)
 -- Name: po_lot_lines trg_after_po_lot_line_change; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3308,7 +3953,7 @@ CREATE TRIGGER trg_after_po_lot_line_change AFTER INSERT OR DELETE OR UPDATE ON 
 
 
 --
--- TOC entry 3802 (class 2620 OID 59797)
+-- TOC entry 3860 (class 2620 OID 59797)
 -- Name: quotations trg_after_quotation_change; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3316,7 +3961,7 @@ CREATE TRIGGER trg_after_quotation_change AFTER INSERT OR UPDATE ON public.quota
 
 
 --
--- TOC entry 3805 (class 2620 OID 59802)
+-- TOC entry 3863 (class 2620 OID 59802)
 -- Name: quotation_charge_lines trg_after_quotation_charge_line_change; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3324,7 +3969,7 @@ CREATE TRIGGER trg_after_quotation_charge_line_change AFTER INSERT OR DELETE OR 
 
 
 --
--- TOC entry 3809 (class 2620 OID 73914)
+-- TOC entry 3867 (class 2620 OID 73914)
 -- Name: shipments trg_after_shipment_created; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3332,7 +3977,7 @@ CREATE TRIGGER trg_after_shipment_created AFTER INSERT ON public.shipments FOR E
 
 
 --
--- TOC entry 3812 (class 2620 OID 73919)
+-- TOC entry 3870 (class 2620 OID 73919)
 -- Name: shipment_lines trg_after_shipment_line_change; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3340,7 +3985,7 @@ CREATE TRIGGER trg_after_shipment_line_change AFTER INSERT OR DELETE OR UPDATE O
 
 
 --
--- TOC entry 3806 (class 2620 OID 59799)
+-- TOC entry 3864 (class 2620 OID 59799)
 -- Name: quotation_charge_lines trg_before_quotation_charge_line_change; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3348,7 +3993,7 @@ CREATE TRIGGER trg_before_quotation_charge_line_change BEFORE INSERT OR UPDATE O
 
 
 --
--- TOC entry 3779 (class 2620 OID 59122)
+-- TOC entry 3837 (class 2620 OID 59122)
 -- Name: currencies trg_currencies_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3356,7 +4001,23 @@ CREATE TRIGGER trg_currencies_update_at BEFORE UPDATE ON public.currencies FOR E
 
 
 --
--- TOC entry 3800 (class 2620 OID 59636)
+-- TOC entry 3877 (class 2620 OID 82028)
+-- Name: customs_declaration_lines trg_customs_declaration_lines_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
+--
+
+CREATE TRIGGER trg_customs_declaration_lines_update_at BEFORE UPDATE ON public.customs_declaration_lines FOR EACH ROW EXECUTE FUNCTION public.fn_set_update_at();
+
+
+--
+-- TOC entry 3875 (class 2620 OID 81957)
+-- Name: customs_declarations trg_customs_declarations_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
+--
+
+CREATE TRIGGER trg_customs_declarations_update_at BEFORE UPDATE ON public.customs_declarations FOR EACH ROW EXECUTE FUNCTION public.fn_set_update_at();
+
+
+--
+-- TOC entry 3858 (class 2620 OID 59636)
 -- Name: delivery_order_lines trg_delivery_order_lines_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3364,7 +4025,7 @@ CREATE TRIGGER trg_delivery_order_lines_update_at BEFORE UPDATE ON public.delive
 
 
 --
--- TOC entry 3798 (class 2620 OID 59589)
+-- TOC entry 3856 (class 2620 OID 59589)
 -- Name: delivery_order_lots trg_delivery_order_lots_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3372,7 +4033,7 @@ CREATE TRIGGER trg_delivery_order_lots_update_at BEFORE UPDATE ON public.deliver
 
 
 --
--- TOC entry 3796 (class 2620 OID 59556)
+-- TOC entry 3854 (class 2620 OID 59556)
 -- Name: delivery_orders trg_delivery_orders_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3380,7 +4041,7 @@ CREATE TRIGGER trg_delivery_orders_update_at BEFORE UPDATE ON public.delivery_or
 
 
 --
--- TOC entry 3780 (class 2620 OID 59145)
+-- TOC entry 3838 (class 2620 OID 59145)
 -- Name: incoterms trg_incoterms_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3388,7 +4049,7 @@ CREATE TRIGGER trg_incoterms_update_at BEFORE UPDATE ON public.incoterms FOR EAC
 
 
 --
--- TOC entry 3778 (class 2620 OID 59098)
+-- TOC entry 3836 (class 2620 OID 59098)
 -- Name: item_customs_profiles trg_item_customs_profiles_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3396,7 +4057,7 @@ CREATE TRIGGER trg_item_customs_profiles_update_at BEFORE UPDATE ON public.item_
 
 
 --
--- TOC entry 3776 (class 2620 OID 59036)
+-- TOC entry 3834 (class 2620 OID 59036)
 -- Name: item_groups trg_item_groups_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3404,7 +4065,7 @@ CREATE TRIGGER trg_item_groups_update_at BEFORE UPDATE ON public.item_groups FOR
 
 
 --
--- TOC entry 3777 (class 2620 OID 59071)
+-- TOC entry 3835 (class 2620 OID 59071)
 -- Name: item_master trg_item_master_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3412,7 +4073,7 @@ CREATE TRIGGER trg_item_master_update_at BEFORE UPDATE ON public.item_master FOR
 
 
 --
--- TOC entry 3788 (class 2620 OID 59413)
+-- TOC entry 3846 (class 2620 OID 59413)
 -- Name: purchase_order_confirmation_lines trg_po_confirmation_lines_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3420,7 +4081,7 @@ CREATE TRIGGER trg_po_confirmation_lines_update_at BEFORE UPDATE ON public.purch
 
 
 --
--- TOC entry 3786 (class 2620 OID 59375)
+-- TOC entry 3844 (class 2620 OID 59375)
 -- Name: purchase_order_confirmations trg_po_confirmations_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3428,7 +4089,7 @@ CREATE TRIGGER trg_po_confirmations_update_at BEFORE UPDATE ON public.purchase_o
 
 
 --
--- TOC entry 3790 (class 2620 OID 59444)
+-- TOC entry 3848 (class 2620 OID 59444)
 -- Name: po_delivery_slots trg_po_delivery_slots_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3436,7 +4097,7 @@ CREATE TRIGGER trg_po_delivery_slots_update_at BEFORE UPDATE ON public.po_delive
 
 
 --
--- TOC entry 3794 (class 2620 OID 59522)
+-- TOC entry 3852 (class 2620 OID 59522)
 -- Name: po_lot_lines trg_po_lot_lines_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3444,7 +4105,7 @@ CREATE TRIGGER trg_po_lot_lines_update_at BEFORE UPDATE ON public.po_lot_lines F
 
 
 --
--- TOC entry 3791 (class 2620 OID 59482)
+-- TOC entry 3849 (class 2620 OID 59482)
 -- Name: po_lots trg_po_lots_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3452,7 +4113,7 @@ CREATE TRIGGER trg_po_lots_update_at BEFORE UPDATE ON public.po_lots FOR EACH RO
 
 
 --
--- TOC entry 3785 (class 2620 OID 59346)
+-- TOC entry 3843 (class 2620 OID 59346)
 -- Name: purchase_order_lines trg_purchase_order_lines_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3460,7 +4121,7 @@ CREATE TRIGGER trg_purchase_order_lines_update_at BEFORE UPDATE ON public.purcha
 
 
 --
--- TOC entry 3784 (class 2620 OID 59289)
+-- TOC entry 3842 (class 2620 OID 59289)
 -- Name: purchase_orders trg_purchase_orders_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3468,7 +4129,7 @@ CREATE TRIGGER trg_purchase_orders_update_at BEFORE UPDATE ON public.purchase_or
 
 
 --
--- TOC entry 3807 (class 2620 OID 59763)
+-- TOC entry 3865 (class 2620 OID 59763)
 -- Name: quotation_charge_lines trg_quotation_charge_lines_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3476,7 +4137,7 @@ CREATE TRIGGER trg_quotation_charge_lines_update_at BEFORE UPDATE ON public.quot
 
 
 --
--- TOC entry 3808 (class 2620 OID 59792)
+-- TOC entry 3866 (class 2620 OID 59792)
 -- Name: quotation_events trg_quotation_events_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3484,7 +4145,7 @@ CREATE TRIGGER trg_quotation_events_update_at BEFORE UPDATE ON public.quotation_
 
 
 --
--- TOC entry 3803 (class 2620 OID 59719)
+-- TOC entry 3861 (class 2620 OID 59719)
 -- Name: quotations trg_quotations_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3492,7 +4153,7 @@ CREATE TRIGGER trg_quotations_update_at BEFORE UPDATE ON public.quotations FOR E
 
 
 --
--- TOC entry 3816 (class 2620 OID 73909)
+-- TOC entry 3874 (class 2620 OID 73909)
 -- Name: shipment_documents trg_shipment_documents_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3500,7 +4161,7 @@ CREATE TRIGGER trg_shipment_documents_update_at BEFORE UPDATE ON public.shipment
 
 
 --
--- TOC entry 3813 (class 2620 OID 73840)
+-- TOC entry 3871 (class 2620 OID 73840)
 -- Name: shipment_lines trg_shipment_lines_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3508,7 +4169,7 @@ CREATE TRIGGER trg_shipment_lines_update_at BEFORE UPDATE ON public.shipment_lin
 
 
 --
--- TOC entry 3815 (class 2620 OID 73874)
+-- TOC entry 3873 (class 2620 OID 73874)
 -- Name: shipment_milestones trg_shipment_milestones_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3516,7 +4177,7 @@ CREATE TRIGGER trg_shipment_milestones_update_at BEFORE UPDATE ON public.shipmen
 
 
 --
--- TOC entry 3810 (class 2620 OID 73783)
+-- TOC entry 3868 (class 2620 OID 73783)
 -- Name: shipments trg_shipments_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3524,7 +4185,7 @@ CREATE TRIGGER trg_shipments_update_at BEFORE UPDATE ON public.shipments FOR EAC
 
 
 --
--- TOC entry 3783 (class 2620 OID 59239)
+-- TOC entry 3841 (class 2620 OID 59239)
 -- Name: supplier_transport_modes trg_supplier_transport_modes_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3532,7 +4193,7 @@ CREATE TRIGGER trg_supplier_transport_modes_update_at BEFORE UPDATE ON public.su
 
 
 --
--- TOC entry 3782 (class 2620 OID 59208)
+-- TOC entry 3840 (class 2620 OID 59208)
 -- Name: suppliers trg_suppliers_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3540,7 +4201,7 @@ CREATE TRIGGER trg_suppliers_update_at BEFORE UPDATE ON public.suppliers FOR EAC
 
 
 --
--- TOC entry 3781 (class 2620 OID 59170)
+-- TOC entry 3839 (class 2620 OID 59170)
 -- Name: transport_modes trg_transport_modes_update_at; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3548,7 +4209,23 @@ CREATE TRIGGER trg_transport_modes_update_at BEFORE UPDATE ON public.transport_m
 
 
 --
--- TOC entry 3797 (class 2620 OID 59651)
+-- TOC entry 3876 (class 2620 OID 82030)
+-- Name: customs_declarations trg_validate_customs_declaration; Type: TRIGGER; Schema: public; Owner: neondb_owner
+--
+
+CREATE TRIGGER trg_validate_customs_declaration BEFORE INSERT OR UPDATE ON public.customs_declarations FOR EACH ROW EXECUTE FUNCTION public.fn_validate_customs_declaration();
+
+
+--
+-- TOC entry 3878 (class 2620 OID 82032)
+-- Name: customs_declaration_lines trg_validate_customs_declaration_line; Type: TRIGGER; Schema: public; Owner: neondb_owner
+--
+
+CREATE TRIGGER trg_validate_customs_declaration_line BEFORE INSERT OR UPDATE ON public.customs_declaration_lines FOR EACH ROW EXECUTE FUNCTION public.fn_validate_customs_declaration_line();
+
+
+--
+-- TOC entry 3855 (class 2620 OID 59651)
 -- Name: delivery_orders trg_validate_delivery_order; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3556,7 +4233,7 @@ CREATE TRIGGER trg_validate_delivery_order BEFORE INSERT OR UPDATE ON public.del
 
 
 --
--- TOC entry 3801 (class 2620 OID 59655)
+-- TOC entry 3859 (class 2620 OID 59655)
 -- Name: delivery_order_lines trg_validate_delivery_order_line; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3564,7 +4241,7 @@ CREATE TRIGGER trg_validate_delivery_order_line BEFORE INSERT OR UPDATE ON publi
 
 
 --
--- TOC entry 3799 (class 2620 OID 59653)
+-- TOC entry 3857 (class 2620 OID 59653)
 -- Name: delivery_order_lots trg_validate_delivery_order_lot; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3572,7 +4249,7 @@ CREATE TRIGGER trg_validate_delivery_order_lot BEFORE INSERT OR UPDATE ON public
 
 
 --
--- TOC entry 3789 (class 2620 OID 59640)
+-- TOC entry 3847 (class 2620 OID 59640)
 -- Name: purchase_order_confirmation_lines trg_validate_po_confirmation_line; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3580,7 +4257,7 @@ CREATE TRIGGER trg_validate_po_confirmation_line BEFORE INSERT OR UPDATE ON publ
 
 
 --
--- TOC entry 3792 (class 2620 OID 59644)
+-- TOC entry 3850 (class 2620 OID 59644)
 -- Name: po_lots trg_validate_po_lot; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3588,7 +4265,7 @@ CREATE TRIGGER trg_validate_po_lot BEFORE INSERT OR UPDATE ON public.po_lots FOR
 
 
 --
--- TOC entry 3795 (class 2620 OID 59647)
+-- TOC entry 3853 (class 2620 OID 59647)
 -- Name: po_lot_lines trg_validate_po_lot_line; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3596,7 +4273,7 @@ CREATE TRIGGER trg_validate_po_lot_line BEFORE INSERT OR UPDATE ON public.po_lot
 
 
 --
--- TOC entry 3804 (class 2620 OID 59795)
+-- TOC entry 3862 (class 2620 OID 59795)
 -- Name: quotations trg_validate_quotation; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3604,7 +4281,7 @@ CREATE TRIGGER trg_validate_quotation BEFORE INSERT OR UPDATE ON public.quotatio
 
 
 --
--- TOC entry 3811 (class 2620 OID 73911)
+-- TOC entry 3869 (class 2620 OID 73911)
 -- Name: shipments trg_validate_shipment; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3612,7 +4289,7 @@ CREATE TRIGGER trg_validate_shipment BEFORE INSERT OR UPDATE ON public.shipments
 
 
 --
--- TOC entry 3814 (class 2620 OID 73918)
+-- TOC entry 3872 (class 2620 OID 73918)
 -- Name: shipment_lines trg_validate_shipment_line; Type: TRIGGER; Schema: public; Owner: neondb_owner
 --
 
@@ -3620,7 +4297,79 @@ CREATE TRIGGER trg_validate_shipment_line BEFORE INSERT OR UPDATE ON public.ship
 
 
 --
--- TOC entry 3754 (class 2606 OID 59612)
+-- TOC entry 3828 (class 2606 OID 82017)
+-- Name: customs_declaration_lines customs_declaration_lines_currency_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declaration_lines
+    ADD CONSTRAINT customs_declaration_lines_currency_id_fkey FOREIGN KEY (currency_id) REFERENCES public.currencies(id);
+
+
+--
+-- TOC entry 3829 (class 2606 OID 81992)
+-- Name: customs_declaration_lines customs_declaration_lines_customs_declaration_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declaration_lines
+    ADD CONSTRAINT customs_declaration_lines_customs_declaration_id_fkey FOREIGN KEY (customs_declaration_id) REFERENCES public.customs_declarations(id);
+
+
+--
+-- TOC entry 3830 (class 2606 OID 82012)
+-- Name: customs_declaration_lines customs_declaration_lines_item_customs_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declaration_lines
+    ADD CONSTRAINT customs_declaration_lines_item_customs_profile_id_fkey FOREIGN KEY (item_customs_profile_id) REFERENCES public.item_customs_profiles(id);
+
+
+--
+-- TOC entry 3831 (class 2606 OID 82007)
+-- Name: customs_declaration_lines customs_declaration_lines_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declaration_lines
+    ADD CONSTRAINT customs_declaration_lines_item_id_fkey FOREIGN KEY (item_id) REFERENCES public.item_master(id);
+
+
+--
+-- TOC entry 3832 (class 2606 OID 82002)
+-- Name: customs_declaration_lines customs_declaration_lines_purchase_order_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declaration_lines
+    ADD CONSTRAINT customs_declaration_lines_purchase_order_line_id_fkey FOREIGN KEY (purchase_order_line_id) REFERENCES public.purchase_order_lines(id);
+
+
+--
+-- TOC entry 3833 (class 2606 OID 81997)
+-- Name: customs_declaration_lines customs_declaration_lines_shipment_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declaration_lines
+    ADD CONSTRAINT customs_declaration_lines_shipment_line_id_fkey FOREIGN KEY (shipment_line_id) REFERENCES public.shipment_lines(id);
+
+
+--
+-- TOC entry 3826 (class 2606 OID 81948)
+-- Name: customs_declarations customs_declarations_broker_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declarations
+    ADD CONSTRAINT customs_declarations_broker_id_fkey FOREIGN KEY (broker_id) REFERENCES public.suppliers(id);
+
+
+--
+-- TOC entry 3827 (class 2606 OID 81943)
+-- Name: customs_declarations customs_declarations_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customs_declarations
+    ADD CONSTRAINT customs_declarations_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipments(id);
+
+
+--
+-- TOC entry 3804 (class 2606 OID 59612)
 -- Name: delivery_order_lines delivery_order_lines_delivery_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3629,7 +4378,7 @@ ALTER TABLE ONLY public.delivery_order_lines
 
 
 --
--- TOC entry 3755 (class 2606 OID 59617)
+-- TOC entry 3805 (class 2606 OID 59617)
 -- Name: delivery_order_lines delivery_order_lines_delivery_order_lot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3638,7 +4387,7 @@ ALTER TABLE ONLY public.delivery_order_lines
 
 
 --
--- TOC entry 3756 (class 2606 OID 59627)
+-- TOC entry 3806 (class 2606 OID 59627)
 -- Name: delivery_order_lines delivery_order_lines_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3647,7 +4396,7 @@ ALTER TABLE ONLY public.delivery_order_lines
 
 
 --
--- TOC entry 3757 (class 2606 OID 59622)
+-- TOC entry 3807 (class 2606 OID 59622)
 -- Name: delivery_order_lines delivery_order_lines_purchase_order_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3656,7 +4405,7 @@ ALTER TABLE ONLY public.delivery_order_lines
 
 
 --
--- TOC entry 3752 (class 2606 OID 59575)
+-- TOC entry 3802 (class 2606 OID 59575)
 -- Name: delivery_order_lots delivery_order_lots_delivery_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3665,7 +4414,7 @@ ALTER TABLE ONLY public.delivery_order_lots
 
 
 --
--- TOC entry 3753 (class 2606 OID 59580)
+-- TOC entry 3803 (class 2606 OID 59580)
 -- Name: delivery_order_lots delivery_order_lots_po_lot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3674,7 +4423,7 @@ ALTER TABLE ONLY public.delivery_order_lots
 
 
 --
--- TOC entry 3750 (class 2606 OID 59543)
+-- TOC entry 3800 (class 2606 OID 59543)
 -- Name: delivery_orders delivery_orders_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3683,7 +4432,7 @@ ALTER TABLE ONLY public.delivery_orders
 
 
 --
--- TOC entry 3751 (class 2606 OID 59548)
+-- TOC entry 3801 (class 2606 OID 59548)
 -- Name: delivery_orders delivery_orders_transport_mode_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3692,7 +4441,7 @@ ALTER TABLE ONLY public.delivery_orders
 
 
 --
--- TOC entry 3729 (class 2606 OID 59091)
+-- TOC entry 3779 (class 2606 OID 59091)
 -- Name: item_customs_profiles item_customs_profiles_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3701,7 +4450,7 @@ ALTER TABLE ONLY public.item_customs_profiles
 
 
 --
--- TOC entry 3728 (class 2606 OID 59064)
+-- TOC entry 3778 (class 2606 OID 59064)
 -- Name: item_master item_master_item_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3710,7 +4459,7 @@ ALTER TABLE ONLY public.item_master
 
 
 --
--- TOC entry 3744 (class 2606 OID 59437)
+-- TOC entry 3794 (class 2606 OID 59437)
 -- Name: po_delivery_slots po_delivery_slots_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3719,7 +4468,7 @@ ALTER TABLE ONLY public.po_delivery_slots
 
 
 --
--- TOC entry 3747 (class 2606 OID 59514)
+-- TOC entry 3797 (class 2606 OID 59514)
 -- Name: po_lot_lines po_lot_lines_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3728,7 +4477,7 @@ ALTER TABLE ONLY public.po_lot_lines
 
 
 --
--- TOC entry 3748 (class 2606 OID 59504)
+-- TOC entry 3798 (class 2606 OID 59504)
 -- Name: po_lot_lines po_lot_lines_po_lot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3737,7 +4486,7 @@ ALTER TABLE ONLY public.po_lot_lines
 
 
 --
--- TOC entry 3749 (class 2606 OID 59509)
+-- TOC entry 3799 (class 2606 OID 59509)
 -- Name: po_lot_lines po_lot_lines_purchase_order_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3746,7 +4495,7 @@ ALTER TABLE ONLY public.po_lot_lines
 
 
 --
--- TOC entry 3745 (class 2606 OID 59474)
+-- TOC entry 3795 (class 2606 OID 59474)
 -- Name: po_lots po_lots_delivery_slot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3755,7 +4504,7 @@ ALTER TABLE ONLY public.po_lots
 
 
 --
--- TOC entry 3746 (class 2606 OID 59469)
+-- TOC entry 3796 (class 2606 OID 59469)
 -- Name: po_lots po_lots_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3764,7 +4513,7 @@ ALTER TABLE ONLY public.po_lots
 
 
 --
--- TOC entry 3742 (class 2606 OID 59401)
+-- TOC entry 3792 (class 2606 OID 59401)
 -- Name: purchase_order_confirmation_lines purchase_order_confirmation_l_purchase_order_confirmation__fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3773,7 +4522,7 @@ ALTER TABLE ONLY public.purchase_order_confirmation_lines
 
 
 --
--- TOC entry 3743 (class 2606 OID 59406)
+-- TOC entry 3793 (class 2606 OID 59406)
 -- Name: purchase_order_confirmation_lines purchase_order_confirmation_lines_purchase_order_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3782,7 +4531,7 @@ ALTER TABLE ONLY public.purchase_order_confirmation_lines
 
 
 --
--- TOC entry 3741 (class 2606 OID 59369)
+-- TOC entry 3791 (class 2606 OID 59369)
 -- Name: purchase_order_confirmations purchase_order_confirmations_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3791,7 +4540,7 @@ ALTER TABLE ONLY public.purchase_order_confirmations
 
 
 --
--- TOC entry 3738 (class 2606 OID 59338)
+-- TOC entry 3788 (class 2606 OID 59338)
 -- Name: purchase_order_lines purchase_order_lines_item_customs_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3800,7 +4549,7 @@ ALTER TABLE ONLY public.purchase_order_lines
 
 
 --
--- TOC entry 3739 (class 2606 OID 59333)
+-- TOC entry 3789 (class 2606 OID 59333)
 -- Name: purchase_order_lines purchase_order_lines_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3809,7 +4558,7 @@ ALTER TABLE ONLY public.purchase_order_lines
 
 
 --
--- TOC entry 3740 (class 2606 OID 59328)
+-- TOC entry 3790 (class 2606 OID 59328)
 -- Name: purchase_order_lines purchase_order_lines_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3818,7 +4567,7 @@ ALTER TABLE ONLY public.purchase_order_lines
 
 
 --
--- TOC entry 3734 (class 2606 OID 59271)
+-- TOC entry 3784 (class 2606 OID 59271)
 -- Name: purchase_orders purchase_orders_currency_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3827,7 +4576,7 @@ ALTER TABLE ONLY public.purchase_orders
 
 
 --
--- TOC entry 3735 (class 2606 OID 59276)
+-- TOC entry 3785 (class 2606 OID 59276)
 -- Name: purchase_orders purchase_orders_incoterm_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3836,7 +4585,7 @@ ALTER TABLE ONLY public.purchase_orders
 
 
 --
--- TOC entry 3736 (class 2606 OID 59266)
+-- TOC entry 3786 (class 2606 OID 59266)
 -- Name: purchase_orders purchase_orders_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3845,7 +4594,7 @@ ALTER TABLE ONLY public.purchase_orders
 
 
 --
--- TOC entry 3737 (class 2606 OID 59281)
+-- TOC entry 3787 (class 2606 OID 59281)
 -- Name: purchase_orders purchase_orders_transport_mode_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3854,7 +4603,7 @@ ALTER TABLE ONLY public.purchase_orders
 
 
 --
--- TOC entry 3760 (class 2606 OID 59755)
+-- TOC entry 3810 (class 2606 OID 59755)
 -- Name: quotation_charge_lines quotation_charge_lines_quotation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3863,7 +4612,7 @@ ALTER TABLE ONLY public.quotation_charge_lines
 
 
 --
--- TOC entry 3761 (class 2606 OID 59784)
+-- TOC entry 3811 (class 2606 OID 59784)
 -- Name: quotation_events quotation_events_quotation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3872,7 +4621,7 @@ ALTER TABLE ONLY public.quotation_events
 
 
 --
--- TOC entry 3758 (class 2606 OID 59707)
+-- TOC entry 3808 (class 2606 OID 59707)
 -- Name: quotations quotations_currency_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3881,7 +4630,7 @@ ALTER TABLE ONLY public.quotations
 
 
 --
--- TOC entry 3759 (class 2606 OID 59702)
+-- TOC entry 3809 (class 2606 OID 59702)
 -- Name: quotations quotations_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3890,7 +4639,7 @@ ALTER TABLE ONLY public.quotations
 
 
 --
--- TOC entry 3774 (class 2606 OID 73901)
+-- TOC entry 3824 (class 2606 OID 73901)
 -- Name: shipment_documents shipment_documents_milestone_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3899,7 +4648,7 @@ ALTER TABLE ONLY public.shipment_documents
 
 
 --
--- TOC entry 3775 (class 2606 OID 73896)
+-- TOC entry 3825 (class 2606 OID 73896)
 -- Name: shipment_documents shipment_documents_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3908,7 +4657,7 @@ ALTER TABLE ONLY public.shipment_documents
 
 
 --
--- TOC entry 3767 (class 2606 OID 73811)
+-- TOC entry 3817 (class 2606 OID 73811)
 -- Name: shipment_lines shipment_lines_delivery_order_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3917,7 +4666,7 @@ ALTER TABLE ONLY public.shipment_lines
 
 
 --
--- TOC entry 3768 (class 2606 OID 73816)
+-- TOC entry 3818 (class 2606 OID 73816)
 -- Name: shipment_lines shipment_lines_delivery_order_lot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3926,7 +4675,7 @@ ALTER TABLE ONLY public.shipment_lines
 
 
 --
--- TOC entry 3769 (class 2606 OID 73831)
+-- TOC entry 3819 (class 2606 OID 73831)
 -- Name: shipment_lines shipment_lines_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3935,7 +4684,7 @@ ALTER TABLE ONLY public.shipment_lines
 
 
 --
--- TOC entry 3770 (class 2606 OID 73826)
+-- TOC entry 3820 (class 2606 OID 73826)
 -- Name: shipment_lines shipment_lines_po_lot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3944,7 +4693,7 @@ ALTER TABLE ONLY public.shipment_lines
 
 
 --
--- TOC entry 3771 (class 2606 OID 73821)
+-- TOC entry 3821 (class 2606 OID 73821)
 -- Name: shipment_lines shipment_lines_purchase_order_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3953,7 +4702,7 @@ ALTER TABLE ONLY public.shipment_lines
 
 
 --
--- TOC entry 3772 (class 2606 OID 73806)
+-- TOC entry 3822 (class 2606 OID 73806)
 -- Name: shipment_lines shipment_lines_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3962,7 +4711,7 @@ ALTER TABLE ONLY public.shipment_lines
 
 
 --
--- TOC entry 3773 (class 2606 OID 73865)
+-- TOC entry 3823 (class 2606 OID 73865)
 -- Name: shipment_milestones shipment_milestones_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3971,7 +4720,7 @@ ALTER TABLE ONLY public.shipment_milestones
 
 
 --
--- TOC entry 3762 (class 2606 OID 73753)
+-- TOC entry 3812 (class 2606 OID 73753)
 -- Name: shipments shipments_delivery_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3980,7 +4729,7 @@ ALTER TABLE ONLY public.shipments
 
 
 --
--- TOC entry 3763 (class 2606 OID 73763)
+-- TOC entry 3813 (class 2606 OID 73763)
 -- Name: shipments shipments_final_quotation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3989,7 +4738,7 @@ ALTER TABLE ONLY public.shipments
 
 
 --
--- TOC entry 3764 (class 2606 OID 73773)
+-- TOC entry 3814 (class 2606 OID 73773)
 -- Name: shipments shipments_forwarder_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -3998,7 +4747,7 @@ ALTER TABLE ONLY public.shipments
 
 
 --
--- TOC entry 3765 (class 2606 OID 73758)
+-- TOC entry 3815 (class 2606 OID 73758)
 -- Name: shipments shipments_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -4007,7 +4756,7 @@ ALTER TABLE ONLY public.shipments
 
 
 --
--- TOC entry 3766 (class 2606 OID 73768)
+-- TOC entry 3816 (class 2606 OID 73768)
 -- Name: shipments shipments_transport_mode_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -4016,7 +4765,7 @@ ALTER TABLE ONLY public.shipments
 
 
 --
--- TOC entry 3732 (class 2606 OID 59226)
+-- TOC entry 3782 (class 2606 OID 59226)
 -- Name: supplier_transport_modes supplier_transport_modes_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -4025,7 +4774,7 @@ ALTER TABLE ONLY public.supplier_transport_modes
 
 
 --
--- TOC entry 3733 (class 2606 OID 59231)
+-- TOC entry 3783 (class 2606 OID 59231)
 -- Name: supplier_transport_modes supplier_transport_modes_transport_mode_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -4034,7 +4783,7 @@ ALTER TABLE ONLY public.supplier_transport_modes
 
 
 --
--- TOC entry 3730 (class 2606 OID 59195)
+-- TOC entry 3780 (class 2606 OID 59195)
 -- Name: suppliers suppliers_default_currency_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -4043,7 +4792,7 @@ ALTER TABLE ONLY public.suppliers
 
 
 --
--- TOC entry 3731 (class 2606 OID 59200)
+-- TOC entry 3781 (class 2606 OID 59200)
 -- Name: suppliers suppliers_default_incoterm_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -4052,7 +4801,7 @@ ALTER TABLE ONLY public.suppliers
 
 
 --
--- TOC entry 3969 (class 0 OID 0)
+-- TOC entry 4031 (class 0 OID 0)
 -- Dependencies: 6
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: neondb_owner
 --
@@ -4062,7 +4811,7 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --
--- TOC entry 2188 (class 826 OID 65537)
+-- TOC entry 2202 (class 826 OID 65537)
 -- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: cloud_admin
 --
 
@@ -4070,18 +4819,18 @@ ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON SEQU
 
 
 --
--- TOC entry 2187 (class 826 OID 65536)
+-- TOC entry 2201 (class 826 OID 65536)
 -- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: cloud_admin
 --
 
 ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON TABLES TO neon_superuser WITH GRANT OPTION;
 
 
--- Completed on 2026-06-11 23:09:44
+-- Completed on 2026-06-12 10:29:08
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dDSFrmqxB6qdRPX6Mbp3ERwTVQYCfR7NSoCwReKhsoPXNc2StTh43F1YFsuGzJ9
+\unrestrict ZLu7aDKePCZYNbTvcELnNYtmEuZsOrcVYIhUM6FTbEyfojSGH5W8A0ZXaGNuHje
 

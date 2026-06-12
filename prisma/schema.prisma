@@ -46,6 +46,7 @@ model ItemMaster {
     po_lot_lines    PoLotLine[]
     delivery_order_lines DeliveryOrderLine[]
     shipment_lines  ShipmentLine[]
+    customs_declaration_lines CustomsDeclarationLine[]
 
     @@map("item_master")
 }
@@ -71,6 +72,7 @@ model ItemCustomsProfile {
     is_delete                       Boolean    @default(false)
     item                            ItemMaster @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
     purchase_order_lines            PurchaseOrderLine[]
+    customs_declaration_lines       CustomsDeclarationLine[]
 
     @@map("item_customs_profiles")
 }
@@ -89,6 +91,7 @@ model Currency {
     suppliers      Supplier[] @relation("SupplierDefaultCurrency")
     purchase_orders PurchaseOrder[]
     quotations     Quotation[]
+    customs_declaration_lines CustomsDeclarationLine[]
 
     @@map("currencies")
 }
@@ -156,6 +159,7 @@ model Supplier {
     purchase_orders          PurchaseOrder[]
     quotations               Quotation[]
     shipments_as_forwarder   Shipment[]                @relation("ShipmentForwarder")
+    customs_declarations_as_broker CustomsDeclaration[] @relation("CustomsBroker")
 
     @@map("suppliers")
 }
@@ -241,6 +245,7 @@ model PurchaseOrderLine {
     lot_lines                      PoLotLine[]
     delivery_order_lines           DeliveryOrderLine[]
     shipment_lines                 ShipmentLine[]
+    customs_declaration_lines      CustomsDeclarationLine[]
 
     @@map("purchase_order_lines")
 }
@@ -540,6 +545,7 @@ model Shipment {
     lines              ShipmentLine[]
     milestones         ShipmentMilestone[]
     documents          ShipmentDocument[]
+    customs_declarations CustomsDeclaration[]
 
     @@map("shipments")
 }
@@ -567,6 +573,7 @@ model ShipmentLine {
     purchase_order_line      PurchaseOrderLine @relation(fields: [purchase_order_line_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
     po_lot                   PoLot?            @relation(fields: [po_lot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
     item                     ItemMaster        @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    customs_declaration_lines CustomsDeclarationLine[]
 
     @@map("shipment_lines")
 }
@@ -612,4 +619,66 @@ model ShipmentDocument {
     milestone     ShipmentMilestone? @relation(fields: [milestone_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
     @@map("shipment_documents")
+}
+
+model CustomsDeclaration {
+    id                 String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+    shipment_id        String                   @db.Uuid
+    declaration_no     String?                  @db.VarChar(100)
+    customs_type       String                   @default("IMPORT") @db.VarChar(50)
+    customs_channel    String?                  @db.VarChar(20)
+    broker_id          String?                  @db.Uuid
+    status             String                   @default("DRAFT") @db.VarChar(30)
+    draft_opened_at    DateTime?                @db.Timestamptz(6)
+    official_opened_at DateTime?                @db.Timestamptz(6)
+    submitted_at       DateTime?                @db.Timestamptz(6)
+    cleared_at         DateTime?                @db.Timestamptz(6)
+    cancelled_at       DateTime?                @db.Timestamptz(6)
+    cancel_reason      String?
+    note               String?
+    create_at          DateTime                 @default(now()) @db.Timestamptz(6)
+    update_at          DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
+    delete_at          DateTime?                @db.Timestamptz(6)
+    is_delete          Boolean                  @default(false)
+    shipment           Shipment                 @relation(fields: [shipment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    broker             Supplier?                @relation("CustomsBroker", fields: [broker_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    lines              CustomsDeclarationLine[]
+
+    @@map("customs_declarations")
+}
+
+model CustomsDeclarationLine {
+    id                     String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+    customs_declaration_id String                 @db.Uuid
+    shipment_line_id       String?                @db.Uuid
+    purchase_order_line_id String                 @db.Uuid
+    item_id                String                 @db.Uuid
+    item_customs_profile_id String?               @db.Uuid
+    line_no                Int
+    hs_code                String?                @db.VarChar(30)
+    item_description       String?
+    quantity               Decimal                @db.Decimal(18, 4)
+    unit                   String                 @db.VarChar(50)
+    customs_value          Decimal                @default(0) @db.Decimal(18, 4)
+    currency_id            String?                @db.Uuid
+    import_duty_rate       Decimal?               @default(0) @db.Decimal(5, 2)
+    preferential_tax_rate  Decimal?               @db.Decimal(5, 2)
+    vat_rate               Decimal?               @default(0) @db.Decimal(5, 2)
+    import_duty_amount     Decimal                @default(0) @db.Decimal(18, 4)
+    vat_amount             Decimal                @default(0) @db.Decimal(18, 4)
+    total_tax_amount       Decimal                @default(0) @db.Decimal(18, 4)
+    co_form                String?                @db.VarChar(50)
+    note                   String?
+    create_at              DateTime               @default(now()) @db.Timestamptz(6)
+    update_at              DateTime               @default(now()) @updatedAt @db.Timestamptz(6)
+    delete_at              DateTime?              @db.Timestamptz(6)
+    is_delete              Boolean                @default(false)
+    customs_declaration    CustomsDeclaration     @relation(fields: [customs_declaration_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    shipment_line          ShipmentLine?          @relation(fields: [shipment_line_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    purchase_order_line    PurchaseOrderLine      @relation(fields: [purchase_order_line_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    item                   ItemMaster             @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    item_customs_profile   ItemCustomsProfile?    @relation(fields: [item_customs_profile_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    currency               Currency?              @relation(fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@map("customs_declaration_lines")
 }
