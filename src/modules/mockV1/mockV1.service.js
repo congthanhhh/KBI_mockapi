@@ -239,9 +239,12 @@ async function getPurchaseOrderContext() {
         incoterms,
         transportModes,
         lines,
+        items,
+        itemCustomsProfiles,
         lots,
         deliveryOrders,
         shipments,
+        shipmentLines,
         domesticTransportOrders
     ] = await Promise.all([
         active(collections.purchaseOrders),
@@ -250,9 +253,12 @@ async function getPurchaseOrderContext() {
         active(collections.incoterms),
         active(collections.transportModes),
         active(collections.purchaseOrderLines),
+        active(collections.items),
+        active(collections.itemCustomsProfiles),
         active(collections.lots),
         active(collections.deliveryOrders),
         active(collections.shipments),
+        active(collections.shipmentLines),
         active(collections.domesticTransportOrders)
     ]);
 
@@ -263,10 +269,32 @@ async function getPurchaseOrderContext() {
         incoterms,
         transportModes,
         lines,
+        items,
+        itemCustomsProfiles,
         lots,
         deliveryOrders,
         shipments,
+        shipmentLines,
         domesticTransportOrders
+    };
+}
+
+function enrichDeliveryOrder(deliveryOrder, context) {
+    const purchaseOrder = context.purchaseOrders.find((row) => row.id === deliveryOrder.purchase_order_id) || null;
+    const enrichedPurchaseOrder = purchaseOrder ? enrichPurchaseOrder(purchaseOrder, context) : null;
+    const shipments = context.shipments
+        .filter((shipment) => shipment.delivery_order_id === deliveryOrder.id)
+        .sort((left, right) => String(left.etd || left.create_at || "").localeCompare(String(right.etd || right.create_at || "")));
+
+    return {
+        ...deliveryOrder,
+        linked_shipment_number: shipments[0]?.shipment_no || null,
+        shipments,
+        purchase_order: enrichedPurchaseOrder,
+        transport_mode: context.transportModes.find((mode) => (
+            mode.id === deliveryOrder.transport_mode_id ||
+            mode.id === enrichedPurchaseOrder?.transport_mode_id
+        )) || null
     };
 }
 
@@ -752,12 +780,21 @@ export async function createDeliveryOrderFromLots(body) {
     }
 
     const deliveryOrders = await active(collections.deliveryOrders);
+    const purchaseOrder = await requireRecord(collections.purchaseOrders, selectedLots[0].purchase_order_id, "Purchase order not found");
+    const primaryLot = selectedLots[0];
     const deliveryOrder = await repo.insert(collections.deliveryOrders, {
         id: nextId(deliveryOrders, "do"),
         delivery_order_no: body.delivery_order_no || nextDocumentNo("DO-KBI-2026", deliveryOrders.length + 1),
         purchase_order_id: selectedLots[0].purchase_order_id,
+        transport_mode_id: body.transport_mode_id || purchaseOrder.transport_mode_id || null,
         status: "DRAFT",
-        requested_pickup_date: body.requested_pickup_date || null,
+        requested_pickup_date: body.requested_pickup_date || primaryLot.planned_cargo_ready_date || null,
+        planned_cargo_ready_date: body.planned_cargo_ready_date || primaryLot.planned_cargo_ready_date || null,
+        planned_etd: body.planned_etd || primaryLot.planned_etd || purchaseOrder.expected_etd || null,
+        planned_eta: body.planned_eta || primaryLot.planned_eta || purchaseOrder.expected_eta || null,
+        origin_address: body.origin_address || primaryLot.origin_port || "Shanghai Port",
+        destination_address: body.destination_address || primaryLot.destination_port || "CatLai Port",
+        warehouse_name: body.warehouse_name || "Kim Binh Main Warehouse",
         notes: body.notes || null
     });
     const lotLines = await active(collections.lotLines);
@@ -797,7 +834,11 @@ export async function createDeliveryOrderFromLots(body) {
 }
 
 export async function listDeliveryOrders() {
-    return active(collections.deliveryOrders);
+    const [deliveryOrders, context] = await Promise.all([
+        active(collections.deliveryOrders),
+        getPurchaseOrderContext()
+    ]);
+    return deliveryOrders.map((deliveryOrder) => enrichDeliveryOrder(deliveryOrder, context));
 }
 
 export async function listLogisticsTasks() {
@@ -806,20 +847,30 @@ export async function listLogisticsTasks() {
 
 export async function getDeliveryOrder(id) {
     const deliveryOrder = await requireRecord(collections.deliveryOrders, id, "Delivery order not found");
-    const [doLots, doLines] = await Promise.all([
+    const [doLots, doLines, context] = await Promise.all([
         active(collections.deliveryOrderLots),
-        active(collections.deliveryOrderLines)
+        active(collections.deliveryOrderLines),
+        getPurchaseOrderContext()
     ]);
     return {
-        ...deliveryOrder,
+        ...enrichDeliveryOrder(deliveryOrder, context),
         lots: doLots.filter((row) => row.delivery_order_id === id),
-        lines: doLines.filter((row) => row.delivery_order_id === id).sort(bySortOrder)
+        lines: doLines
+            .filter((row) => row.delivery_order_id === id)
+            .sort(bySortOrder)
+            .map((line) => enrichDeliveryOrderLine(line, context))
     };
 }
 
 export async function listDeliveryOrdersByPurchaseOrder(purchaseOrderId) {
     await requireRecord(collections.purchaseOrders, purchaseOrderId, "Purchase order not found");
-    return (await active(collections.deliveryOrders)).filter((deliveryOrder) => deliveryOrder.purchase_order_id === purchaseOrderId);
+    const [deliveryOrders, context] = await Promise.all([
+        active(collections.deliveryOrders),
+        getPurchaseOrderContext()
+    ]);
+    return deliveryOrders
+        .filter((deliveryOrder) => deliveryOrder.purchase_order_id === purchaseOrderId)
+        .map((deliveryOrder) => enrichDeliveryOrder(deliveryOrder, context));
 }
 
 export async function listDeliveryOrderLots(deliveryOrderId) {
@@ -839,9 +890,11 @@ export async function listDeliveryOrderLots(deliveryOrderId) {
 
 export async function listDeliveryOrderLines(deliveryOrderId) {
     await requireRecord(collections.deliveryOrders, deliveryOrderId, "Delivery order not found");
+    const context = await getPurchaseOrderContext();
     return (await active(collections.deliveryOrderLines))
         .filter((line) => line.delivery_order_id === deliveryOrderId)
-        .sort(bySortOrder);
+        .sort(bySortOrder)
+        .map((line) => enrichDeliveryOrderLine(line, context));
 }
 
 export async function markDeliveryOrderReadyForQuotation(id) {
@@ -1597,6 +1650,20 @@ async function requireRecord(collectionName, id, message) {
     return record;
 }
 
+async function getPurchaseOrderLinesForAll() {
+    const [lines, items, profiles] = await Promise.all([
+        active(collections.purchaseOrderLines),
+        active(collections.items),
+        active(collections.itemCustomsProfiles)
+    ]);
+
+    return lines.map((line) => ({
+        ...line,
+        item: items.find((item) => item.id === line.item_id) || null,
+        item_customs_profile: profiles.find((profile) => profile.id === line.item_customs_profile_id) || null
+    }));
+}
+
 async function getPurchaseOrderLines(purchaseOrderId) {
     const [lines, items, profiles] = await Promise.all([
         active(collections.purchaseOrderLines),
@@ -1629,6 +1696,31 @@ function enrichLotLine(line, poLines, items) {
         item,
         item_customs_profile: customsProfile,
         purchase_order_line: poLine || null
+    };
+}
+
+function enrichDeliveryOrderLine(line, context) {
+    const enrichedLine = enrichLotLine(line, context.lines, context.items);
+    const deliveryOrder = context.deliveryOrders.find((row) => row.id === line.delivery_order_id) || null;
+    const lot = context.lots.find((row) => row.id === line.po_lot_id) || null;
+    const shipmentLine = context.shipmentLines.find((row) => row.delivery_order_line_id === line.id) || null;
+    const shipment = shipmentLine
+        ? context.shipments.find((row) => row.id === shipmentLine.shipment_id) || null
+        : context.shipments.find((row) => row.delivery_order_id === line.delivery_order_id) || null;
+
+    return {
+        ...enrichedLine,
+        delivery_order: deliveryOrder,
+        lot,
+        lot_no: lot?.lot_no || null,
+        shipment,
+        shipment_line: shipmentLine,
+        shipment_number: shipment?.shipment_no || null,
+        container_no: shipment?.container_no || null,
+        route_origin: shipment?.pol || deliveryOrder?.origin_address || null,
+        route_destination: shipment?.pod || deliveryOrder?.destination_address || null,
+        etd: shipment?.etd || deliveryOrder?.planned_etd || null,
+        eta: shipment?.eta || deliveryOrder?.planned_eta || null
     };
 }
 

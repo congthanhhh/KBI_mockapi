@@ -123,6 +123,9 @@ Purchase order list/detail responses are enriched at runtime from related mock c
 - Container counts and port dates come from linked `shipments`.
 - Warehouse dates and PO delay days come from linked `domestic_transport_orders`.
 - PO seed records are normalized with `transport_mode_id`, actual port dates, and warehouse ETA/ATA fallback dates so the purchase order UI has complete timeline data even for planning/demo POs without an active shipment.
+- Delivery order seed records include route/date/warehouse fields (`planned_etd`, `planned_eta`, `origin_address`, `destination_address`, `warehouse_name`, `transport_mode_id`) and representative statuses for processing, international transit, port arrival, customs, customs-cleared, delivery, and completed tabs.
+- Delivery order APIs enrich rows with linked `shipments` and `linked_shipment_number` from `shipments.delivery_order_id` so the DO board can show assigned shipment numbers instead of placeholders.
+- Delivery order line APIs enrich line rows with linked item, LOT, purchase-order-line, shipment-line, and shipment data so item names, HS codes, ordered quantity, gross weight, shipment number, container, route, ETD, and ETA render from mock data.
 - PO line seed data is normalized before writing JSON so frontend DTO fields such as customs profile, description, confirmed/lotted/shipped/received quantities, line ETA, and gross weight are always present.
 
 ## LOT Planning Without Slot

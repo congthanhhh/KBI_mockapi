@@ -149,6 +149,22 @@ Delivery Orders:
 - `POST /api/v1/delivery-orders/:id/ready-for-quotation`
 - `POST /api/v1/delivery-orders/:id/cancel`
 
+Delivery order rows include frontend-ready logistics fields for the DO board:
+
+- `transport_mode_id`
+- `transport_mode`
+- `planned_cargo_ready_date`
+- `planned_etd`
+- `planned_eta`
+- `origin_address`
+- `destination_address`
+- `warehouse_name`
+- `linked_shipment_number`
+- `shipments`
+- `purchase_order`
+
+Delivery order line rows include joined `item`, `purchase_order_line`, `item_code`, `item_name`, `hs_code`, `qty_ordered`, and `gross_weight_kg` so allocation, weight, and item metadata can be rendered without placeholder data. They also include line-level logistics context from linked shipment data: `lot`, `lot_no`, `shipment`, `shipment_line`, `shipment_number`, `container_no`, `route_origin`, `route_destination`, `etd`, and `eta`.
+
 Dashboard Tasks:
 
 - `GET /api/v1/logistics-tasks`
