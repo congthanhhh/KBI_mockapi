@@ -33,7 +33,8 @@ const collections = {
     customsDeclarationLines: "customs-declaration-lines",
     carrierDeliveryOrders: "carrier-delivery-orders",
     domesticTransportOrders: "domestic-transport-orders",
-    domesticTransportOrderLines: "domestic-transport-order-lines"
+    domesticTransportOrderLines: "domestic-transport-order-lines",
+    logisticsTasks: "logistics-tasks"
 };
 
 const collectionAliases = Object.freeze({
@@ -66,7 +67,8 @@ const collectionAliases = Object.freeze({
     transport_modes: collections.transportModes,
     carrier_delivery_orders: collections.carrierDeliveryOrders,
     domestic_transport_orders: collections.domesticTransportOrders,
-    domestic_transport_order_lines: collections.domesticTransportOrderLines
+    domestic_transport_order_lines: collections.domesticTransportOrderLines,
+    logistics_tasks: collections.logisticsTasks
 });
 
 const shipmentStatusByMilestone = Object.freeze({
@@ -207,28 +209,116 @@ export async function listItemCustomsProfiles(itemId) {
 }
 
 export async function listPurchaseOrders() {
-    const [purchaseOrders, suppliers] = await Promise.all([
-        active(collections.purchaseOrders),
-        active(collections.suppliers)
-    ]);
+    const context = await getPurchaseOrderContext();
+    const { purchaseOrders, suppliers } = context;
 
-    return purchaseOrders.map((purchaseOrder) => ({
-        ...purchaseOrder,
-        supplier: suppliers.find((supplier) => supplier.id === purchaseOrder.supplier_id) || null
+    return purchaseOrders.map((purchaseOrder) => enrichPurchaseOrder(purchaseOrder, {
+        ...context,
+        suppliers
     }));
 }
 
 export async function getPurchaseOrder(id) {
     const purchaseOrder = await requireRecord(collections.purchaseOrders, id, "Purchase order not found");
-    const [lines, suppliers] = await Promise.all([
+    const [lines, context] = await Promise.all([
         getPurchaseOrderLines(id),
-        active(collections.suppliers)
+        getPurchaseOrderContext()
     ]);
 
     return {
-        ...purchaseOrder,
-        supplier: suppliers.find((supplier) => supplier.id === purchaseOrder.supplier_id) || null,
+        ...enrichPurchaseOrder(purchaseOrder, context),
         lines
+    };
+}
+
+async function getPurchaseOrderContext() {
+    const [
+        purchaseOrders,
+        suppliers,
+        currencies,
+        incoterms,
+        transportModes,
+        lines,
+        lots,
+        deliveryOrders,
+        shipments,
+        domesticTransportOrders
+    ] = await Promise.all([
+        active(collections.purchaseOrders),
+        active(collections.suppliers),
+        active(collections.currencies),
+        active(collections.incoterms),
+        active(collections.transportModes),
+        active(collections.purchaseOrderLines),
+        active(collections.lots),
+        active(collections.deliveryOrders),
+        active(collections.shipments),
+        active(collections.domesticTransportOrders)
+    ]);
+
+    return {
+        purchaseOrders,
+        suppliers,
+        currencies,
+        incoterms,
+        transportModes,
+        lines,
+        lots,
+        deliveryOrders,
+        shipments,
+        domesticTransportOrders
+    };
+}
+
+function enrichPurchaseOrder(purchaseOrder, context) {
+    const poLines = context.lines.filter((line) => line.purchase_order_id === purchaseOrder.id);
+    const poLots = context.lots.filter((lot) => lot.purchase_order_id === purchaseOrder.id).sort(bySortOrder);
+    const deliveryOrders = context.deliveryOrders.filter((deliveryOrder) => deliveryOrder.purchase_order_id === purchaseOrder.id);
+    const deliveryOrderIds = new Set(deliveryOrders.map((deliveryOrder) => deliveryOrder.id));
+    const shipments = context.shipments.filter((shipment) => deliveryOrderIds.has(shipment.delivery_order_id));
+    const shipmentIds = new Set(shipments.map((shipment) => shipment.id));
+    const domesticTransportOrders = context.domesticTransportOrders.filter((order) => shipmentIds.has(order.shipment_id));
+    const firstShipment = firstByDate(shipments, "etd") || null;
+    const firstDto = firstByDate(domesticTransportOrders, "scheduled_delivery_at") || null;
+    const lotIds = poLots.map((lot) => lot.lot_no || lot.id);
+    const totalWeightKg = roundNumber(poLines.reduce((total, line) => total + Number(line.gross_weight_kg || 0), 0));
+    const totalContainers = uniqueValues(shipments.map((shipment) => shipment.container_no).filter(Boolean)).length;
+    const delayedDays = getPurchaseOrderDelayedDays(purchaseOrder, shipments, domesticTransportOrders);
+
+    return {
+        ...purchaseOrder,
+        supplier: context.suppliers.find((supplier) => supplier.id === purchaseOrder.supplier_id) || null,
+        currency: context.currencies.find((currency) => (
+            currency.id === purchaseOrder.currency_id ||
+            currency.currency_code === purchaseOrder.currency_code
+        )) || null,
+        incoterm: context.incoterms.find((incoterm) => incoterm.id === purchaseOrder.incoterm_id) || null,
+        transport_mode: context.transportModes.find((mode) => mode.id === purchaseOrder.transport_mode_id) || null,
+        total_weight_kg: totalWeightKg || null,
+        total_containers: totalContainers,
+        total_lots: poLots.length,
+        lot_ids: lotIds,
+        delayed_days: delayedDays,
+        lot_summary: {
+            total_weight_kg: totalWeightKg || null,
+            total_containers: totalContainers,
+            total_lots: poLots.length,
+            lot_ids: lotIds
+        },
+        logistics_timeline: {
+            loading_port: {
+                etd: firstShipment?.etd || purchaseOrder.expected_etd || null,
+                atd: firstShipment?.atd || purchaseOrder.actual_etd || null
+            },
+            unloading_port: {
+                eta: firstShipment?.eta || purchaseOrder.expected_eta || null,
+                ata: firstShipment?.ata || purchaseOrder.actual_eta || null
+            },
+            warehouse: {
+                eta: firstDto?.scheduled_delivery_at || purchaseOrder.expected_warehouse_eta || null,
+                ata: firstDto?.actual_delivery_at || purchaseOrder.actual_warehouse_ata || null
+            }
+        }
     };
 }
 
@@ -351,6 +441,7 @@ export async function createPurchaseOrder(body) {
     const purchaseOrder = await repo.insert(collections.purchaseOrders, {
         id: nextId(purchaseOrders, "po"),
         po_no: body.po_no,
+        contract_no: body.contract_no || nextDocumentNo("KBI-CN", purchaseOrders.length + 1),
         supplier_id: body.supplier_id,
         po_type: body.po_type || "IMPORT",
         incoterm_id: body.incoterm_id || "inc_fob",
@@ -384,12 +475,21 @@ export async function createPurchaseOrder(body) {
             id: formatId("po_line", lineStart + index),
             purchase_order_id: purchaseOrder.id,
             item_id: line.item_id,
+            item_customs_profile_id: line.item_customs_profile_id || null,
             line_no: line.line_no || index + 1,
+            item_description: line.item_description || null,
             qty_ordered: Number(line.qty_ordered),
             unit: line.unit || "PCS",
             unit_price: line.unit_price || 0,
             tax_rate: line.tax_rate || 0,
             discount_pct: line.discount_pct || 0,
+            gross_weight_kg: Number(line.gross_weight_kg || 0),
+            qty_confirmed: 0,
+            qty_lotted: Number(line.qty_ordered),
+            qty_shipped: 0,
+            qty_received: 0,
+            expected_eta_line: line.expected_eta_line || body.expected_eta || null,
+            notes: line.notes || null,
             sort_order: index + 1
         });
         await repo.insert(collections.lotLines, {
@@ -399,6 +499,7 @@ export async function createPurchaseOrder(body) {
             item_id: purchaseOrderLine.item_id,
             qty_lotted: purchaseOrderLine.qty_ordered,
             unit: purchaseOrderLine.unit,
+            notes: null,
             sort_order: index + 1
         });
     }
@@ -581,6 +682,7 @@ export async function splitLotLine(lineId, body) {
             item_id: sourceLine.item_id,
             qty_lotted: splitQty,
             unit: sourceLine.unit,
+            notes: sourceLine.notes || null,
             sort_order: body.target_sort_order || maxSort(lotLines.filter((line) => line.po_lot_id === targetLot.id)) + 1
         });
     }
@@ -696,6 +798,10 @@ export async function createDeliveryOrderFromLots(body) {
 
 export async function listDeliveryOrders() {
     return active(collections.deliveryOrders);
+}
+
+export async function listLogisticsTasks() {
+    return active(collections.logisticsTasks);
 }
 
 export async function getDeliveryOrder(id) {
@@ -1492,29 +1598,103 @@ async function requireRecord(collectionName, id, message) {
 }
 
 async function getPurchaseOrderLines(purchaseOrderId) {
-    const [lines, items] = await Promise.all([
+    const [lines, items, profiles] = await Promise.all([
         active(collections.purchaseOrderLines),
-        active(collections.items)
+        active(collections.items),
+        active(collections.itemCustomsProfiles)
     ]);
     return lines
         .filter((line) => line.purchase_order_id === purchaseOrderId)
         .sort(bySortOrder)
         .map((line) => ({
             ...line,
-            item: items.find((item) => item.id === line.item_id) || null
+            item: items.find((item) => item.id === line.item_id) || null,
+            item_customs_profile: profiles.find((profile) => profile.id === line.item_customs_profile_id) || null
         }));
 }
 
 function enrichLotLine(line, poLines, items) {
     const poLine = poLines.find((row) => row.id === line.purchase_order_line_id);
-    const item = items.find((row) => row.id === line.item_id) || poLine?.item || {};
+    const item = items.find((row) => row.id === line.item_id) || poLine?.item || null;
+    const customsProfile = poLine?.item_customs_profile || null;
 
     return {
         ...line,
-        item_code: item.item_code,
-        item_name: item.item_name,
-        qty_ordered: poLine?.qty_ordered
+        notes: line.notes || null,
+        item_code: item?.item_code || null,
+        item_name: item?.item_name || poLine?.item_description || null,
+        hs_code: customsProfile?.hs_code || null,
+        gross_weight_kg: poLine?.gross_weight_kg || null,
+        qty_ordered: poLine?.qty_ordered || null,
+        item,
+        item_customs_profile: customsProfile,
+        purchase_order_line: poLine || null
     };
+}
+
+function getPurchaseOrderDelayedDays(purchaseOrder, shipments, domesticTransportOrders) {
+    const explicitDelay = [
+        purchaseOrder.delayed_days,
+        ...shipments.map((shipment) => shipment.delayed_days),
+        ...domesticTransportOrders.map((order) => order.delayed_days)
+    ].map(Number).filter((value) => Number.isFinite(value) && value > 0);
+
+    if (explicitDelay.length) {
+        return Math.max(...explicitDelay);
+    }
+
+    const actualDelays = [
+        ...shipments.map((shipment) => daysLate(shipment.eta, shipment.ata)),
+        ...domesticTransportOrders.map((order) => daysLate(order.scheduled_delivery_at, order.actual_delivery_at))
+    ].filter((value) => value > 0);
+
+    if (actualDelays.length) {
+        return Math.max(...actualDelays);
+    }
+
+    const openDueDates = [
+        ...shipments.filter((shipment) => !shipment.ata).map((shipment) => shipment.eta),
+        ...domesticTransportOrders.filter((order) => !order.actual_delivery_at).map((order) => order.scheduled_delivery_at)
+    ];
+    const today = new Date();
+    const openDelays = openDueDates.map((date) => daysLate(date, today)).filter((value) => value > 0);
+
+    return openDelays.length ? Math.max(...openDelays) : 0;
+}
+
+function daysLate(planned, actual) {
+    const plannedDate = toDate(planned);
+    const actualDate = toDate(actual);
+
+    if (!plannedDate || !actualDate) {
+        return 0;
+    }
+
+    const diffMs = actualDate.getTime() - plannedDate.getTime();
+    return diffMs > 0 ? Math.ceil(diffMs / 86400000) : 0;
+}
+
+function firstByDate(rows, field) {
+    return [...rows]
+        .filter((row) => row[field])
+        .sort((left, right) => toDate(left[field]).getTime() - toDate(right[field]).getTime())[0];
+}
+
+function roundNumber(value) {
+    return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function toDate(value) {
+    if (!value) {
+        return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function uniqueValues(values) {
+    return [...new Set(values)];
 }
 
 function requireField(body, field) {

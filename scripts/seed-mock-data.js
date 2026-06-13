@@ -216,6 +216,18 @@ const files = {
         base({ id: "do_013", delivery_order_no: "DO-KBI-2026-013", purchase_order_id: "po_013", status: "SHIPPED", requested_pickup_date: "2026-08-02", notes: "Filter cartons shipped under supplier CIF booking." }),
         base({ id: "do_014", delivery_order_no: "DO-KBI-2026-014", purchase_order_id: "po_014", status: "SHIPPED", requested_pickup_date: "2026-08-26", notes: "ECU modules released to air forwarder after QC." })
     ],
+    "logistics-tasks": [
+        base({ task_id: "task_001", id: "task_001", do_number: "DO-KBI-2026-001", hbl_number: null, request_code: "DO-KBI-2026-001", po_number: "PO-KBI-2026-002", production_contract_number: "KBI-CN-2026-002", task_name: "Bao gia cuoc FCL", role: "PIC Manager", assignee: { user_id: "u_ops_01", name: "Mai Anh", department: "Logistics" }, progress: 40, created_at: "2026-06-08T02:00:00.000Z", assigned_at: "2026-06-08T03:00:00.000Z", completed_at: null, status: "IN_PROGRESS", priority: "HIGH", due_date: "2026-06-12", notes: "Bao gia can chot de tao shipment.", is_required_for_do_closure: true, blocked_reason: null }),
+        base({ task_id: "task_002", id: "task_002", do_number: "DO-KBI-2026-005", hbl_number: null, request_code: "DO-KBI-2026-005", po_number: "PO-KBI-2026-005", production_contract_number: "KBI-CN-2026-005", task_name: "Booking tau Shanghai - Hai Phong", role: "Port Officer", assignee: { user_id: "u_port_01", name: "Hoang Nam", department: "Port Ops" }, progress: 25, created_at: "2026-06-10T02:00:00.000Z", assigned_at: "2026-06-10T03:00:00.000Z", completed_at: null, status: "BLOCKED", priority: "URGENT", due_date: "2026-06-11", notes: "Booking bi giu do thieu SI.", is_required_for_do_closure: true, blocked_reason: "Waiting supplier shipping instruction." }),
+        base({ task_id: "task_003", id: "task_003", do_number: "DO-KBI-2026-006", hbl_number: null, request_code: "DO-KBI-2026-006", po_number: "PO-KBI-2026-006", production_contract_number: "KBI-CN-2026-006", task_name: "Xu ly chung tu air freight", role: "Sale Staff", assignee: { user_id: "u_sale_01", name: "Thu Ha", department: "Sales" }, progress: 65, created_at: "2026-06-11T02:00:00.000Z", assigned_at: "2026-06-11T03:00:00.000Z", completed_at: null, status: "WAITING", priority: "HIGH", due_date: "2026-06-12", notes: "Chung tu invoice packing list chua dong bo.", is_required_for_do_closure: true, blocked_reason: null }),
+        base({ task_id: "task_004", id: "task_004", do_number: "DO-KBI-2026-007", hbl_number: "HBL-KBI-007", request_code: "DO-KBI-2026-007", po_number: "PO-KBI-2026-007", production_contract_number: "KBI-CN-2026-007", task_name: "Mo to khai hai quan", role: "Customs Officer", assignee: { user_id: "u_cus_01", name: "Quoc Bao", department: "Customs" }, progress: 50, created_at: "2026-06-09T02:00:00.000Z", assigned_at: "2026-06-09T03:00:00.000Z", completed_at: null, status: "IN_PROGRESS", priority: "HIGH", due_date: "2026-06-12", notes: "To khai can mapping HS code voi packing list.", is_required_for_do_closure: true, blocked_reason: null }),
+        base({ task_id: "task_005", id: "task_005", do_number: "DO-KBI-2026-009", hbl_number: "HBL-KBI-009", request_code: "DO-KBI-2026-009", po_number: "PO-KBI-2026-009", production_contract_number: "KBI-CN-2026-009", task_name: "Giao hang ve kho Kim Binh", role: "Warehouse Staff", assignee: { user_id: "u_wh_01", name: "Minh Duc", department: "Warehouse" }, progress: 10, created_at: "2026-06-07T02:00:00.000Z", assigned_at: "2026-06-07T03:00:00.000Z", completed_at: null, status: "TODO", priority: "URGENT", due_date: "2026-06-10", notes: "Giao hang tre do xe chua duoc dieu phoi.", is_required_for_do_closure: true, blocked_reason: null }),
+        base({ task_id: "task_006", id: "task_006", do_number: "DO-KBI-2026-010", hbl_number: "HBL-KBI-010", request_code: "DO-KBI-2026-010", po_number: "PO-KBI-2026-010", production_contract_number: "KBI-CN-2026-010", task_name: "Kiem tra phi local charge", role: "Finance Officer", assignee: { user_id: "u_fin_01", name: "Lan Phuong", department: "Finance" }, progress: 100, created_at: "2026-06-05T02:00:00.000Z", assigned_at: "2026-06-05T03:00:00.000Z", completed_at: "2026-06-12T08:00:00.000Z", status: "COMPLETED", priority: "MEDIUM", due_date: "2026-06-12", notes: "Finance confirmed local charge.", is_required_for_do_closure: false, blocked_reason: null }),
+        base({ task_id: "task_007", id: "task_007", do_number: "DO-KBI-2026-011", hbl_number: null, request_code: "DO-KBI-2026-011", po_number: "PO-KBI-2026-011", production_contract_number: "KBI-CN-2026-011", task_name: "Bao gia air freight khan", role: "PIC Manager", assignee: { user_id: "u_ops_02", name: "Thanh Tung", department: "Logistics" }, progress: 15, created_at: "2026-06-12T02:00:00.000Z", assigned_at: "2026-06-12T03:00:00.000Z", completed_at: null, status: "TODO", priority: "URGENT", due_date: "2026-06-13", notes: "Bao gia can trong ngay de giu slot bay.", is_required_for_do_closure: true, blocked_reason: null }),
+        base({ task_id: "task_008", id: "task_008", do_number: "DO-KBI-2026-012", hbl_number: null, request_code: "DO-KBI-2026-012", po_number: "PO-KBI-2026-012", production_contract_number: "KBI-CN-2026-012", task_name: "Booking breakbulk", role: "Port Officer", assignee: { user_id: "u_port_02", name: "Gia Huy", department: "Port Ops" }, progress: 75, created_at: "2026-06-10T02:00:00.000Z", assigned_at: "2026-06-10T03:00:00.000Z", completed_at: null, status: "IN_PROGRESS", priority: "MEDIUM", due_date: "2026-06-18", notes: "Booking dang cho hang tau xac nhan lich.", is_required_for_do_closure: true, blocked_reason: null }),
+        base({ task_id: "task_009", id: "task_009", do_number: "DO-KBI-2026-013", hbl_number: "HBL-KBI-013", request_code: "DO-KBI-2026-013", po_number: "PO-KBI-2026-013", production_contract_number: "KBI-CN-2026-013", task_name: "Xu ly chung tu CIF", role: "Sale Staff", assignee: { user_id: "u_sale_02", name: "Bao Ngoc", department: "Sales" }, progress: 100, created_at: "2026-06-06T02:00:00.000Z", assigned_at: "2026-06-06T03:00:00.000Z", completed_at: "2026-06-09T08:00:00.000Z", status: "COMPLETED", priority: "LOW", due_date: "2026-06-09", notes: "Chung tu CIF da hoan tat.", is_required_for_do_closure: true, blocked_reason: null }),
+        base({ task_id: "task_010", id: "task_010", do_number: "DO-KBI-2026-014", hbl_number: "HBL-KBI-014", request_code: "DO-KBI-2026-014", po_number: "PO-KBI-2026-014", production_contract_number: "KBI-CN-2026-014", task_name: "Giao hang ECU ve kho", role: "Warehouse Staff", assignee: { user_id: "u_wh_02", name: "Nguyen Khoa", department: "Warehouse" }, progress: 35, created_at: "2026-06-12T02:00:00.000Z", assigned_at: "2026-06-12T03:00:00.000Z", completed_at: null, status: "IN_PROGRESS", priority: "HIGH", due_date: "2026-06-16", notes: "Giao hang dang cho lich xe noi dia.", is_required_for_do_closure: true, blocked_reason: null })
+    ],
     "delivery-order-lots": [
         base({ id: "do_lot_001", delivery_order_id: "do_001", po_lot_id: "lot_003", sort_order: 1 }),
         base({ id: "do_lot_002", delivery_order_id: "do_002", po_lot_id: "lot_004", sort_order: 1 }),
@@ -401,7 +413,7 @@ const files = {
         base({ id: "dto_005", dto_no: "DTO-KBI-2026-005", shipment_id: "shp_005", carrier_delivery_order_id: "cdo_005", truck_vendor_id: "sup_vn_trucking", origin: "Hai Phong Port", destination: "Kim Binh Factory", warehouse: "KBI Main Warehouse", vehicle_type: "20GP Container Truck", vehicle_plate: null, driver_name: null, driver_phone: null, scheduled_pickup_at: "2026-07-31T01:00:00.000Z", actual_pickup_at: null, scheduled_delivery_at: "2026-07-31T09:00:00.000Z", actual_delivery_at: null, pod_document_ref: null, status: "QUOTE_CONFIRMED", note: "Dispatch after CDO release." }),
         base({ id: "dto_006", dto_no: "DTO-KBI-2026-006", shipment_id: "shp_006", carrier_delivery_order_id: "cdo_006", truck_vendor_id: "sup_vn_trucking", origin: "Noi Bai Cargo", destination: "Kim Binh Factory", warehouse: "KBI Spare Parts Warehouse", vehicle_type: "Van", vehicle_plate: null, driver_name: null, driver_phone: null, scheduled_pickup_at: "2026-08-05T05:00:00.000Z", actual_pickup_at: null, scheduled_delivery_at: "2026-08-05T10:00:00.000Z", actual_delivery_at: null, pod_document_ref: null, status: "QUOTE_CONFIRMED", note: "Same-day airport delivery planned." }),
         base({ id: "dto_007", dto_no: "DTO-KBI-2026-007", shipment_id: "shp_007", carrier_delivery_order_id: "cdo_007", truck_vendor_id: "sup_vn_trucking", origin: "Hai Phong CFS", destination: "Kim Binh Factory", warehouse: "KBI Main Warehouse", vehicle_type: "Box Truck", vehicle_plate: "15C-77889", driver_name: "Pham Van D", driver_phone: "+84-900-000-007", scheduled_pickup_at: "2026-07-09T01:00:00.000Z", actual_pickup_at: "2026-07-09T01:20:00.000Z", scheduled_delivery_at: "2026-07-09T09:00:00.000Z", actual_delivery_at: "2026-07-09T08:50:00.000Z", pod_document_ref: "POD-007", status: "CLOSED", note: "Warehouse received full quantity." }),
-        base({ id: "dto_008", dto_no: "DTO-KBI-2026-008", shipment_id: "shp_008", carrier_delivery_order_id: "cdo_008", truck_vendor_id: "sup_vn_trucking", origin: "Hai Phong Port", destination: "Kim Binh Factory", warehouse: "KBI Main Warehouse", vehicle_type: "40HC Container Truck", vehicle_plate: null, driver_name: null, driver_phone: null, scheduled_pickup_at: "2026-07-23T01:00:00.000Z", actual_pickup_at: null, scheduled_delivery_at: "2026-07-23T09:00:00.000Z", actual_delivery_at: null, pod_document_ref: null, status: "DRAFT", note: "Waiting for customs clearance." }),
+        base({ id: "dto_008", dto_no: "DTO-KBI-2026-008", shipment_id: "shp_008", carrier_delivery_order_id: "cdo_008", truck_vendor_id: "sup_vn_trucking", origin: "Hai Phong Port", destination: "Kim Binh Factory", warehouse: "KBI Main Warehouse", vehicle_type: "40HC Container Truck", vehicle_plate: null, driver_name: null, driver_phone: null, scheduled_pickup_at: "2026-07-23T01:00:00.000Z", actual_pickup_at: null, scheduled_delivery_at: "2026-07-23T09:00:00.000Z", actual_delivery_at: null, pod_document_ref: null, status: "DRAFT", delayed_days: 3, note: "Waiting for customs clearance." }),
         base({ id: "dto_009", dto_no: "DTO-KBI-2026-009", shipment_id: "shp_009", carrier_delivery_order_id: "cdo_009", truck_vendor_id: "sup_vn_trucking", origin: "Pingxiang Border", destination: "Kim Binh Factory", warehouse: "KBI Main Warehouse", vehicle_type: "Curtain Side Truck", vehicle_plate: "29C-90909", driver_name: "Le Van E", driver_phone: "+84-900-000-009", scheduled_pickup_at: "2026-08-12T02:00:00.000Z", actual_pickup_at: "2026-08-12T02:10:00.000Z", scheduled_delivery_at: "2026-08-14T09:00:00.000Z", actual_delivery_at: "2026-08-14T08:30:00.000Z", pod_document_ref: "POD-009", status: "CLOSED", note: "Delivered after border clearance." }),
         base({ id: "dto_010", dto_no: "DTO-KBI-2026-010", shipment_id: "shp_010", carrier_delivery_order_id: "cdo_010", truck_vendor_id: "sup_vn_trucking", origin: "Hai Phong CFS", destination: "Kim Binh Factory", warehouse: "KBI Main Warehouse", vehicle_type: "Box Truck", vehicle_plate: "15C-51010", driver_name: "Hoang Van H", driver_phone: "+84-900-000-010", scheduled_pickup_at: "2026-08-27T01:00:00.000Z", actual_pickup_at: "2026-08-27T01:10:00.000Z", scheduled_delivery_at: "2026-08-27T09:00:00.000Z", actual_delivery_at: "2026-08-27T08:55:00.000Z", pod_document_ref: "POD-010", status: "CLOSED", note: "Palletized LCL cargo received." }),
         base({ id: "dto_011", dto_no: "DTO-KBI-2026-011", shipment_id: "shp_011", carrier_delivery_order_id: "cdo_011", truck_vendor_id: "sup_vn_trucking", origin: "Noi Bai Cargo", destination: "Kim Binh Factory", warehouse: "KBI Spare Parts Warehouse", vehicle_type: "Van", vehicle_plate: null, driver_name: null, driver_phone: null, scheduled_pickup_at: "2026-09-04T06:00:00.000Z", actual_pickup_at: null, scheduled_delivery_at: "2026-09-04T11:00:00.000Z", actual_delivery_at: null, pod_document_ref: null, status: "QUOTE_CONFIRMED", note: "Dispatch after airport release." }),
@@ -427,6 +439,29 @@ const files = {
     ]
 };
 
+const itemWeightKg = {
+    item_001: 820,
+    item_002: 0.45,
+    item_003: 145,
+    item_004: 58,
+    item_005: 18,
+    item_006: 7,
+    item_007: 0.85,
+    item_008: 0.18,
+    item_009: 32,
+    item_010: 1.4,
+    item_011: 9.5,
+    item_012: 2.2,
+    item_013: 0.55,
+    item_014: 3.8
+};
+
+files["shipments"] = enrichShipmentTimeline(files);
+files["domestic-transport-orders"] = enrichDomesticTransportTimeline(files);
+files["purchase-orders"] = enrichPurchaseOrders(files);
+files["po-lot-lines"] = enrichPoLotLines(files);
+files["purchase-order-lines"] = enrichPurchaseOrderLines(files);
+
 export async function seedMockData() {
     await fs.mkdir(dataDir, { recursive: true });
 
@@ -440,6 +475,140 @@ export async function seedMockData() {
 if (process.argv[1] === scriptPath) {
     const seededCollections = await seedMockData();
     console.log(`Seeded ${seededCollections.length} mock-data collections.`);
+}
+
+function enrichPurchaseOrderLines(seedFiles) {
+    const itemsById = Object.fromEntries(seedFiles["item-master"].map((item) => [item.id, item]));
+    const purchaseOrdersById = Object.fromEntries(seedFiles["purchase-orders"].map((purchaseOrder) => [purchaseOrder.id, purchaseOrder]));
+    const profilesByItemId = new Map();
+
+    for (const profile of seedFiles["item-customs-profiles"]) {
+        if (!profilesByItemId.has(profile.item_id)) {
+            profilesByItemId.set(profile.item_id, profile);
+        }
+    }
+
+    return seedFiles["purchase-order-lines"].map((line) => {
+        const item = itemsById[line.item_id];
+        const purchaseOrder = purchaseOrdersById[line.purchase_order_id];
+        const qtyConfirmed = sumBy(seedFiles["purchase-order-confirmation-lines"], (confirmationLine) => (
+            confirmationLine.purchase_order_line_id === line.id ? confirmationLine.confirmed_qty : 0
+        ));
+        const qtyLotted = sumBy(seedFiles["po-lot-lines"], (lotLine) => (
+            lotLine.purchase_order_line_id === line.id ? lotLine.qty_lotted : 0
+        ));
+        const qtyShipped = sumBy(seedFiles["shipment-lines"], (shipmentLine) => (
+            shipmentLine.purchase_order_line_id === line.id ? shipmentLine.qty_shipped : 0
+        ));
+        const qtyReceived = sumBy(seedFiles["domestic-transport-order-lines"], (transportLine) => {
+            if (transportLine.purchase_order_line_id !== line.id) {
+                return 0;
+            }
+
+            const transportOrder = seedFiles["domestic-transport-orders"].find((row) => row.id === transportLine.domestic_transport_order_id);
+            return transportOrder?.actual_delivery_at ? transportLine.qty : 0;
+        });
+
+        return {
+            item_customs_profile_id: profilesByItemId.get(line.item_id)?.id || null,
+            item_description: item?.item_name || null,
+            gross_weight_kg: roundNumber(Number(line.qty_ordered || 0) * Number(itemWeightKg[line.item_id] || 0)),
+            qty_confirmed: qtyConfirmed,
+            qty_lotted: qtyLotted,
+            qty_shipped: qtyShipped,
+            qty_received: qtyReceived,
+            expected_eta_line: purchaseOrder?.expected_eta || null,
+            notes: null,
+            ...line
+        };
+    });
+}
+
+function enrichPoLotLines(seedFiles) {
+    return seedFiles["po-lot-lines"].map((line) => ({
+        notes: null,
+        ...line
+    }));
+}
+
+function enrichShipmentTimeline(seedFiles) {
+    return seedFiles["shipments"].map((shipment) => ({
+        ...shipment,
+        atd: shipment.atd || shipment.etd || null,
+        ata: shipment.ata || shipment.eta || null
+    }));
+}
+
+function enrichDomesticTransportTimeline(seedFiles) {
+    return seedFiles["domestic-transport-orders"].map((order) => ({
+        ...order,
+        actual_pickup_at: order.actual_pickup_at || order.scheduled_pickup_at || null,
+        actual_delivery_at: order.actual_delivery_at || order.scheduled_delivery_at || null
+    }));
+}
+
+function enrichPurchaseOrders(seedFiles) {
+    const deliveryOrdersByPoId = groupBy(seedFiles["delivery-orders"], "purchase_order_id");
+    const shipmentsByDeliveryOrderId = groupBy(seedFiles["shipments"], "delivery_order_id");
+    const domesticTransportOrdersByShipmentId = groupBy(seedFiles["domestic-transport-orders"], "shipment_id");
+    const transportModeIdByCode = Object.fromEntries(
+        seedFiles["transport-modes"].map((mode) => [mode.mode_code, mode.id])
+    );
+
+    return seedFiles["purchase-orders"].map((purchaseOrder, index) => {
+        const deliveryOrders = deliveryOrdersByPoId.get(purchaseOrder.id) || [];
+        const shipments = deliveryOrders.flatMap((deliveryOrder) => shipmentsByDeliveryOrderId.get(deliveryOrder.id) || []);
+        const firstShipment = firstByDate(shipments, "etd");
+        const domesticTransportOrders = shipments.flatMap((shipment) => domesticTransportOrdersByShipmentId.get(shipment.id) || []);
+        const firstTransportOrder = firstByDate(domesticTransportOrders, "scheduled_delivery_at");
+        const expectedWarehouseEta = firstTransportOrder?.scheduled_delivery_at || toWarehouseIso(purchaseOrder.expected_eta, 9);
+
+        return {
+            ...purchaseOrder,
+            contract_no: purchaseOrder.contract_no || `KBI-CN-2026-${String(index + 1).padStart(3, "0")}`,
+            transport_mode_id: purchaseOrder.transport_mode_id || transportModeIdByCode[firstShipment?.mode] || "tm_sea_fcl",
+            actual_etd: purchaseOrder.actual_etd || firstShipment?.atd || purchaseOrder.expected_etd || null,
+            actual_eta: purchaseOrder.actual_eta || firstShipment?.ata || purchaseOrder.expected_eta || null,
+            expected_warehouse_eta: purchaseOrder.expected_warehouse_eta || expectedWarehouseEta,
+            actual_warehouse_ata: purchaseOrder.actual_warehouse_ata || firstTransportOrder?.actual_delivery_at || expectedWarehouseEta
+        };
+    });
+}
+
+function groupBy(rows, field) {
+    const groups = new Map();
+
+    for (const row of rows) {
+        const value = row[field];
+        if (!groups.has(value)) {
+            groups.set(value, []);
+        }
+        groups.get(value).push(row);
+    }
+
+    return groups;
+}
+
+function firstByDate(rows, field) {
+    return [...rows]
+        .filter((row) => row[field])
+        .sort((left, right) => new Date(left[field]).getTime() - new Date(right[field]).getTime())[0] || null;
+}
+
+function toWarehouseIso(date, hour) {
+    if (!date) {
+        return null;
+    }
+
+    return `${date.slice(0, 10)}T${String(hour).padStart(2, "0")}:00:00.000Z`;
+}
+
+function sumBy(rows, selector) {
+    return rows.reduce((total, row) => total + Number(selector(row) || 0), 0);
+}
+
+function roundNumber(value) {
+    return Math.round((Number(value) || 0) * 100) / 100;
 }
 
 function buildMilestones() {

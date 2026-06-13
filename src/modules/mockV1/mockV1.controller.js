@@ -149,6 +149,10 @@ export async function listDeliveryOrders(req, res) {
     res.json(success(await service.listDeliveryOrders()));
 }
 
+export async function listLogisticsTasks(req, res) {
+    res.json(success(await service.listLogisticsTasks()));
+}
+
 export async function getDeliveryOrder(req, res) {
     res.json(success(await service.getDeliveryOrder(req.params.id)));
 }

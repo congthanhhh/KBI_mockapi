@@ -83,6 +83,7 @@ Core database-table coverage:
 - `delivery_order_lines`
 - `delivery_order_lots`
 - `delivery_orders`
+- `logistics_tasks`
 - `incoterms`
 - `item_customs_profiles`
 - `item_groups`
@@ -113,6 +114,17 @@ Extended mock entities:
 
 Core flow collections seed realistic PO-to-DTO scenarios with at least 9 records for item, PO, DO, shipment, customs, carrier DO, and DTO tables. `shipment_milestones` has 90 records for 9 shipments times 10 milestones. Smaller reference collections such as currencies, incoterms, transport modes, suppliers, and item groups remain compact lookup sets.
 
+`logistics_tasks` seeds dashboard-ready work items across quotation, booking, document processing, customs declaration, warehouse delivery, and finance review so urgency cards, overdue task cards, task role progress, and monthly throughput do not render empty in the frontend demo.
+
+Purchase order list/detail responses are enriched at runtime from related mock collections:
+
+- LOT counts and LOT IDs come from `po_lots`.
+- Total weight comes from `purchase_order_lines.gross_weight_kg`.
+- Container counts and port dates come from linked `shipments`.
+- Warehouse dates and PO delay days come from linked `domestic_transport_orders`.
+- PO seed records are normalized with `transport_mode_id`, actual port dates, and warehouse ETA/ATA fallback dates so the purchase order UI has complete timeline data even for planning/demo POs without an active shipment.
+- PO line seed data is normalized before writing JSON so frontend DTO fields such as customs profile, description, confirmed/lotted/shipped/received quantities, line ETA, and gross weight are always present.
+
 ## LOT Planning Without Slot
 
 Active LOT Planning does not use delivery slots.
@@ -120,6 +132,7 @@ Active LOT Planning does not use delivery slots.
 - No active `/delivery-slots` endpoints.
 - No active `/move-slot` endpoint.
 - `GET /api/v1/purchase-orders/:id/lot-planning` returns `purchase_order`, `po_lines`, and `lots`.
+- `lots[].items[]` is enriched at runtime from PO lines, item master, and customs profiles so the frontend can render item code/name, HSCODE, ordered/lotted quantity, weight, and the nested `purchase_order_line` without extra API calls.
 - LOT movement uses `POST /api/v1/po-lot-lines/:lineId/move`.
 - LOT split uses `POST /api/v1/po-lot-lines/:lineId/split`.
 - `po-delivery-slots.json` exists only to cover the legacy table and is ignored by LOT runtime.

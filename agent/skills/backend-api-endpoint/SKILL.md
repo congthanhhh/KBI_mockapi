@@ -84,6 +84,30 @@ Master-data compatibility endpoints may keep current frontend shapes:
 - Use table-style collection names in generic routes when helpful, such as
   `purchase_orders`, while repository files remain kebab-case JSON files.
 
+## Data/Contract Change Workflow
+
+Use this sequence when adding or changing a collection, field, relationship,
+seed record shape, endpoint payload, or frontend-visible API surface:
+
+1. Identify the business entity first - decide which entity owns the data and
+   whether it needs a business endpoint or only generic mock collection access.
+2. Update `docs/API_CONTRACT.md` when a route, request, response, entity field,
+   or example payload changes.
+3. Update `docs/MOCK_JSON_RUNTIME.md` when a collection, relationship,
+   generated JSON file, or runtime mock rule changes.
+4. Update `scripts/seed-mock-data.js` as the source of truth; do not treat
+   `mock-data/*.json` hand edits as durable because `npm run mock:seed`
+   regenerates them.
+5. Run `npm run mock:seed` after seed changes so runtime JSON matches the
+   source data.
+6. Update `mockV1` route/controller/service only for real business behavior;
+   update `mockMasterData` only for compatibility master-data behavior.
+7. Validate cross-record references, for example PO lines to items, LOT lines to
+   PO lines, delivery orders to LOTs, and shipments to delivery orders.
+8. Run `npm run mock:smoke` for flow-impacting changes.
+9. Update frontend DTOs, clients, or pages in `PROJECT-PRODUCT/frontend` when
+   the API surface changes.
+
 ## Endpoint Families
 
 Prefer business endpoints from `API_CONTRACT.md`.
@@ -137,8 +161,8 @@ Do not invent old database-first action routes such as `/move-slot`,
 6. Persist through repository - use `MockJsonRepository` for all JSON reads and
    writes; keep file I/O out of controllers.
 7. Update seed and docs - change `scripts/seed-mock-data.js`,
-   `docs/API_CONTRACT.md`, `docs/MOCK_JSON_RUNTIME.md`, or
-   `docs/API_CONTRACT.md` when routes, fields, data, or flows change.
+   `docs/API_CONTRACT.md`, or `docs/MOCK_JSON_RUNTIME.md` when routes, fields,
+   data, or flows change.
 8. Validate - run syntax checks for changed JS files, run `npm run mock:seed`
    when seed changed, and run `npm run mock:smoke` for flow-impacting changes.
 

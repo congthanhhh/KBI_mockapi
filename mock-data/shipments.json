@@ -17,8 +17,8 @@
     "pod": "VNHPH",
     "etd": "2026-07-08",
     "eta": "2026-07-16",
-    "atd": null,
-    "ata": null,
+    "atd": "2026-07-08",
+    "ata": "2026-07-16",
     "status": "BOOKING_CONFIRMED"
   },
   {
@@ -40,7 +40,7 @@
     "etd": "2026-06-24",
     "eta": "2026-07-02",
     "atd": "2026-06-24",
-    "ata": null,
+    "ata": "2026-07-02",
     "status": "CUSTOMS_CLEARED"
   },
   {
@@ -83,8 +83,8 @@
     "pod": "Kim Binh",
     "etd": "2026-07-20",
     "eta": "2026-07-21",
-    "atd": null,
-    "ata": null,
+    "atd": "2026-07-20",
+    "ata": "2026-07-21",
     "status": "BOOKING_CONFIRMED"
   },
   {
@@ -105,8 +105,8 @@
     "pod": "VNHPH",
     "etd": "2026-07-22",
     "eta": "2026-07-30",
-    "atd": null,
-    "ata": null,
+    "atd": "2026-07-22",
+    "ata": "2026-07-30",
     "status": "BOOKING_CONFIRMED"
   },
   {
@@ -128,7 +128,7 @@
     "etd": "2026-08-04",
     "eta": "2026-08-05",
     "atd": "2026-08-04",
-    "ata": null,
+    "ata": "2026-08-05",
     "status": "ATD"
   },
   {
@@ -172,7 +172,7 @@
     "etd": "2026-07-14",
     "eta": "2026-07-22",
     "atd": "2026-07-14",
-    "ata": null,
+    "ata": "2026-07-22",
     "status": "ARRIVAL_NOTICE"
   },
   {
@@ -238,7 +238,7 @@
     "etd": "2026-09-03",
     "eta": "2026-09-04",
     "atd": "2026-09-03",
-    "ata": null,
+    "ata": "2026-09-04",
     "status": "ATD"
   },
   {
@@ -259,8 +259,8 @@
     "pod": "VNHPH",
     "etd": "2026-09-08",
     "eta": "2026-09-18",
-    "atd": null,
-    "ata": null,
+    "atd": "2026-09-08",
+    "ata": "2026-09-18",
     "status": "BOOKING_CONFIRMED"
   },
   {

@@ -74,6 +74,37 @@ Purchase Orders:
 - `POST /api/v1/purchase-orders/:id/confirm`
 - `POST /api/v1/purchase-orders/:id/cancel`
 
+`GET /api/v1/purchase-orders` and `GET /api/v1/purchase-orders/:id` enrich each purchase order with:
+
+- `supplier`, `currency`, `incoterm`, `transport_mode`
+- `total_weight_kg`, `total_containers`, `total_lots`, `lot_ids`
+- `delayed_days`
+- `lot_summary: { total_weight_kg, total_containers, total_lots, lot_ids }`
+- `logistics_timeline.loading_port: { etd, atd }`
+- `logistics_timeline.unloading_port: { eta, ata }`
+- `logistics_timeline.warehouse: { eta, ata }`
+
+The mock seed keeps PO timeline fields populated for UI testing:
+
+- `contract_no`
+- `transport_mode_id`
+- `actual_etd`
+- `actual_eta`
+- `expected_warehouse_eta`
+- `actual_warehouse_ata`
+
+Purchase order lines include frontend-ready logistics quantities:
+
+- `item_customs_profile_id`
+- `item_description`
+- `gross_weight_kg`
+- `qty_confirmed`
+- `qty_lotted`
+- `qty_shipped`
+- `qty_received`
+- `expected_eta_line`
+- `notes`
+
 Supplier Confirmation:
 
 - `GET /api/v1/purchase-orders/:id/confirmations`
@@ -91,6 +122,22 @@ LOT Planning:
 - `PATCH /api/v1/po-lots/reorder`
 - `PATCH /api/v1/po-lot-lines/reorder`
 
+`GET /api/v1/purchase-orders/:id/lot-planning` returns:
+
+- `purchase_order`
+- `po_lines` enriched like purchase order line responses
+- `lots[].items[]` enriched with:
+  - `item`
+  - `item_code`
+  - `item_name`
+  - `item_customs_profile`
+  - `hs_code`
+  - `purchase_order_line`
+  - `qty_ordered`
+  - `qty_lotted`
+  - `gross_weight_kg`
+  - `notes`
+
 Delivery Orders:
 
 - `GET /api/v1/delivery-orders`
@@ -101,6 +148,12 @@ Delivery Orders:
 - `GET /api/v1/delivery-orders/:id/lines`
 - `POST /api/v1/delivery-orders/:id/ready-for-quotation`
 - `POST /api/v1/delivery-orders/:id/cancel`
+
+Dashboard Tasks:
+
+- `GET /api/v1/logistics-tasks`
+
+`GET /api/v1/logistics-tasks` returns frontend-ready task rows for dashboard urgency, overdue task grouping, task role progress, and monthly completed-task throughput.
 
 Quotations:
 

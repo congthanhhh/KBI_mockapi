@@ -47,6 +47,7 @@ router.post("/po-lot-lines/:lineId/move", asyncHandler(controller.moveLotLine));
 router.post("/po-lot-lines/:lineId/split", asyncHandler(controller.splitLotLine));
 
 router.get("/delivery-orders", asyncHandler(controller.listDeliveryOrders));
+router.get("/logistics-tasks", asyncHandler(controller.listLogisticsTasks));
 router.post("/delivery-orders/from-lots", asyncHandler(controller.createDeliveryOrderFromLots));
 router.get("/delivery-orders/:id/lots", asyncHandler(controller.listDeliveryOrderLots));
 router.get("/delivery-orders/:id/lines", asyncHandler(controller.listDeliveryOrderLines));
