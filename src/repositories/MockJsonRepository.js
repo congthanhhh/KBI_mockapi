@@ -29,6 +29,7 @@ export class MockJsonRepository {
 
     async writeCollection(name, data) {
         const filePath = this.getFilePath(name);
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
         await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
         return data;
     }

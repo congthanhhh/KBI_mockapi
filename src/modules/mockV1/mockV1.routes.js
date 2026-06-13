@@ -29,10 +29,12 @@ router.get("/purchase-orders/:id/lines", asyncHandler(controller.listPurchaseOrd
 router.post("/purchase-orders/:id/send", asyncHandler(controller.sendPurchaseOrder));
 router.post("/purchase-orders/:id/confirm", asyncHandler(controller.confirmPurchaseOrder));
 router.post("/purchase-orders/:id/cancel", asyncHandler(controller.cancelPurchaseOrder));
+router.patch("/purchase-orders/:id", asyncHandler(controller.updatePurchaseOrder));
 router.get("/purchase-orders/:id/confirmations", asyncHandler(controller.listPurchaseOrderConfirmations));
 router.post("/purchase-orders/:id/confirmations", asyncHandler(controller.createPurchaseOrderConfirmation));
 router.get("/purchase-orders/:id/lot-planning", asyncHandler(controller.getLotPlanning));
 router.post("/purchase-orders/:id/lots", asyncHandler(controller.createLot));
+router.get("/purchase-orders/:id/tasks", asyncHandler(controller.listPurchaseOrderTasks));
 router.get("/purchase-orders/:id/delivery-orders", asyncHandler(controller.listDeliveryOrdersByPurchaseOrder));
 router.get("/purchase-orders/:id", asyncHandler(controller.getPurchaseOrder));
 
@@ -48,6 +50,10 @@ router.post("/po-lot-lines/:lineId/split", asyncHandler(controller.splitLotLine)
 
 router.get("/delivery-orders", asyncHandler(controller.listDeliveryOrders));
 router.get("/logistics-tasks", asyncHandler(controller.listLogisticsTasks));
+router.get("/tasks", asyncHandler(controller.listTasks));
+router.get("/tasks/:id", asyncHandler(controller.getTask));
+router.patch("/tasks/:id", asyncHandler(controller.updateTask));
+router.post("/tasks/:id/assign", asyncHandler(controller.assignTask));
 router.post("/delivery-orders/from-lots", asyncHandler(controller.createDeliveryOrderFromLots));
 router.get("/delivery-orders/:id/lots", asyncHandler(controller.listDeliveryOrderLots));
 router.get("/delivery-orders/:id/lines", asyncHandler(controller.listDeliveryOrderLines));
@@ -55,6 +61,7 @@ router.get("/delivery-orders/:id/quotations", asyncHandler(controller.listQuotat
 router.post("/delivery-orders/:id/quotations", asyncHandler(controller.createQuotationForDeliveryOrder));
 router.post("/delivery-orders/:id/ready-for-quotation", asyncHandler(controller.markDeliveryOrderReadyForQuotation));
 router.post("/delivery-orders/:id/cancel", asyncHandler(controller.cancelDeliveryOrder));
+router.patch("/delivery-orders/:id", asyncHandler(controller.updateDeliveryOrder));
 router.get("/delivery-orders/:id", asyncHandler(controller.getDeliveryOrder));
 
 router.get("/quotations", asyncHandler(controller.listQuotations));
@@ -78,6 +85,7 @@ router.post("/shipments/:id/milestones/:code/done", asyncHandler(controller.mark
 router.get("/shipments/:id/documents", asyncHandler(controller.listShipmentDocuments));
 router.post("/shipments/:id/documents", asyncHandler(controller.createShipmentDocument));
 router.post("/shipments/:id/cancel", asyncHandler(controller.cancelShipment));
+router.patch("/shipments/:id", asyncHandler(controller.updateShipment));
 router.get("/shipments/:shipmentId/customs-declarations", asyncHandler(controller.listCustomsDeclarationsByShipment));
 router.post("/shipments/:shipmentId/customs-declarations", asyncHandler(controller.createCustomsDeclaration));
 router.post("/shipments/:shipmentId/carrier-delivery-orders", asyncHandler(controller.createCarrierDeliveryOrder));

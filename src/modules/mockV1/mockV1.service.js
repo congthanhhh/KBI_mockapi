@@ -34,7 +34,8 @@ const collections = {
     carrierDeliveryOrders: "carrier-delivery-orders",
     domesticTransportOrders: "domestic-transport-orders",
     domesticTransportOrderLines: "domestic-transport-order-lines",
-    logisticsTasks: "logistics-tasks"
+    logisticsTasks: "logistics-tasks",
+    taskListScreen: "screens/task-list"
 };
 
 const collectionAliases = Object.freeze({
@@ -83,6 +84,26 @@ const shipmentStatusByMilestone = Object.freeze({
     CUSTOMS_CLEARED: "CUSTOMS_CLEARED",
     DELIVERED: "DELIVERED"
 });
+
+const taskStages = Object.freeze([
+    "SUPPLIER_CONFIRMATION",
+    "LOT_PLANNING",
+    "INTERNAL_DO",
+    "QUOTATION",
+    "SHIPMENT",
+    "CUSTOMS",
+    "CARRIER_DO",
+    "DTO"
+]);
+
+const taskStatuses = Object.freeze([
+    "PENDING",
+    "IN_PROGRESS",
+    "WAITING",
+    "BLOCKED",
+    "COMPLETED",
+    "CANCELLED"
+]);
 
 export async function getMockHealth() {
     const names = await repo.listCollectionNames();
@@ -355,6 +376,32 @@ export async function listPurchaseOrderLines(id) {
     return getPurchaseOrderLines(id);
 }
 
+export async function updatePurchaseOrder(id, body) {
+    await requireRecord(collections.purchaseOrders, id, "Purchase order not found");
+    const allowedFields = [
+        "po_no",
+        "contract_no",
+        "supplier_id",
+        "po_type",
+        "incoterm_id",
+        "payment_term",
+        "currency_code",
+        "currency_id",
+        "exchange_rate",
+        "status",
+        "expected_etd",
+        "expected_eta",
+        "transport_mode_id",
+        "notes"
+    ];
+    const patch = Object.fromEntries(
+        Object.entries(pick(body, allowedFields)).filter(([, value]) => value !== undefined)
+    );
+
+    await repo.update(collections.purchaseOrders, id, patch);
+    return getPurchaseOrder(id);
+}
+
 export async function sendPurchaseOrder(id) {
     return updatePurchaseOrderStatus(id, "SENT");
 }
@@ -475,10 +522,12 @@ export async function createPurchaseOrder(body) {
         incoterm_id: body.incoterm_id || "inc_fob",
         payment_term: body.payment_term || null,
         currency_code: body.currency_code || "USD",
+        currency_id: body.currency_id || null,
         exchange_rate: body.exchange_rate || 25000,
         status: body.status || "CONFIRMED",
         expected_etd: body.expected_etd || null,
         expected_eta: body.expected_eta || null,
+        transport_mode_id: body.transport_mode_id || null,
         notes: body.notes || null
     });
     const lot = await repo.insert(collections.lots, {
@@ -845,6 +894,65 @@ export async function listLogisticsTasks() {
     return active(collections.logisticsTasks);
 }
 
+export async function listTasks(query = {}) {
+    const screen = await readTaskListScreen();
+    const items = filterTasks(screen.items || [], query);
+
+    return {
+        data: {
+            items,
+            summary: buildTaskSummary(items),
+            filters: screen.filters || {}
+        },
+        meta: {
+            total: items.length
+        }
+    };
+}
+
+export async function getTask(id) {
+    const detail = await readScreenOrNull(taskDetailCollectionName(id));
+
+    if (detail) {
+        return detail;
+    }
+
+    const task = await findTaskItem(id);
+
+    if (!task) {
+        throw apiError("NOT_FOUND", "Task not found", { id }, 404);
+    }
+
+    return {
+        ...task,
+        description: null,
+        related_records: {},
+        activity: []
+    };
+}
+
+export async function listPurchaseOrderTasks(purchaseOrderId) {
+    const purchaseOrder = await requireRecord(collections.purchaseOrders, purchaseOrderId, "Purchase order not found");
+    const screen = await readScreenOrNull(poTasksCollectionName(purchaseOrderId));
+
+    if (screen) {
+        return screen;
+    }
+
+    const taskList = await readTaskListScreen();
+    return buildPurchaseOrderTaskScreen(purchaseOrder, taskList.items || []);
+}
+
+export async function updateTask(id, body) {
+    const patch = buildTaskPatch(body);
+    return persistTaskPatch(id, patch);
+}
+
+export async function assignTask(id, body) {
+    const assignee = normalizeAssignee(body);
+    return persistTaskPatch(id, { assignee });
+}
+
 export async function getDeliveryOrder(id) {
     const deliveryOrder = await requireRecord(collections.deliveryOrders, id, "Delivery order not found");
     const [doLots, doLines, context] = await Promise.all([
@@ -905,6 +1013,32 @@ export async function cancelDeliveryOrder(id) {
     return updateDeliveryOrderStatus(id, "CANCELLED");
 }
 
+export async function updateDeliveryOrder(id, body) {
+    await requireRecord(collections.deliveryOrders, id, "Delivery order not found");
+    const allowedFields = [
+        "delivery_order_no",
+        "purchase_order_id",
+        "transport_mode_id",
+        "status",
+        "requested_pickup_date",
+        "planned_cargo_ready_date",
+        "planned_etd",
+        "planned_eta",
+        "origin_address",
+        "destination_address",
+        "warehouse_name",
+        "requested_by",
+        "handled_by",
+        "notes"
+    ];
+    const patch = Object.fromEntries(
+        Object.entries(pick(body, allowedFields)).filter(([, value]) => value !== undefined)
+    );
+
+    await repo.update(collections.deliveryOrders, id, patch);
+    return getDeliveryOrder(id);
+}
+
 export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
     const deliveryOrder = await requireRecord(collections.deliveryOrders, deliveryOrderId, "Delivery order not found");
     const [quotations, chargeLines] = await Promise.all([
@@ -949,16 +1083,23 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
     for (const [index, line] of sourceChargeLines.entries()) {
         const quantity = Number(line.quantity ?? 1);
         const unitPrice = Number(line.unit_price ?? line.amount ?? 0);
+        const amount = Number(line.amount ?? quantity * unitPrice);
+        const taxRate = Number(line.tax_rate || 0);
+        const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
         await repo.insert(collections.quotationChargeLines, {
             id: formatId("qt_line", start + index),
             quotation_id: quotation.id,
+            line_no: line.line_no ?? index + 1,
             charge_type: line.charge_type || "OTHER",
             description: line.description || null,
             quantity,
+            unit: line.unit || "SET",
             unit_price: unitPrice,
-            amount: Number(line.amount ?? quantity * unitPrice),
+            amount,
             currency_code: line.currency_code || quotation.currency_code,
-            tax_rate: Number(line.tax_rate || 0),
+            tax_rate: taxRate,
+            tax_amount: taxAmount,
+            total_amount: Number(line.total_amount ?? amount + taxAmount),
             note: line.note || null
         });
     }
@@ -1000,9 +1141,11 @@ export async function listQuotations() {
 
 export async function listQuotationsByDeliveryOrder(deliveryOrderId) {
     await requireRecord(collections.deliveryOrders, deliveryOrderId, "Delivery order not found");
-    return (await active(collections.quotations)).filter((quotation) => (
+    const quotations = (await active(collections.quotations)).filter((quotation) => (
         quotation.ref_type === "DELIVERY_ORDER" && quotation.ref_id === deliveryOrderId
     ));
+
+    return Promise.all(quotations.map((quotation) => getQuotation(quotation.id)));
 }
 
 export async function createQuotationVersion(id, body = {}) {
@@ -1060,23 +1203,30 @@ export async function createQuotationChargeLine(id, body) {
     const chargeLines = await active(collections.quotationChargeLines);
     const quantity = Number(body.quantity ?? 1);
     const unitPrice = Number(body.unit_price ?? body.amount ?? 0);
+    const amount = Number(body.amount ?? quantity * unitPrice);
+    const taxRate = Number(body.tax_rate || 0);
+    const taxAmount = Number(body.tax_amount ?? amount * taxRate / 100);
     return repo.insert(collections.quotationChargeLines, {
         id: nextId(chargeLines, "qt_line"),
         quotation_id: id,
+        line_no: body.line_no ?? chargeLines.filter((line) => line.quotation_id === id).length + 1,
         charge_type: body.charge_type || "OTHER",
         description: body.description || null,
         quantity,
+        unit: body.unit || "SET",
         unit_price: unitPrice,
-        amount: Number(body.amount ?? quantity * unitPrice),
+        amount,
         currency_code: body.currency_code || "USD",
-        tax_rate: Number(body.tax_rate || 0),
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        total_amount: Number(body.total_amount ?? amount + taxAmount),
         note: body.note || null
     });
 }
 
 export async function updateQuotationChargeLine(lineId, body) {
     await requireRecord(collections.quotationChargeLines, lineId, "Quotation charge line not found");
-    const allowedFields = ["charge_type", "description", "quantity", "unit_price", "amount", "currency_code", "tax_rate", "note"];
+    const allowedFields = ["line_no", "charge_type", "description", "quantity", "unit", "unit_price", "amount", "currency_code", "tax_rate", "tax_amount", "total_amount", "note"];
     return repo.update(collections.quotationChargeLines, lineId, pick(body, allowedFields));
 }
 
@@ -1095,14 +1245,47 @@ export async function listQuotationEvents(id) {
 
 export async function getQuotation(id) {
     const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
-    const [chargeLines, events] = await Promise.all([
+    const [chargeLines, events, suppliers, currencies] = await Promise.all([
         active(collections.quotationChargeLines),
-        active(collections.quotationEvents)
+        active(collections.quotationEvents),
+        active(collections.suppliers),
+        active(collections.currencies)
     ]);
+    const quotationChargeLines = chargeLines
+        .filter((line) => line.quotation_id === id)
+        .map((line, index) => enrichQuotationChargeLine(line, quotation, index));
+
     return {
         ...quotation,
-        charge_lines: chargeLines.filter((line) => line.quotation_id === id),
+        supplier: suppliers.find((supplier) => supplier.id === quotation.supplier_id) || null,
+        currency: currencies.find((currency) => (
+            currency.id === quotation.currency_id ||
+            currency.currency_code === quotation.currency_code ||
+            currency.id === quotation.currency_code
+        )) || null,
+        charge_lines: quotationChargeLines,
         events: events.filter((event) => event.quotation_id === id)
+    };
+}
+
+function enrichQuotationChargeLine(line, quotation, index) {
+    const quantity = Number(line.quantity ?? 1);
+    const unitPrice = Number(line.unit_price ?? 0);
+    const amount = Number(line.amount ?? quantity * unitPrice);
+    const taxRate = Number(line.tax_rate ?? 0);
+    const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
+
+    return {
+        ...line,
+        line_no: line.line_no ?? index + 1,
+        unit: line.unit ?? "SET",
+        currency_code: line.currency_code || quotation.currency_code || null,
+        quantity,
+        unit_price: unitPrice,
+        amount,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        total_amount: Number(line.total_amount ?? amount + taxAmount)
     };
 }
 
@@ -1261,6 +1444,37 @@ export async function deleteShipmentDocument(documentId) {
 
 export async function cancelShipment(id) {
     return updateShipmentStatus(id, "CANCELLED");
+}
+
+export async function updateShipment(id, body) {
+    await requireRecord(collections.shipments, id, "Shipment not found");
+    const allowedFields = [
+        "shipment_no",
+        "delivery_order_id",
+        "mode",
+        "forwarder_id",
+        "carrier",
+        "vessel_flight",
+        "voyage_no",
+        "bl_awb_no",
+        "container_no",
+        "pol",
+        "pod",
+        "etd",
+        "eta",
+        "atd",
+        "ata",
+        "status",
+        "customs_channel",
+        "final_quotation_id",
+        "notes"
+    ];
+    const patch = Object.fromEntries(
+        Object.entries(pick(body, allowedFields)).filter(([, value]) => value !== undefined)
+    );
+
+    await repo.update(collections.shipments, id, patch);
+    return getShipment(id);
 }
 
 export async function createCustomsDeclaration(shipmentId, body) {
@@ -1607,8 +1821,19 @@ async function updateDeliveryOrderStatus(id, status) {
 }
 
 async function updateQuotationStatus(id, status) {
-    await requireRecord(collections.quotations, id, "Quotation not found");
-    await repo.update(collections.quotations, id, { status });
+    const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
+    const now = new Date().toISOString();
+    await repo.update(collections.quotations, id, {
+        status,
+        confirmed_at: status === "CONFIRMED_BY_KBI" ? now : quotation.confirmed_at || null,
+        rejected_at: status === "REJECTED" ? now : quotation.rejected_at || null,
+        cancelled_at: status === "CANCELLED" ? now : quotation.cancelled_at || null
+    });
+    if (status === "CONFIRMED_BY_KBI" && quotation.ref_type === "DELIVERY_ORDER") {
+        await repo.update(collections.deliveryOrders, quotation.ref_id, {
+            status: "QUOTATION_CONFIRMED"
+        });
+    }
     return getQuotation(id);
 }
 
@@ -1634,6 +1859,205 @@ async function updateDomesticTransportOrderStatus(id, status, extraPatch = {}) {
         status
     });
     return getDomesticTransportOrder(id);
+}
+
+async function readTaskListScreen() {
+    const screen = await readScreenOrNull(collections.taskListScreen);
+    if (screen) {
+        return screen;
+    }
+
+    return {
+        items: []
+    };
+}
+
+async function readScreenOrNull(collectionName) {
+    try {
+        return await repo.readCollection(collectionName);
+    } catch (err) {
+        if (err.code === "ENOENT") {
+            return null;
+        }
+        throw err;
+    }
+}
+
+async function findTaskItem(id) {
+    const screen = await readTaskListScreen();
+    return (screen.items || []).find((task) => task.id === id) || null;
+}
+
+function filterTasks(items, query) {
+    const filters = pick(query, ["status", "priority", "stage", "role", "ref_type", "ref_id", "assignee_id"]);
+
+    return items.filter((task) => Object.entries(filters).every(([key, value]) => {
+        if (value === undefined || value === null || value === "") {
+            return true;
+        }
+
+        if (key === "assignee_id") {
+            return String(task.assignee?.id || task.assignee?.user_id || "") === String(value);
+        }
+
+        return String(task[key] || "") === String(value);
+    }));
+}
+
+function buildTaskSummary(items) {
+    return {
+        total: items.length,
+        pending: items.filter((task) => task.status === "PENDING").length,
+        in_progress: items.filter((task) => task.status === "IN_PROGRESS").length,
+        blocked: items.filter((task) => task.status === "BLOCKED").length,
+        completed: items.filter((task) => task.status === "COMPLETED").length,
+        overdue: items.filter((task) => task.status !== "COMPLETED" && task.due_at && new Date(task.due_at) < new Date()).length
+    };
+}
+
+function buildTaskPatch(body = {}) {
+    const patch = {};
+
+    if (body.status !== undefined) {
+        if (!taskStatuses.includes(body.status)) {
+            throw apiError("VALIDATION_ERROR", "Invalid task status", { status: body.status }, 400);
+        }
+        patch.status = body.status;
+    }
+
+    if (body.progress !== undefined) {
+        const progress = Number(body.progress);
+        if (!Number.isFinite(progress) || progress < 0 || progress > 100) {
+            throw apiError("VALIDATION_ERROR", "progress must be between 0 and 100", { progress: body.progress }, 400);
+        }
+        patch.progress = progress;
+    }
+
+    for (const field of ["note", "blocked_reason", "priority", "due_at", "completed_at"]) {
+        if (body[field] !== undefined) {
+            patch[field] = body[field];
+        }
+    }
+
+    if (body.notes !== undefined && body.note === undefined) {
+        patch.note = body.notes;
+    }
+
+    if (patch.status === "COMPLETED" && patch.completed_at === undefined) {
+        patch.completed_at = new Date().toISOString();
+        patch.progress = patch.progress ?? 100;
+    }
+
+    return patch;
+}
+
+function normalizeAssignee(body = {}) {
+    const source = body.assignee || body;
+    const id = source.id || source.user_id;
+
+    if (!id) {
+        throw apiError("VALIDATION_ERROR", "assignee.id is required", { field: "assignee.id" }, 400);
+    }
+
+    return {
+        id,
+        name: source.name || "Unassigned",
+        department: source.department || null
+    };
+}
+
+async function persistTaskPatch(id, patch) {
+    const screen = await readTaskListScreen();
+    const index = (screen.items || []).findIndex((task) => task.id === id);
+
+    if (index < 0) {
+        throw apiError("NOT_FOUND", "Task not found", { id }, 404);
+    }
+
+    const updatedTask = {
+        ...screen.items[index],
+        ...patch,
+        update_at: new Date().toISOString()
+    };
+    screen.items[index] = updatedTask;
+    screen.summary = buildTaskSummary(screen.items);
+    await repo.writeCollection(collections.taskListScreen, screen);
+    await persistTaskDetailPatch(id, patch);
+    await persistPurchaseOrderTaskPatch(updatedTask, patch);
+
+    return getTask(id);
+}
+
+async function persistTaskDetailPatch(id, patch) {
+    const collectionName = taskDetailCollectionName(id);
+    const detail = await readScreenOrNull(collectionName);
+
+    if (!detail) {
+        return;
+    }
+
+    await repo.writeCollection(collectionName, {
+        ...detail,
+        ...patch,
+        update_at: new Date().toISOString(),
+        activity: [
+            {
+                event_code: "TASK_UPDATED",
+                event_at: new Date().toISOString(),
+                note: "Task updated in mock API."
+            },
+            ...(detail.activity || [])
+        ]
+    });
+}
+
+async function persistPurchaseOrderTaskPatch(task, patch) {
+    if (task.ref_type !== "PURCHASE_ORDER" || !task.ref_id) {
+        return;
+    }
+
+    const collectionName = poTasksCollectionName(task.ref_id);
+    const screen = await readScreenOrNull(collectionName);
+
+    if (!screen) {
+        return;
+    }
+
+    const taskGroups = (screen.task_groups || []).map((group) => ({
+        ...group,
+        tasks: (group.tasks || []).map((row) => row.id === task.id ? { ...row, ...patch, update_at: new Date().toISOString() } : row)
+    }));
+
+    await repo.writeCollection(collectionName, {
+        ...screen,
+        task_groups: taskGroups
+    });
+}
+
+function buildPurchaseOrderTaskScreen(purchaseOrder, items) {
+    const poTasks = items.filter((task) => task.ref_type === "PURCHASE_ORDER" && task.ref_id === purchaseOrder.id);
+
+    return {
+        purchase_order: {
+            id: purchaseOrder.id,
+            po_no: purchaseOrder.po_no,
+            status: purchaseOrder.status
+        },
+        task_groups: taskStages.map((stage) => ({
+            stage,
+            tasks: poTasks
+                .filter((task) => task.stage === stage)
+                .sort((left, right) => String(left.due_at || "").localeCompare(String(right.due_at || "")))
+        }))
+    };
+}
+
+function taskDetailCollectionName(id) {
+    return `screens/task-detail-${id}`;
+}
+
+function poTasksCollectionName(purchaseOrderId) {
+    return `screens/po-tasks-${purchaseOrderId}`;
 }
 
 async function active(collectionName) {

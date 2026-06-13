@@ -69,6 +69,7 @@ Purchase Orders:
 - `GET /api/v1/purchase-orders`
 - `POST /api/v1/purchase-orders`
 - `GET /api/v1/purchase-orders/:id`
+- `PATCH /api/v1/purchase-orders/:id`
 - `GET /api/v1/purchase-orders/:id/lines`
 - `POST /api/v1/purchase-orders/:id/send`
 - `POST /api/v1/purchase-orders/:id/confirm`
@@ -148,6 +149,7 @@ Delivery Orders:
 - `GET /api/v1/delivery-orders/:id/lines`
 - `POST /api/v1/delivery-orders/:id/ready-for-quotation`
 - `POST /api/v1/delivery-orders/:id/cancel`
+- `PATCH /api/v1/delivery-orders/:id`
 
 Delivery order rows include frontend-ready logistics fields for the DO board:
 
@@ -165,11 +167,67 @@ Delivery order rows include frontend-ready logistics fields for the DO board:
 
 Delivery order line rows include joined `item`, `purchase_order_line`, `item_code`, `item_name`, `hs_code`, `qty_ordered`, and `gross_weight_kg` so allocation, weight, and item metadata can be rendered without placeholder data. They also include line-level logistics context from linked shipment data: `lot`, `lot_no`, `shipment`, `shipment_line`, `shipment_number`, `container_no`, `route_origin`, `route_destination`, `etd`, and `eta`.
 
+`PATCH /api/v1/delivery-orders/:id` updates editable DO header fields such as `status`, `transport_mode_id`, planned dates, route addresses, `warehouse_name`, and `notes`, then returns the enriched DO detail with lots and lines.
+
 Dashboard Tasks:
 
 - `GET /api/v1/logistics-tasks`
+- `GET /api/v1/tasks`
+- `GET /api/v1/tasks/:id`
+- `GET /api/v1/purchase-orders/:id/tasks`
+- `PATCH /api/v1/tasks/:id`
+- `POST /api/v1/tasks/:id/assign`
 
 `GET /api/v1/logistics-tasks` returns frontend-ready task rows for dashboard urgency, overdue task grouping, task role progress, and monthly completed-task throughput.
+
+`GET /api/v1/tasks` returns screen-ready Task DTO rows from `mock-data/screens/task-list.json`:
+
+- `items[]`
+- `summary`
+- `filters`
+
+Supported query filters:
+
+- `status`
+- `priority`
+- `stage`
+- `role`
+- `ref_type`
+- `ref_id`
+- `assignee_id`
+
+`GET /api/v1/purchase-orders/:id/tasks` returns task groups by PO flow stage:
+
+- `SUPPLIER_CONFIRMATION`
+- `LOT_PLANNING`
+- `INTERNAL_DO`
+- `QUOTATION`
+- `SHIPMENT`
+- `CUSTOMS`
+- `CARRIER_DO`
+- `DTO`
+
+`PATCH /api/v1/tasks/:id` updates only mock task screen state fields:
+
+- `status`
+- `note`
+- `progress`
+- `completed_at`
+- `blocked_reason`
+- `priority`
+- `due_at`
+
+`POST /api/v1/tasks/:id/assign` updates only mock task assignee:
+
+```json
+{
+  "assignee": {
+    "id": "user_buyer_001",
+    "name": "Nguyen Van A",
+    "department": "Procurement"
+  }
+}
+```
 
 Quotations:
 
@@ -188,11 +246,14 @@ Quotations:
 - `DELETE /api/v1/quotation-charge-lines/:lineId`
 - `GET /api/v1/quotations/:id/events`
 
+Quotation detail responses include `supplier`, `currency`, `charge_lines`, and `events`. Charge lines are normalized with `line_no`, `unit`, `tax_amount`, and `total_amount` so quotation tables can render totals even when older mock rows only contain base amounts.
+
 Shipments:
 
 - `GET /api/v1/shipments`
 - `GET /api/v1/shipments/:id`
 - `POST /api/v1/shipments/from-delivery-order`
+- `PATCH /api/v1/shipments/:id`
 - `GET /api/v1/shipments/:id/lines`
 - `GET /api/v1/shipments/:id/milestones`
 - `POST /api/v1/shipments/:id/milestones/:code/done`

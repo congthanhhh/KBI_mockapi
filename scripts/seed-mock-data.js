@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = fileURLToPath(import.meta.url);
 const dataDir = path.join(rootDir, "mock-data");
+const screensDir = path.join(dataDir, "screens");
 const now = "2026-06-12T00:00:00.000Z";
 
 const base = (record) => ({
@@ -462,19 +463,238 @@ files["purchase-orders"] = enrichPurchaseOrders(files);
 files["po-lot-lines"] = enrichPoLotLines(files);
 files["purchase-order-lines"] = enrichPurchaseOrderLines(files);
 
+const screenFiles = buildScreenFiles(files);
+
 export async function seedMockData() {
     await fs.mkdir(dataDir, { recursive: true });
+    await fs.mkdir(screensDir, { recursive: true });
 
     for (const [name, records] of Object.entries(files)) {
         await fs.writeFile(path.join(dataDir, `${name}.json`), `${JSON.stringify(records, null, 2)}\n`, "utf8");
     }
 
-    return Object.keys(files);
+    for (const [name, screen] of Object.entries(screenFiles)) {
+        await fs.writeFile(path.join(screensDir, `${name}.json`), `${JSON.stringify(screen, null, 2)}\n`, "utf8");
+    }
+
+    return [
+        ...Object.keys(files),
+        ...Object.keys(screenFiles).map((name) => `screens/${name}`)
+    ];
 }
 
 if (process.argv[1] === scriptPath) {
     const seededCollections = await seedMockData();
     console.log(`Seeded ${seededCollections.length} mock-data collections.`);
+}
+
+function buildScreenFiles(seedFiles) {
+    const purchaseOrdersById = Object.fromEntries(seedFiles["purchase-orders"].map((purchaseOrder) => [purchaseOrder.id, purchaseOrder]));
+    const items = [
+        taskScreenItem({
+            id: "task_001",
+            task_no: "TASK-001",
+            task_name: "Confirm supplier cargo ready date",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "SUPPLIER_CONFIRMATION",
+            role: "BUYER",
+            assignee: { id: "user_buyer_001", name: "Nguyen Van A", department: "Procurement" },
+            status: "PENDING",
+            priority: "HIGH",
+            due_at: "2026-07-01T17:00:00+07:00",
+            progress: 0,
+            note: "Supplier needs to confirm cargo ready date before LOT planning."
+        }),
+        taskScreenItem({
+            id: "task_002",
+            task_no: "TASK-002",
+            task_name: "Review default LOT allocation",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "LOT_PLANNING",
+            role: "LOGISTICS_PLANNER",
+            assignee: { id: "user_log_001", name: "Tran Minh", department: "Logistics" },
+            status: "IN_PROGRESS",
+            priority: "HIGH",
+            due_at: "2026-07-02T17:00:00+07:00",
+            progress: 45,
+            note: "Check whether the default LOT should be split into multiple cargo-ready batches."
+        }),
+        taskScreenItem({
+            id: "task_003",
+            task_no: "TASK-003",
+            task_name: "Create internal delivery order",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "INTERNAL_DO",
+            role: "LOGISTICS_PLANNER",
+            assignee: { id: "user_log_002", name: "Le Hoai", department: "Logistics" },
+            status: "PENDING",
+            priority: "MEDIUM",
+            due_at: "2026-07-03T17:00:00+07:00",
+            progress: 0,
+            note: "Create internal DO after LOT allocation is confirmed."
+        }),
+        taskScreenItem({
+            id: "task_004",
+            task_no: "TASK-004",
+            task_name: "Request freight quotation",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "QUOTATION",
+            role: "PIC_MANAGER",
+            assignee: { id: "user_pic_001", name: "Pham Quang", department: "Logistics" },
+            status: "BLOCKED",
+            priority: "HIGH",
+            due_at: "2026-07-04T12:00:00+07:00",
+            progress: 20,
+            blocked_reason: "Waiting for confirmed cargo ready date.",
+            note: "Forwarder quotation can start after supplier confirmation."
+        }),
+        taskScreenItem({
+            id: "task_005",
+            task_no: "TASK-005",
+            task_name: "Track shipment booking",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "SHIPMENT",
+            role: "PORT_OFFICER",
+            assignee: { id: "user_port_001", name: "Hoang Nam", department: "Port Ops" },
+            status: "PENDING",
+            priority: "MEDIUM",
+            due_at: "2026-07-06T17:00:00+07:00",
+            progress: 0,
+            note: "Track booking and BL/AWB progress once shipment is created."
+        }),
+        taskScreenItem({
+            id: "task_006",
+            task_no: "TASK-006",
+            task_name: "Prepare customs declaration",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "CUSTOMS",
+            role: "CUSTOMS_OFFICER",
+            assignee: { id: "user_customs_001", name: "Quoc Bao", department: "Customs" },
+            status: "PENDING",
+            priority: "MEDIUM",
+            due_at: "2026-07-08T17:00:00+07:00",
+            progress: 0,
+            note: "Prepare HS code and invoice data after shipment documents are available."
+        }),
+        taskScreenItem({
+            id: "task_007",
+            task_no: "TASK-007",
+            task_name: "Collect carrier delivery order",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "CARRIER_DO",
+            role: "PORT_OFFICER",
+            assignee: { id: "user_port_002", name: "Gia Huy", department: "Port Ops" },
+            status: "PENDING",
+            priority: "LOW",
+            due_at: "2026-07-10T12:00:00+07:00",
+            progress: 0,
+            note: "Collect carrier DO after customs clearance."
+        }),
+        taskScreenItem({
+            id: "task_008",
+            task_no: "TASK-008",
+            task_name: "Dispatch domestic transport order",
+            ref_id: "po_001",
+            ref_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+            stage: "DTO",
+            role: "WAREHOUSE_STAFF",
+            assignee: { id: "user_wh_001", name: "Minh Duc", department: "Warehouse" },
+            status: "PENDING",
+            priority: "MEDIUM",
+            due_at: "2026-07-11T17:00:00+07:00",
+            progress: 0,
+            note: "Dispatch truck after carrier DO release."
+        })
+    ];
+    const poTaskScreen = buildPoTaskScreen(purchaseOrdersById.po_001, items);
+
+    return {
+        "task-list": {
+            items,
+            summary: taskScreenSummary(items),
+            filters: {
+                stages: taskStages(),
+                statuses: ["PENDING", "IN_PROGRESS", "WAITING", "BLOCKED", "COMPLETED", "CANCELLED"],
+                priorities: ["LOW", "MEDIUM", "HIGH", "URGENT"]
+            }
+        },
+        "task-detail-task_001": {
+            ...items[0],
+            description: "Screen-ready mock detail for confirming supplier cargo readiness before the PO can move through LOT planning.",
+            related_records: {
+                purchase_order: {
+                    id: "po_001",
+                    po_no: purchaseOrdersById.po_001?.po_no || "PO-KBI-2026-001",
+                    status: purchaseOrdersById.po_001?.status || "CONFIRMED"
+                }
+            },
+            activity: [
+                {
+                    event_code: "TASK_CREATED",
+                    event_at: "2026-06-12T02:00:00.000Z",
+                    note: "Mock task created for supplier confirmation stage."
+                }
+            ]
+        },
+        "po-tasks-po_001": poTaskScreen
+    };
+}
+
+function taskScreenItem(record) {
+    return {
+        create_at: now,
+        update_at: now,
+        delete_at: null,
+        is_delete: false,
+        ref_type: "PURCHASE_ORDER",
+        completed_at: null,
+        blocked_reason: null,
+        ...record
+    };
+}
+
+function buildPoTaskScreen(purchaseOrder, items) {
+    return {
+        purchase_order: {
+            id: purchaseOrder?.id || "po_001",
+            po_no: purchaseOrder?.po_no || "PO-KBI-2026-001",
+            status: purchaseOrder?.status || "CONFIRMED"
+        },
+        task_groups: taskStages().map((stage) => ({
+            stage,
+            tasks: items.filter((task) => task.ref_type === "PURCHASE_ORDER" && task.ref_id === "po_001" && task.stage === stage)
+        }))
+    };
+}
+
+function taskStages() {
+    return [
+        "SUPPLIER_CONFIRMATION",
+        "LOT_PLANNING",
+        "INTERNAL_DO",
+        "QUOTATION",
+        "SHIPMENT",
+        "CUSTOMS",
+        "CARRIER_DO",
+        "DTO"
+    ];
+}
+
+function taskScreenSummary(items) {
+    return {
+        total: items.length,
+        pending: items.filter((task) => task.status === "PENDING").length,
+        in_progress: items.filter((task) => task.status === "IN_PROGRESS").length,
+        blocked: items.filter((task) => task.status === "BLOCKED").length,
+        completed: items.filter((task) => task.status === "COMPLETED").length
+    };
 }
 
 function enrichPurchaseOrderLines(seedFiles) {

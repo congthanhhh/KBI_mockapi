@@ -81,6 +81,10 @@ export async function createPurchaseOrder(req, res) {
     res.status(201).json(success(await service.createPurchaseOrder(req.body)));
 }
 
+export async function updatePurchaseOrder(req, res) {
+    res.json(success(await service.updatePurchaseOrder(req.params.id, req.body)));
+}
+
 export async function listPurchaseOrderLines(req, res) {
     res.json(success(await service.listPurchaseOrderLines(req.params.id)));
 }
@@ -153,6 +157,27 @@ export async function listLogisticsTasks(req, res) {
     res.json(success(await service.listLogisticsTasks()));
 }
 
+export async function listTasks(req, res) {
+    const result = await service.listTasks(req.query);
+    res.json(success(result.data, result.meta));
+}
+
+export async function getTask(req, res) {
+    res.json(success(await service.getTask(req.params.id)));
+}
+
+export async function listPurchaseOrderTasks(req, res) {
+    res.json(success(await service.listPurchaseOrderTasks(req.params.id)));
+}
+
+export async function updateTask(req, res) {
+    res.json(success(await service.updateTask(req.params.id, req.body)));
+}
+
+export async function assignTask(req, res) {
+    res.json(success(await service.assignTask(req.params.id, req.body)));
+}
+
 export async function getDeliveryOrder(req, res) {
     res.json(success(await service.getDeliveryOrder(req.params.id)));
 }
@@ -175,6 +200,10 @@ export async function markDeliveryOrderReadyForQuotation(req, res) {
 
 export async function cancelDeliveryOrder(req, res) {
     res.json(success(await service.cancelDeliveryOrder(req.params.id)));
+}
+
+export async function updateDeliveryOrder(req, res) {
+    res.json(success(await service.updateDeliveryOrder(req.params.id, req.body)));
 }
 
 export async function createQuotationForDeliveryOrder(req, res) {
@@ -275,6 +304,10 @@ export async function deleteShipmentDocument(req, res) {
 
 export async function cancelShipment(req, res) {
     res.json(success(await service.cancelShipment(req.params.id)));
+}
+
+export async function updateShipment(req, res) {
+    res.json(success(await service.updateShipment(req.params.id, req.body)));
 }
 
 export async function listCustomsDeclarationsByShipment(req, res) {

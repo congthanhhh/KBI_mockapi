@@ -15,6 +15,7 @@ Use this mode for:
 - Customs declaration.
 - Carrier Delivery Order.
 - Domestic Transport Order.
+- Task dashboard and PO task workflow screens.
 
 ## Runtime
 
@@ -112,9 +113,23 @@ Extended mock entities:
 - `domestic_transport_orders`
 - `domestic_transport_order_lines`
 
+Screen DTO files:
+
+- `screens/task-list`
+- `screens/task-detail-task_001`
+- `screens/po-tasks-po_001`
+
 Core flow collections seed realistic PO-to-DTO scenarios with at least 9 records for item, PO, DO, shipment, customs, carrier DO, and DTO tables. `shipment_milestones` has 90 records for 9 shipments times 10 milestones. Smaller reference collections such as currencies, incoterms, transport modes, suppliers, and item groups remain compact lookup sets.
 
 `logistics_tasks` seeds dashboard-ready work items across quotation, booking, document processing, customs declaration, warehouse delivery, and finance review so urgency cards, overdue task cards, task role progress, and monthly throughput do not render empty in the frontend demo.
+
+Task screen APIs read and write `mock-data/screens/*.json`:
+
+- `GET /api/v1/tasks` reads `screens/task-list`.
+- `GET /api/v1/tasks/:id` reads `screens/task-detail-:id` when available and falls back to `screens/task-list`.
+- `GET /api/v1/purchase-orders/:id/tasks` reads `screens/po-tasks-:id` when available and falls back to grouped task-list rows.
+- `PATCH /api/v1/tasks/:id` updates mock screen state only.
+- `POST /api/v1/tasks/:id/assign` updates mock screen assignee only.
 
 Purchase order list/detail responses are enriched at runtime from related mock collections:
 
