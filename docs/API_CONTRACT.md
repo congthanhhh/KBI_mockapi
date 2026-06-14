@@ -64,6 +64,8 @@ Master Data:
 - `GET /api/v1/items/:id`
 - `GET /api/v1/items/:id/customs-profiles`
 
+Master-data compatibility endpoints are mounted under `/api/*` at runtime and keep the list/detail/mutation response shapes used by the frontend. Supplier rows are normalized from legacy seed fields so the UI receives `supplier_roles`, `contact_email`, `contact_phone`, `default_currency`, `default_incoterm`, and `supplier_transport_modes`. Item rows are enriched with `item_group` and `customs_profiles`; tax profiles normalize legacy `preferential_tax_rate` into `preferential_import_duty_rate`.
+
 Purchase Orders:
 
 - `GET /api/v1/purchase-orders`
@@ -80,10 +82,13 @@ Purchase Orders:
 - `supplier`, `currency`, `incoterm`, `transport_mode`
 - `total_weight_kg`, `total_containers`, `total_lots`, `lot_ids`
 - `delayed_days`
+- `lines[]` enriched with `item` and `item_customs_profile`
 - `lot_summary: { total_weight_kg, total_containers, total_lots, lot_ids }`
 - `logistics_timeline.loading_port: { etd, atd }`
 - `logistics_timeline.unloading_port: { eta, ata }`
 - `logistics_timeline.warehouse: { eta, ata }`
+
+`GET /api/v1/purchase-orders` supports `page`, `limit`, `search`/`q`, `status`, and `supplier_id`. Search matches PO header fields, supplier, incoterm, transport mode, LOT, PO line, item, and customs profile display fields. The response meta includes `total` and `pagination`.
 
 The mock seed keeps PO timeline fields populated for UI testing:
 
@@ -105,6 +110,8 @@ Purchase order lines include frontend-ready logistics quantities:
 - `qty_received`
 - `expected_eta_line`
 - `notes`
+
+`POST /api/v1/purchase-orders` creates a new PO in `DRAFT` status, creates default `LOT-001`, and assigns the initial PO lines to that LOT. The user flow should then move through `Send PO` and Supplier Confirmation instead of skipping directly to `CONFIRMED`.
 
 Supplier Confirmation:
 
@@ -150,6 +157,8 @@ Delivery Orders:
 - `POST /api/v1/delivery-orders/:id/ready-for-quotation`
 - `POST /api/v1/delivery-orders/:id/cancel`
 - `PATCH /api/v1/delivery-orders/:id`
+
+`GET /api/v1/delivery-orders` supports `page`, `limit`, `search`/`q`, `status`, `purchase_order_id`, and `transport_mode_id`. The response meta includes `total` and `pagination`.
 
 Delivery order rows include frontend-ready logistics fields for the DO board:
 
@@ -246,7 +255,11 @@ Quotations:
 - `DELETE /api/v1/quotation-charge-lines/:lineId`
 - `GET /api/v1/quotations/:id/events`
 
+`GET /api/v1/quotations` supports `page`, `limit`, `search`/`q`, `ref_type`, `ref_id`, `status`, `supplier_id`, `from_date`, and `to_date`. The response meta includes `total` and `pagination`.
+
 Quotation detail responses include `supplier`, `currency`, `charge_lines`, and `events`. Charge lines are normalized with `line_no`, `unit`, `tax_amount`, and `total_amount` so quotation tables can render totals even when older mock rows only contain base amounts.
+
+Marking a quotation final sets `quotation.status = CONFIRMED_BY_KBI`, `quotation.is_final = true`, clears `is_final` from other quotations in the same `quotation_group_id`, and updates the linked delivery order to `QUOTATION_CONFIRMED`. `POST /api/v1/quotations/:id/confirm-by-kbi` follows the same finalization rule for compatibility.
 
 Shipments:
 
@@ -262,6 +275,8 @@ Shipments:
 - `PATCH /api/v1/shipment-documents/:documentId`
 - `DELETE /api/v1/shipment-documents/:documentId`
 - `POST /api/v1/shipments/:id/cancel`
+
+`GET /api/v1/shipments` supports `page`, `limit`, `search`/`q`, `status`, `mode`, `delivery_order_id`, `purchase_order_id`, `forwarder_id`, `transport_mode_id`, `from_date`, and `to_date`. The response meta includes `total` and `pagination`.
 
 Customs:
 
@@ -300,6 +315,15 @@ DTO:
 - `POST /api/v1/domestic-transport-orders/:id/deliver`
 - `POST /api/v1/domestic-transport-orders/:id/close`
 - `POST /api/v1/domestic-transport-orders/:id/cancel`
+
+Domestic transport order list/detail responses include frontend-ready fields for DTO screens:
+
+- `shipment`, `carrier_delivery_order`, `truck_vendor`
+- `lines[]` enriched with `item`, `purchase_order_line`, `item_customs_profile`, `lot`, `shipment_line`
+- line display fields: `item_code`, `item_name`, `item_description`, `hs_code`, `lot_no`, `qty_ordered`, `gross_weight_kg`
+- header totals: `total_qty`, `total_gross_weight_kg`
+
+`GET /api/v1/domestic-transport-orders` supports `page`, `limit`, `search`/`q`, `status`, `shipment_id`, and `truck_vendor_id`. Search matches DTO number, shipment number, truck vendor, driver, vehicle, origin, destination, and warehouse. The response meta includes `total` and `pagination`.
 
 Mock Debug:
 

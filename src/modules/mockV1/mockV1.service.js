@@ -229,14 +229,27 @@ export async function listItemCustomsProfiles(itemId) {
     return (await active(collections.itemCustomsProfiles)).filter((profile) => profile.item_id === itemId);
 }
 
-export async function listPurchaseOrders() {
+export async function listPurchaseOrders(query = {}) {
     const context = await getPurchaseOrderContext();
     const { purchaseOrders, suppliers } = context;
+    const search = searchTerm(query);
+    const status = String(query.status || "").trim();
+    const supplierId = String(query.supplier_id || "").trim();
 
-    return purchaseOrders.map((purchaseOrder) => enrichPurchaseOrder(purchaseOrder, {
-        ...context,
-        suppliers
-    }));
+    const items = purchaseOrders
+        .map((purchaseOrder) => enrichPurchaseOrder(purchaseOrder, {
+            ...context,
+            suppliers
+        }))
+        .filter((purchaseOrder) => {
+            if (status && purchaseOrder.status !== status) return false;
+            if (supplierId && purchaseOrder.supplier_id !== supplierId) return false;
+            if (!search) return true;
+            return purchaseOrderMatchesSearch(purchaseOrder, context, search);
+        })
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
+
+    return paginateResult(items, query);
 }
 
 export async function getPurchaseOrder(id) {
@@ -319,6 +332,26 @@ function enrichDeliveryOrder(deliveryOrder, context) {
     };
 }
 
+function deliveryOrderMatchesSearch(deliveryOrder, search) {
+    return [
+        deliveryOrder.id,
+        deliveryOrder.delivery_order_no,
+        deliveryOrder.do_no,
+        deliveryOrder.status,
+        deliveryOrder.origin_address,
+        deliveryOrder.destination_address,
+        deliveryOrder.warehouse_name,
+        deliveryOrder.notes,
+        deliveryOrder.linked_shipment_number,
+        deliveryOrder.purchase_order?.po_no,
+        deliveryOrder.purchase_order?.contract_no,
+        deliveryOrder.purchase_order?.supplier?.supplier_code,
+        deliveryOrder.purchase_order?.supplier?.supplier_name,
+        deliveryOrder.transport_mode?.mode_code,
+        deliveryOrder.transport_mode?.mode_name
+    ].some((value) => String(value || "").toLowerCase().includes(search));
+}
+
 function enrichPurchaseOrder(purchaseOrder, context) {
     const poLines = context.lines.filter((line) => line.purchase_order_id === purchaseOrder.id);
     const poLots = context.lots.filter((lot) => lot.purchase_order_id === purchaseOrder.id).sort(bySortOrder);
@@ -336,6 +369,7 @@ function enrichPurchaseOrder(purchaseOrder, context) {
 
     return {
         ...purchaseOrder,
+        lines: poLines.sort(bySortOrder).map((line) => enrichPurchaseOrderLine(line, context)),
         supplier: context.suppliers.find((supplier) => supplier.id === purchaseOrder.supplier_id) || null,
         currency: context.currencies.find((currency) => (
             currency.id === purchaseOrder.currency_id ||
@@ -369,6 +403,52 @@ function enrichPurchaseOrder(purchaseOrder, context) {
             }
         }
     };
+}
+
+function enrichPurchaseOrderLine(line, context) {
+    return {
+        ...line,
+        item: context.items.find((item) => item.id === line.item_id) || null,
+        item_customs_profile: context.itemCustomsProfiles.find((profile) => profile.id === line.item_customs_profile_id) || null
+    };
+}
+
+function purchaseOrderMatchesSearch(purchaseOrder, context, search) {
+    const poLots = context.lots.filter((lot) => lot.purchase_order_id === purchaseOrder.id);
+    const poLines = context.lines.filter((line) => line.purchase_order_id === purchaseOrder.id);
+    const poLineItemIds = new Set(poLines.map((line) => line.item_id).filter(Boolean));
+    const poLineProfileIds = new Set(poLines.map((line) => line.item_customs_profile_id).filter(Boolean));
+    const items = context.items.filter((item) => poLineItemIds.has(item.id));
+    const profiles = context.itemCustomsProfiles.filter((profile) => poLineProfileIds.has(profile.id));
+
+    return [
+        purchaseOrder.id,
+        purchaseOrder.po_no,
+        purchaseOrder.contract_no,
+        purchaseOrder.po_type,
+        purchaseOrder.payment_term,
+        purchaseOrder.currency_code,
+        purchaseOrder.status,
+        purchaseOrder.expected_etd,
+        purchaseOrder.expected_eta,
+        purchaseOrder.actual_etd,
+        purchaseOrder.actual_eta,
+        purchaseOrder.expected_warehouse_eta,
+        purchaseOrder.actual_warehouse_ata,
+        purchaseOrder.notes,
+        purchaseOrder.supplier?.supplier_code,
+        purchaseOrder.supplier?.supplier_name,
+        purchaseOrder.supplier?.supplier_short_name,
+        purchaseOrder.incoterm?.code,
+        purchaseOrder.incoterm?.incoterm_code,
+        purchaseOrder.incoterm?.name,
+        purchaseOrder.transport_mode?.mode_code,
+        purchaseOrder.transport_mode?.mode_name,
+        ...poLots.flatMap((lot) => [lot.lot_no, lot.lot_name, lot.status, lot.origin_port, lot.destination_port]),
+        ...poLines.flatMap((line) => [line.line_no, line.item_description, line.unit, line.notes]),
+        ...items.flatMap((item) => [item.item_code, item.item_name, item.item_description]),
+        ...profiles.flatMap((profile) => [profile.hs_code, profile.customs_type, profile.co_form])
+    ].some((value) => String(value || "").toLowerCase().includes(search));
 }
 
 export async function listPurchaseOrderLines(id) {
@@ -524,7 +604,7 @@ export async function createPurchaseOrder(body) {
         currency_code: body.currency_code || "USD",
         currency_id: body.currency_id || null,
         exchange_rate: body.exchange_rate || 25000,
-        status: body.status || "CONFIRMED",
+        status: body.status || "DRAFT",
         expected_etd: body.expected_etd || null,
         expected_eta: body.expected_eta || null,
         transport_mode_id: body.transport_mode_id || null,
@@ -882,12 +962,25 @@ export async function createDeliveryOrderFromLots(body) {
     return getDeliveryOrder(deliveryOrder.id);
 }
 
-export async function listDeliveryOrders() {
+export async function listDeliveryOrders(query = {}) {
     const [deliveryOrders, context] = await Promise.all([
         active(collections.deliveryOrders),
         getPurchaseOrderContext()
     ]);
-    return deliveryOrders.map((deliveryOrder) => enrichDeliveryOrder(deliveryOrder, context));
+    const search = searchTerm(query);
+
+    const items = deliveryOrders
+        .map((deliveryOrder) => enrichDeliveryOrder(deliveryOrder, context))
+        .filter((deliveryOrder) => {
+            if (query.status && deliveryOrder.status !== query.status) return false;
+            if (query.purchase_order_id && deliveryOrder.purchase_order_id !== query.purchase_order_id) return false;
+            if (query.transport_mode_id && deliveryOrder.transport_mode_id !== query.transport_mode_id) return false;
+            if (!search) return true;
+            return deliveryOrderMatchesSearch(deliveryOrder, search);
+        })
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
+
+    return paginateResult(items, query);
 }
 
 export async function listLogisticsTasks() {
@@ -1111,9 +1204,14 @@ export async function markQuotationFinal(id) {
     const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
     const quotations = await active(collections.quotations);
     for (const row of quotations.filter((item) => item.quotation_group_id === quotation.quotation_group_id)) {
+        const isSelected = row.id === id;
         await repo.update(collections.quotations, row.id, {
-            is_final: row.id === id,
-            status: row.id === id ? "CONFIRMED_BY_KBI" : row.status
+            is_final: isSelected,
+            status: isSelected
+                ? "CONFIRMED_BY_KBI"
+                : row.status === "CONFIRMED_BY_KBI"
+                    ? "RECEIVED"
+                    : row.status
         });
     }
 
@@ -1135,8 +1233,40 @@ export async function markQuotationFinal(id) {
     return getQuotation(id);
 }
 
-export async function listQuotations() {
-    return active(collections.quotations);
+export async function listQuotations(query = {}) {
+    const [quotations, suppliers] = await Promise.all([
+        active(collections.quotations),
+        active(collections.suppliers)
+    ]);
+    const search = searchTerm(query);
+
+    const matchedQuotations = quotations
+        .filter((quotation) => {
+            if (query.ref_type && quotation.ref_type !== query.ref_type) return false;
+            if (query.ref_id && quotation.ref_id !== query.ref_id) return false;
+            if (query.status && quotation.status !== query.status) return false;
+            if (query.supplier_id && quotation.supplier_id !== query.supplier_id) return false;
+            if (query.from_date && String(quotation.quoted_at || "") < String(query.from_date)) return false;
+            if (query.to_date && String(quotation.quoted_at || "") > String(query.to_date)) return false;
+            if (!search) return true;
+
+            const supplier = suppliers.find((row) => row.id === quotation.supplier_id) || {};
+            return [
+                quotation.quotation_no,
+                quotation.ref_type,
+                quotation.ref_id,
+                quotation.status,
+                quotation.quotation_type,
+                quotation.currency_code,
+                quotation.note,
+                supplier.supplier_code,
+                supplier.supplier_name
+            ].some((value) => String(value || "").toLowerCase().includes(search));
+        })
+        .sort((left, right) => String(right.quoted_at || right.create_at || "").localeCompare(String(left.quoted_at || left.create_at || "")));
+
+    const items = await Promise.all(matchedQuotations.map((quotation) => getQuotation(quotation.id)));
+    return paginateResult(items, query);
 }
 
 export async function listQuotationsByDeliveryOrder(deliveryOrderId) {
@@ -1182,7 +1312,7 @@ export async function createQuotationVersion(id, body = {}) {
 }
 
 export async function confirmQuotationByKbi(id) {
-    return updateQuotationStatus(id, "CONFIRMED_BY_KBI");
+    return markQuotationFinal(id);
 }
 
 export async function rejectQuotation(id) {
@@ -1359,8 +1489,46 @@ export async function createShipmentFromDeliveryOrder(body) {
     return getShipment(shipment.id);
 }
 
-export async function listShipments() {
-    return active(collections.shipments);
+export async function listShipments(query = {}) {
+    const [shipments, deliveryOrders, purchaseOrders] = await Promise.all([
+        active(collections.shipments),
+        active(collections.deliveryOrders),
+        active(collections.purchaseOrders)
+    ]);
+    const search = searchTerm(query);
+
+    const items = shipments
+        .filter((shipment) => {
+            const deliveryOrder = deliveryOrders.find((row) => row.id === shipment.delivery_order_id) || {};
+            const purchaseOrder = purchaseOrders.find((row) => row.id === deliveryOrder.purchase_order_id) || {};
+
+            if (query.status && shipment.status !== query.status) return false;
+            if (query.mode && shipment.mode !== query.mode) return false;
+            if (query.delivery_order_id && shipment.delivery_order_id !== query.delivery_order_id) return false;
+            if (query.purchase_order_id && deliveryOrder.purchase_order_id !== query.purchase_order_id) return false;
+            if (query.forwarder_id && shipment.forwarder_id !== query.forwarder_id) return false;
+            if (query.transport_mode_id && shipment.transport_mode_id !== query.transport_mode_id) return false;
+            if (query.from_date && String(shipment.etd || shipment.create_at || "") < String(query.from_date)) return false;
+            if (query.to_date && String(shipment.etd || shipment.create_at || "") > String(query.to_date)) return false;
+            if (!search) return true;
+
+            return [
+                shipment.shipment_no,
+                shipment.carrier,
+                shipment.vessel_flight,
+                shipment.voyage_no,
+                shipment.bl_awb_no,
+                shipment.pol,
+                shipment.pod,
+                shipment.status,
+                shipment.mode,
+                deliveryOrder.delivery_order_no,
+                purchaseOrder.po_no
+            ].some((value) => String(value || "").toLowerCase().includes(search));
+        })
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
+
+    return paginateResult(items, query);
 }
 
 export async function getShipment(id) {
@@ -1731,15 +1899,39 @@ export async function createDomesticTransportOrder(shipmentId, body) {
 
 export async function getDomesticTransportOrder(id) {
     const dto = await requireRecord(collections.domesticTransportOrders, id, "Domestic transport order not found");
-    const lines = await active(collections.domesticTransportOrderLines);
-    return {
-        ...dto,
-        lines: lines.filter((line) => line.domestic_transport_order_id === id)
-    };
+    const context = await getDomesticTransportOrderContext();
+    return enrichDomesticTransportOrder(dto, context);
 }
 
-export async function listDomesticTransportOrders() {
-    return active(collections.domesticTransportOrders);
+export async function listDomesticTransportOrders(query = {}) {
+    const context = await getDomesticTransportOrderContext();
+    const search = searchTerm(query);
+
+    const items = context.domesticTransportOrders
+        .filter((order) => {
+            if (query.status && order.status !== query.status) return false;
+            if (query.shipment_id && order.shipment_id !== query.shipment_id) return false;
+            if (query.truck_vendor_id && order.truck_vendor_id !== query.truck_vendor_id) return false;
+            if (!search) return true;
+
+            const shipment = context.shipments.find((row) => row.id === order.shipment_id) || {};
+            const vendor = context.suppliers.find((row) => row.id === order.truck_vendor_id) || {};
+            return [
+                order.dto_no,
+                order.origin,
+                order.destination,
+                order.warehouse,
+                order.vehicle_plate,
+                order.driver_name,
+                shipment.shipment_no,
+                vendor.supplier_name,
+                vendor.supplier_code
+            ].some((value) => String(value || "").toLowerCase().includes(search));
+        })
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")))
+        .map((order) => enrichDomesticTransportOrder(order, context));
+
+    return paginateResult(items, query);
 }
 
 export async function updateDomesticTransportOrder(id, body) {
@@ -1771,7 +1963,8 @@ export async function updateDomesticTransportOrder(id, body) {
         "status",
         "note"
     ];
-    return repo.update(collections.domesticTransportOrders, id, pick(body, allowedFields));
+    await repo.update(collections.domesticTransportOrders, id, pick(body, allowedFields));
+    return getDomesticTransportOrder(id);
 }
 
 export async function markDomesticTransportOrderQuotePending(id) {
@@ -2064,6 +2257,39 @@ async function active(collectionName) {
     return (await repo.readCollection(collectionName)).filter((row) => row.is_delete !== true);
 }
 
+function searchTerm(query = {}) {
+    return String(query.search || query.q || "").trim().toLowerCase();
+}
+
+function positiveInteger(value, fallback) {
+    const parsed = Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function paginateResult(items, query = {}) {
+    const total = items.length;
+    const defaultLimit = total > 0 ? total : 20;
+    const limit = positiveInteger(query.limit, defaultLimit);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const page = Math.min(positiveInteger(query.page, 1), totalPages);
+    const startIndex = (page - 1) * limit;
+
+    return {
+        data: items.slice(startIndex, startIndex + limit),
+        meta: {
+            total,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
+        }
+    };
+}
+
 async function requireRecord(collectionName, id, message) {
     const record = await repo.findById(collectionName, id);
 
@@ -2145,6 +2371,97 @@ function enrichDeliveryOrderLine(line, context) {
         route_destination: shipment?.pod || deliveryOrder?.destination_address || null,
         etd: shipment?.etd || deliveryOrder?.planned_etd || null,
         eta: shipment?.eta || deliveryOrder?.planned_eta || null
+    };
+}
+
+async function getDomesticTransportOrderContext() {
+    const [
+        domesticTransportOrders,
+        domesticTransportOrderLines,
+        shipments,
+        shipmentLines,
+        carrierDeliveryOrders,
+        suppliers,
+        purchaseOrderLines,
+        lots,
+        items,
+        itemCustomsProfiles
+    ] = await Promise.all([
+        active(collections.domesticTransportOrders),
+        active(collections.domesticTransportOrderLines),
+        active(collections.shipments),
+        active(collections.shipmentLines),
+        active(collections.carrierDeliveryOrders),
+        active(collections.suppliers),
+        active(collections.purchaseOrderLines),
+        active(collections.lots),
+        active(collections.items),
+        active(collections.itemCustomsProfiles)
+    ]);
+
+    return {
+        domesticTransportOrders,
+        domesticTransportOrderLines,
+        shipments,
+        shipmentLines,
+        carrierDeliveryOrders,
+        suppliers,
+        purchaseOrderLines,
+        lots,
+        items,
+        itemCustomsProfiles
+    };
+}
+
+function enrichDomesticTransportOrder(order, context) {
+    const shipment = context.shipments.find((row) => row.id === order.shipment_id) || null;
+    const carrierDeliveryOrder = context.carrierDeliveryOrders.find((row) => row.id === order.carrier_delivery_order_id) || null;
+    const truckVendor = context.suppliers.find((row) => row.id === order.truck_vendor_id) || null;
+    const lines = context.domesticTransportOrderLines
+        .filter((line) => line.domestic_transport_order_id === order.id)
+        .sort(bySortOrder)
+        .map((line) => enrichDomesticTransportOrderLine(line, context));
+
+    return {
+        ...order,
+        shipment,
+        carrier_delivery_order: carrierDeliveryOrder,
+        truck_vendor: truckVendor,
+        lines,
+        total_qty: roundNumber(lines.reduce((total, line) => total + Number(line.qty || 0), 0)),
+        total_gross_weight_kg: roundNumber(lines.reduce((total, line) => total + Number(line.gross_weight_kg || 0), 0))
+    };
+}
+
+function enrichDomesticTransportOrderLine(line, context) {
+    const purchaseOrderLine = context.purchaseOrderLines.find((row) => row.id === line.purchase_order_line_id) || null;
+    const item = context.items.find((row) => row.id === line.item_id) || null;
+    const lot = context.lots.find((row) => row.id === line.po_lot_id) || null;
+    const profile = context.itemCustomsProfiles.find((row) => (
+        row.id === purchaseOrderLine?.item_customs_profile_id ||
+        row.item_id === line.item_id
+    )) || null;
+    const transportOrder = context.domesticTransportOrders.find((row) => row.id === line.domestic_transport_order_id) || null;
+    const shipmentLine = context.shipmentLines.find((row) => (
+        row.shipment_id === transportOrder?.shipment_id &&
+        row.purchase_order_line_id === line.purchase_order_line_id &&
+        row.item_id === line.item_id
+    )) || null;
+
+    return {
+        ...line,
+        item,
+        item_code: item?.item_code || null,
+        item_name: item?.item_name || purchaseOrderLine?.item_description || null,
+        item_description: purchaseOrderLine?.item_description || item?.item_name || null,
+        hs_code: profile?.hs_code || null,
+        gross_weight_kg: purchaseOrderLine?.gross_weight_kg || null,
+        qty_ordered: purchaseOrderLine?.qty_ordered || null,
+        purchase_order_line: purchaseOrderLine,
+        item_customs_profile: profile,
+        lot,
+        lot_no: lot?.lot_no || null,
+        shipment_line: shipmentLine
     };
 }
 

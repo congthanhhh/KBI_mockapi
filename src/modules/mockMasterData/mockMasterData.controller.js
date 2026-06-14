@@ -22,10 +22,30 @@ export const createTransportMode = create("transport-modes", "tm");
 export const updateTransportMode = update("transport-modes");
 export const deleteTransportMode = remove("transport-modes");
 
-export const listSuppliers = list("suppliers");
-export const getSupplier = detail("suppliers");
-export const createSupplier = create("suppliers", "sup");
-export const updateSupplier = update("suppliers");
+export async function listSuppliers(req, res) {
+    res.json(await service.listSuppliers(req.query));
+}
+
+export async function getSupplier(req, res) {
+    res.json({
+        data: await service.getSupplier(req.params.id)
+    });
+}
+
+export async function createSupplier(req, res) {
+    res.status(201).json({
+        data: await service.createSupplier(req.body),
+        message: "Record created"
+    });
+}
+
+export async function updateSupplier(req, res) {
+    res.json({
+        data: await service.updateSupplier(req.params.id, req.body),
+        message: "Record updated"
+    });
+}
+
 export const deleteSupplier = remove("suppliers");
 
 export const listItemGroups = list("item-groups");
@@ -35,14 +55,19 @@ export const updateItemGroup = update("item-groups");
 export const deleteItemGroup = remove("item-groups");
 
 export async function listItemsByGroup(req, res) {
-    res.json(await service.listCollection("item-master", {
-        ...req.query,
-        item_group_id: req.params.id
-    }));
+    res.json(await service.listItemsByGroup(req.params.id, req.query));
 }
 
-export const listItems = list("item-master");
-export const getItem = detail("item-master");
+export async function listItems(req, res) {
+    res.json(await service.listItems(req.query));
+}
+
+export async function getItem(req, res) {
+    res.json({
+        data: await service.getItem(req.params.id)
+    });
+}
+
 export const createItem = create("item-master", "item");
 export const updateItem = update("item-master");
 

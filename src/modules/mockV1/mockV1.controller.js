@@ -70,7 +70,8 @@ export async function listItemCustomsProfiles(req, res) {
 }
 
 export async function listPurchaseOrders(req, res) {
-    res.json(success(await service.listPurchaseOrders(req.query)));
+    const result = await service.listPurchaseOrders(req.query);
+    res.json(success(result.data, result.meta));
 }
 
 export async function getPurchaseOrder(req, res) {
@@ -150,7 +151,8 @@ export async function createDeliveryOrderFromLots(req, res) {
 }
 
 export async function listDeliveryOrders(req, res) {
-    res.json(success(await service.listDeliveryOrders()));
+    const result = await service.listDeliveryOrders(req.query);
+    res.json(success(result.data, result.meta));
 }
 
 export async function listLogisticsTasks(req, res) {
@@ -211,7 +213,8 @@ export async function createQuotationForDeliveryOrder(req, res) {
 }
 
 export async function listQuotations(req, res) {
-    res.json(success(await service.listQuotations()));
+    const result = await service.listQuotations(req.query);
+    res.json(success(result.data, result.meta));
 }
 
 export async function listQuotationsByDeliveryOrder(req, res) {
@@ -267,7 +270,8 @@ export async function createShipmentFromDeliveryOrder(req, res) {
 }
 
 export async function listShipments(req, res) {
-    res.json(success(await service.listShipments(req.query)));
+    const result = await service.listShipments(req.query);
+    res.json(success(result.data, result.meta));
 }
 
 export async function getShipment(req, res) {
@@ -387,7 +391,8 @@ export async function createDomesticTransportOrder(req, res) {
 }
 
 export async function listDomesticTransportOrders(req, res) {
-    res.json(success(await service.listDomesticTransportOrders()));
+    const result = await service.listDomesticTransportOrders(req.query);
+    res.json(success(result.data, result.meta));
 }
 
 export async function getDomesticTransportOrder(req, res) {

@@ -9,10 +9,16 @@
       "stage": "SUPPLIER_CONFIRMATION",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": null,
           "id": "task_001",
           "task_no": "TASK-001",
           "task_name": "Confirm supplier cargo ready date",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "SUPPLIER_CONFIRMATION",
@@ -25,9 +31,7 @@
           "status": "PENDING",
           "priority": "HIGH",
           "due_at": "2026-07-01T17:00:00+07:00",
-          "completed_at": null,
           "progress": 0,
-          "blocked_reason": null,
           "note": "Supplier needs to confirm cargo ready date before LOT planning."
         }
       ]
@@ -36,10 +40,16 @@
       "stage": "LOT_PLANNING",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": null,
           "id": "task_002",
           "task_no": "TASK-002",
           "task_name": "Review default LOT allocation",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "LOT_PLANNING",
@@ -52,9 +62,7 @@
           "status": "IN_PROGRESS",
           "priority": "HIGH",
           "due_at": "2026-07-02T17:00:00+07:00",
-          "completed_at": null,
           "progress": 45,
-          "blocked_reason": null,
           "note": "Check whether the default LOT should be split into multiple cargo-ready batches."
         }
       ]
@@ -63,10 +71,16 @@
       "stage": "INTERNAL_DO",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": null,
           "id": "task_003",
           "task_no": "TASK-003",
           "task_name": "Create internal delivery order",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "INTERNAL_DO",
@@ -79,9 +93,7 @@
           "status": "PENDING",
           "priority": "MEDIUM",
           "due_at": "2026-07-03T17:00:00+07:00",
-          "completed_at": null,
           "progress": 0,
-          "blocked_reason": null,
           "note": "Create internal DO after LOT allocation is confirmed."
         }
       ]
@@ -90,10 +102,16 @@
       "stage": "QUOTATION",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": "Waiting for confirmed cargo ready date.",
           "id": "task_004",
           "task_no": "TASK-004",
           "task_name": "Request freight quotation",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "QUOTATION",
@@ -106,9 +124,7 @@
           "status": "BLOCKED",
           "priority": "HIGH",
           "due_at": "2026-07-04T12:00:00+07:00",
-          "completed_at": null,
           "progress": 20,
-          "blocked_reason": "Waiting for confirmed cargo ready date.",
           "note": "Forwarder quotation can start after supplier confirmation."
         }
       ]
@@ -117,10 +133,16 @@
       "stage": "SHIPMENT",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": null,
           "id": "task_005",
           "task_no": "TASK-005",
           "task_name": "Track shipment booking",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "SHIPMENT",
@@ -133,9 +155,7 @@
           "status": "PENDING",
           "priority": "MEDIUM",
           "due_at": "2026-07-06T17:00:00+07:00",
-          "completed_at": null,
           "progress": 0,
-          "blocked_reason": null,
           "note": "Track booking and BL/AWB progress once shipment is created."
         }
       ]
@@ -144,10 +164,16 @@
       "stage": "CUSTOMS",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": null,
           "id": "task_006",
           "task_no": "TASK-006",
           "task_name": "Prepare customs declaration",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "CUSTOMS",
@@ -160,9 +186,7 @@
           "status": "PENDING",
           "priority": "MEDIUM",
           "due_at": "2026-07-08T17:00:00+07:00",
-          "completed_at": null,
           "progress": 0,
-          "blocked_reason": null,
           "note": "Prepare HS code and invoice data after shipment documents are available."
         }
       ]
@@ -171,10 +195,16 @@
       "stage": "CARRIER_DO",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": null,
           "id": "task_007",
           "task_no": "TASK-007",
           "task_name": "Collect carrier delivery order",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "CARRIER_DO",
@@ -187,9 +217,7 @@
           "status": "PENDING",
           "priority": "LOW",
           "due_at": "2026-07-10T12:00:00+07:00",
-          "completed_at": null,
           "progress": 0,
-          "blocked_reason": null,
           "note": "Collect carrier DO after customs clearance."
         }
       ]
@@ -198,10 +226,16 @@
       "stage": "DTO",
       "tasks": [
         {
+          "create_at": "2026-06-12T00:00:00.000Z",
+          "update_at": "2026-06-12T00:00:00.000Z",
+          "delete_at": null,
+          "is_delete": false,
+          "ref_type": "PURCHASE_ORDER",
+          "completed_at": null,
+          "blocked_reason": null,
           "id": "task_008",
           "task_no": "TASK-008",
           "task_name": "Dispatch domestic transport order",
-          "ref_type": "PURCHASE_ORDER",
           "ref_id": "po_001",
           "ref_no": "PO-KBI-2026-001",
           "stage": "DTO",
@@ -214,9 +248,7 @@
           "status": "PENDING",
           "priority": "MEDIUM",
           "due_at": "2026-07-11T17:00:00+07:00",
-          "completed_at": null,
           "progress": 0,
-          "blocked_reason": null,
           "note": "Dispatch truck after carrier DO release."
         }
       ]

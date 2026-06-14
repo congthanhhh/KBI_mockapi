@@ -121,6 +121,8 @@ Screen DTO files:
 
 Core flow collections seed realistic PO-to-DTO scenarios with at least 9 records for item, PO, DO, shipment, customs, carrier DO, and DTO tables. `shipment_milestones` has 90 records for 9 shipments times 10 milestones. Smaller reference collections such as currencies, incoterms, transport modes, suppliers, and item groups remain compact lookup sets.
 
+Master-data APIs normalize compact legacy mock rows at runtime. Supplier endpoints map `supplier_type`, `email`, and `phone` into the frontend DTO fields and enrich `supplier_transport_modes` from `supplier-transport-modes.json`. Item endpoints enrich `item_group` and `customs_profiles`, including legacy tax profile fields such as `preferential_tax_rate`.
+
 `logistics_tasks` seeds dashboard-ready work items across quotation, booking, document processing, customs declaration, warehouse delivery, and finance review so urgency cards, overdue task cards, task role progress, and monthly throughput do not render empty in the frontend demo.
 
 Task screen APIs read and write `mock-data/screens/*.json`:
@@ -142,6 +144,7 @@ Purchase order list/detail responses are enriched at runtime from related mock c
 - Delivery order APIs enrich rows with linked `shipments` and `linked_shipment_number` from `shipments.delivery_order_id` so the DO board can show assigned shipment numbers instead of placeholders.
 - Delivery order line APIs enrich line rows with linked item, LOT, purchase-order-line, shipment-line, and shipment data so item names, HS codes, ordered quantity, gross weight, shipment number, container, route, ETD, and ETA render from mock data.
 - PO line seed data is normalized before writing JSON so frontend DTO fields such as customs profile, description, confirmed/lotted/shipped/received quantities, line ETA, and gross weight are always present.
+- Domestic transport order list/detail APIs enrich DTO headers with shipment, carrier DO, trucking vendor, total quantity, total gross weight, and line-level item/PO line/LOT/customs profile/shipment-line display fields for the frontend DTO module.
 
 ## LOT Planning Without Slot
 
