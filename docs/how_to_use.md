@@ -674,7 +674,70 @@ DTO không phải DO. DTO là bước sau shipment/customs.
 Shipment status = CUSTOMS_CLEARED
 ```
 
-Trạng thái DTO:
+### 11.1. Quan hệ Shipment ↔ DTO là nhiều-nhiều (n:n)
+
+Đây là thiết kế quan trọng phản ánh thực tế logistics:
+
+**Một Shipment có thể có nhiều DTO:**
+- Shipment lớn (nhiều container) cần nhiều chuyến xe → mỗi chuyến là một DTO riêng.
+- Giao hàng một phần: hàng gấp giao trước (DTO-1), hàng còn lại giao sau (DTO-2).
+- Giao về nhiều kho: cùng một shipment nhưng hàng đi về 2 kho khác nhau.
+
+**Một DTO có thể phục vụ nhiều Shipment:**
+- Hàng LCL (Less than Container Load): nhiều shipment ghép chung container. Sau khi hải quan thông quan, một xe duy nhất gom hàng từ nhiều shipment về kho trong một chuyến.
+- Cross-docking: hàng từ 2-3 shipment về cảng cùng lúc, một xe nhận hết trong một lần.
+
+Vì vậy, hệ thống không ràng buộc 1 DTO chỉ thuộc 1 Shipment mà quản lý liên kết qua bảng trung gian `shipment-dto-links`.
+
+### 11.2. Màn hình Domestic Transport Orders
+
+Trong frontend, DTO có màn hình riêng:
+
+```txt
+Domestic Transport Orders
+```
+
+Bạn dùng màn hình này để:
+
+- Xem danh sách DTO theo trạng thái.
+- Tìm DTO theo DTO number, shipment, vendor, driver hoặc route.
+- Tạo DTO mới từ shipment đã `CUSTOMS_CLEARED`.
+- Xem tất cả shipments liên kết với DTO (có thể nhiều hơn 1).
+- Xem Carrier DO, trucking vendor, route, warehouse và POD.
+- Cập nhật thông tin xe, tài xế, lịch pickup/delivery, actual pickup/delivery và POD document.
+- Xem DTO lines đã copy từ shipment lines.
+
+Khi DTO liên kết với nhiều shipment:
+- Trong danh sách: hiển thị "N shipments" thay vì 1 số shipment.
+- Trong detail panel: hiển thị tất cả shipment dưới dạng các badge riêng.
+
+DTO lines hiện được backend chuẩn bị sẵn dữ liệu:
+
+- Item code / item name.
+- PO line.
+- LOT / lot number.
+- HS code.
+- Quantity.
+- Ordered quantity.
+- Gross weight.
+- Shipment line.
+
+### 11.3. Quản lý DTOs từ màn hình Shipment
+
+Ngoài màn hình DTO, bạn còn có thể quản lý DTOs trực tiếp từ **Shipment detail**:
+
+1. Mở chi tiết Shipment.
+2. Chuyển sang tab **"DTOs"**.
+3. Tại đây bạn có thể:
+   - **Xem** danh sách DTO đang linked với Shipment này.
+   - **Tạo DTO mới** cho Shipment (nếu Shipment đã `CUSTOMS_CLEARED`).
+   - **Link DTO hiện có** vào Shipment này (dùng cho trường hợp LCL: một xe DTO gom hàng từ nhiều shipment):
+     1. Chọn DTO từ dropdown.
+     2. Nhấn **"Link"**.
+     3. Hệ thống ghi nhận liên kết — DTO đó giờ phục vụ cả Shipment hiện tại.
+   - **Unlink DTO** khỏi Shipment nếu liên kết không còn cần thiết (DTO không bị xóa, chỉ xóa liên kết).
+
+### 11.4. Trạng thái DTO
 
 ```txt
 DRAFT
@@ -689,47 +752,42 @@ CLOSED
 CANCELLED
 ```
 
-Trong frontend, DTO có màn hình riêng:
+### 11.5. Luồng sử dụng DTO đầy đủ
 
-```txt
-Domestic Transport Orders
-```
+**Trường hợp 1: FCL — 1 Shipment, nhiều chuyến xe**
 
-Bạn dùng màn hình này để:
+1. Shipment đạt `CUSTOMS_CLEARED`.
+2. Vào Shipment detail → tab **DTOs**.
+3. Tạo **DTO-1** cho chuyến xe đầu tiên (giao ngay).
+4. Tạo **DTO-2** cho chuyến xe thứ hai (hàng còn lại).
+5. Xử lý từng DTO theo luồng: báo giá → confirm → dispatch → giao hàng → POD → close.
 
-- Xem danh sách DTO theo trạng thái.
-- Tìm DTO theo DTO number, shipment, vendor, driver hoặc route.
-- Tạo DTO từ shipment đã `CUSTOMS_CLEARED`.
-- Xem shipment liên kết, Carrier DO, trucking vendor, route, warehouse và POD.
-- Cập nhật thông tin xe, tài xế, lịch pickup/delivery, actual pickup/delivery và POD document.
-- Xem DTO lines đã copy từ shipment lines.
+**Trường hợp 2: LCL consolidation — nhiều Shipment, 1 chuyến xe**
 
-DTO lines hiện được backend chuẩn bị sẵn dữ liệu để frontend không phải tự join nhiều bảng:
+1. Cả `shp_002` và `shp_007` về cùng cảng, cùng thời điểm.
+2. `shp_002` đã tạo `dto_002` (chuyến xe gom hàng).
+3. Vào `shp_007` detail → tab **DTOs**.
+4. Chọn **Link DTO** → chọn `dto_002` từ dropdown → nhấn **Link**.
+5. Bây giờ `dto_002` phục vụ cả `shp_002` và `shp_007` trong cùng một chuyến.
+6. Xử lý `dto_002` bình thường: dispatch → giao → POD → close.
 
-- Item code / item name.
-- PO line.
-- LOT / lot number.
-- HS code.
-- Quantity.
-- Ordered quantity.
-- Gross weight.
-- Shipment line.
+**Luồng cơ bản cho mỗi DTO:**
 
-Luồng sử dụng:
+1. Tạo DTO (status: `DRAFT`).
+2. Gửi yêu cầu báo giá vận tải nội địa (`QUOTE_PENDING`).
+3. Nhận báo giá (`QUOTED`).
+4. Confirm báo giá (`QUOTE_CONFIRMED`).
+5. Dispatch xe — chỉ cho phép khi đang ở `QUOTE_CONFIRMED` (`DISPATCHED`).
+6. Theo dõi xe trên đường (`IN_TRANSIT`).
+7. Ghi nhận giao hàng thành công (`DELIVERED`).
+8. Nhận Proof of Delivery — POD (`POD_RECEIVED`).
+9. Close DTO (`CLOSED`).
 
-1. Sau khi customs cleared, tạo DTO từ shipment.
-2. Chờ báo giá vận tải nội địa.
-3. Confirm quote.
-4. Dispatch xe.
-5. Theo dõi in transit.
-6. Ghi nhận delivered.
-7. Nhận POD.
-8. Close DTO.
+**Rules quan trọng:**
 
-Rule quan trọng:
-
-- Không dispatch nếu DTO chưa `QUOTE_CONFIRMED`.
-- DTO owns inland trucking/POD, không gộp với Internal DO.
+- Không thể Dispatch nếu DTO chưa `QUOTE_CONFIRMED`.
+- DTO quản lý vận tải nội địa và POD, không gộp với Internal DO.
+- Unlink DTO chỉ xóa liên kết, không xóa DTO.
 
 ## 12. Tasks
 
@@ -926,16 +984,24 @@ Kết quả: shipment chuyển sang `CUSTOMS_CLEARED`.
 
 Sau customs cleared:
 
-1. Tạo hoặc cập nhật Carrier DO để release hàng.
-2. Tạo DTO cho vận tải nội địa.
-3. Confirm quote DTO.
-4. Dispatch xe.
-5. Theo dõi xe in transit.
-6. Ghi nhận delivered.
-7. Nhận POD.
-8. Close DTO.
+1. Tạo hoặc cập nhật Carrier DO để release hàng từ hãng tàu/forwarder.
+2. Vào Shipment detail → tab **DTOs** để quản lý vận tải nội địa.
+3. **Tạo DTO mới** cho shipment này nếu chưa có:
+   - Nhấn "Create DTO" trong tab DTOs.
+   - Backend tự động tạo liên kết shipment ↔ DTO.
+4. Hoặc **Link DTO hiện có** (trường hợp LCL, nhiều shipment chung một chuyến xe):
+   - Chọn DTO từ dropdown → nhấn "Link".
+5. Trong màn hình Domestic Transport Orders, xử lý từng DTO:
+   - Confirm quote.
+   - Dispatch xe (chỉ khi đã `QUOTE_CONFIRMED`).
+   - Theo dõi xe in transit.
+   - Ghi nhận delivered.
+   - Nhận POD.
+   - Close DTO.
 
 Kết quả: hàng được đưa về kho KBI và quy trình vận hành có thể đóng.
+
+**Lưu ý quan hệ n:n**: Nếu một Shipment cần nhiều chuyến xe (ví dụ shipment lớn, nhiều container), lặp lại bước 3 để tạo thêm DTO-2, DTO-3... Mỗi DTO là một chuyến xe riêng biệt.
 
 ### Bước 11: Close DO
 
@@ -1000,7 +1066,7 @@ Task cần chú ý nếu:
 5. DO được tạo từ LOT, không phải nhập tay toàn bộ line nếu hệ thống đã có LOT.
 6. Shipment được tạo sau quotation confirmed.
 7. Customs được tạo từ Shipment.
-8. DTO được tạo sau customs cleared.
+8. DTO được tạo sau customs cleared. Một Shipment có thể có nhiều DTO (nhiều chuyến xe). Một DTO có thể phục vụ nhiều Shipment (LCL consolidation).
 9. Tasks là checklist vận hành, không chỉ là ghi chú.
 10. Dashboard dùng để phát hiện việc cần xử lý, không thay thế màn hình detail.
 
@@ -1056,7 +1122,25 @@ Kiểm tra:
 - Shipment/customs/DTO đã đạt trạng thái cần thiết chưa.
 - Warehouse actual entry/POD đã có chưa nếu flow yêu cầu.
 
-### 16.6. Dữ liệu vừa nhập bị mất
+### 16.6. Không dispatch được DTO
+
+DTO chỉ được chuyển sang `DISPATCHED` khi status đang là `QUOTE_CONFIRMED`.
+
+Kiểm tra:
+
+- DTO đã nhận báo giá chưa (`QUOTED`).
+- Báo giá đã được confirm chưa (`QUOTE_CONFIRMED`).
+- Nếu chưa, cập nhật status DTO theo thứ tự: `QUOTE_PENDING` → `QUOTED` → `QUOTE_CONFIRMED` → rồi mới Dispatch.
+
+### 16.7. Muốn link một DTO vào nhiều Shipment (LCL)
+
+1. Tạo DTO từ Shipment đầu tiên (DTO được tạo và tự động linked với Shipment đó).
+2. Vào Shipment thứ hai → tab **DTOs**.
+3. Trong dropdown "Link existing DTO", chọn DTO vừa tạo.
+4. Nhấn **"Link"**.
+5. DTO đó giờ phục vụ cả hai Shipment.
+
+### 16.8. Dữ liệu vừa nhập bị mất
 
 Nếu bạn chạy:
 
@@ -1094,7 +1178,7 @@ Sau khi đi qua 10 bước này, bạn sẽ hiểu được hệ thống không 
 
 `Carrier DO`: Lệnh giao hàng từ carrier/forwarder, dùng để release hàng.
 
-`DTO`: Domestic Transport Order, lệnh vận tải nội địa.
+`DTO`: Domestic Transport Order, lệnh vận tải nội địa. Quan hệ với Shipment là nhiều-nhiều (n:n): 1 Shipment có thể có nhiều DTO (nhiều chuyến xe), và 1 DTO có thể phục vụ nhiều Shipment (LCL consolidation).
 
 `ETD`: Estimated Time of Departure.
 
@@ -1111,6 +1195,10 @@ Sau khi đi qua 10 bước này, bạn sẽ hiểu được hệ thống không 
 `Customs Channel`: Luồng hải quan Green/Yellow/Red.
 
 `POD`: Proof of Delivery.
+
+`LCL`: Less than Container Load — hàng ghép container với các lô hàng của đơn vị khác. Trong KBI context: nhiều Shipment LCL về cùng cảng có thể được gom chung trong 1 DTO (1 chuyến xe) để tiết kiệm chi phí vận tải nội địa.
+
+`FCL`: Full Container Load — hàng thuê nguyên container. Một Shipment FCL lớn có thể cần nhiều chuyến xe (nhiều DTO) để chở về kho.
 
 `Mock data`: Dữ liệu JSON dùng cho demo/test thay vì database thật.
 

@@ -430,3 +430,18 @@ export async function closeDomesticTransportOrder(req, res) {
 export async function cancelDomesticTransportOrder(req, res) {
     res.json(success(await service.cancelDomesticTransportOrder(req.params.id)));
 }
+
+export async function listShipmentDomesticTransportOrders(req, res) {
+    const data = await service.listShipmentDomesticTransportOrders(req.params.shipmentId, req.query);
+    res.json(success(data.data, data.meta));
+}
+
+export async function linkDtoToShipment(req, res) {
+    const dto = await service.linkDtoToShipment(req.params.shipmentId, req.body);
+    res.json(success(dto));
+}
+
+export async function unlinkDtoFromShipment(req, res) {
+    const dto = await service.unlinkDtoFromShipment(req.params.shipmentId, req.params.dtoId);
+    res.json(success(dto));
+}

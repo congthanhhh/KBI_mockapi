@@ -437,6 +437,22 @@ const files = {
         base({ id: "dto_line_012", domestic_transport_order_id: "dto_012", purchase_order_line_id: "po_line_012", po_lot_id: "lot_013", item_id: "item_012", qty: 300, unit: "PCS", sort_order: 1 }),
         base({ id: "dto_line_013", domestic_transport_order_id: "dto_013", purchase_order_line_id: "po_line_013", po_lot_id: "lot_014", item_id: "item_013", qty: 600, unit: "PCS", sort_order: 1 }),
         base({ id: "dto_line_014", domestic_transport_order_id: "dto_014", purchase_order_line_id: "po_line_014", po_lot_id: "lot_015", item_id: "item_014", qty: 20, unit: "PCS", sort_order: 1 })
+    ],
+    "shipment-dto-links": [
+        base({ id: "sdl_001", shipment_id: "shp_001", dto_id: "dto_001" }),
+        base({ id: "sdl_002", shipment_id: "shp_002", dto_id: "dto_002" }),
+        base({ id: "sdl_003", shipment_id: "shp_003", dto_id: "dto_003" }),
+        base({ id: "sdl_004", shipment_id: "shp_004", dto_id: "dto_004" }),
+        base({ id: "sdl_005", shipment_id: "shp_005", dto_id: "dto_005" }),
+        base({ id: "sdl_006", shipment_id: "shp_006", dto_id: "dto_006" }),
+        base({ id: "sdl_007", shipment_id: "shp_007", dto_id: "dto_007" }),
+        base({ id: "sdl_008", shipment_id: "shp_008", dto_id: "dto_008" }),
+        base({ id: "sdl_009", shipment_id: "shp_009", dto_id: "dto_009" }),
+        base({ id: "sdl_010", shipment_id: "shp_010", dto_id: "dto_010" }),
+        base({ id: "sdl_011", shipment_id: "shp_011", dto_id: "dto_011" }),
+        base({ id: "sdl_012", shipment_id: "shp_012", dto_id: "dto_012" }),
+        base({ id: "sdl_013", shipment_id: "shp_013", dto_id: "dto_013" }),
+        base({ id: "sdl_014", shipment_id: "shp_014", dto_id: "dto_014" })
     ]
 };
 

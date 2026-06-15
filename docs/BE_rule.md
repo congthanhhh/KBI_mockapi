@@ -766,7 +766,27 @@ DTO means Domestic Transport Order.
 
 DTO is for inland trucking from port/airport to KBI warehouse.
 
-Endpoint:
+## 13.1 Shipment ↔ DTO Relationship (n:n)
+
+The relationship between Shipment and DTO is **many-to-many (n:n)**:
+
+- One Shipment can have **multiple DTOs** (multiple truck runs, partial delivery, delivery to different warehouses).
+- One DTO can serve **multiple Shipments** (LCL consolidation: one truck picks up cargo from multiple shipments in a single run).
+
+This is modeled via a junction collection `shipment-dto-links`:
+
+```txt
+shipment-dto-links
+  id           (sdl_001)
+  shipment_id  → shipments.id
+  dto_id       → domestic-transport-orders.id
+```
+
+Each DTO also retains a `shipment_id` FK (the primary/first shipment) for backward compatibility. Enriched DTO responses include a `shipments[]` array with all linked shipments.
+
+## 13.2 DTO Endpoints
+
+### Create DTO from Shipment
 
 ```txt
 POST /api/v1/shipments/:shipmentId/domestic-transport-orders
@@ -778,9 +798,49 @@ Rules:
 - shipment must exist.
 - shipment.status must be CUSTOMS_CLEARED.
 - copy shipment_lines into domestic_transport_order_lines.
+- auto-insert a shipment-dto-links record linking the new DTO to the shipment.
 ```
 
-DTO statuses:
+### List DTOs linked to a Shipment
+
+```txt
+GET /api/v1/shipments/:shipmentId/domestic-transport-orders
+```
+
+Returns all active DTOs linked to the shipment via the junction table.
+
+### Link an existing DTO to a Shipment
+
+```txt
+POST /api/v1/shipments/:shipmentId/domestic-transport-orders/link
+Body: { "dto_id": "dto_005" }
+```
+
+Rules:
+
+```txt
+- shipment must exist.
+- dto must exist.
+- link must not already exist (no duplicate).
+```
+
+Use case: LCL consolidation — one truck DTO is linked to multiple shipments.
+
+### Unlink a DTO from a Shipment
+
+```txt
+DELETE /api/v1/shipments/:shipmentId/domestic-transport-orders/:dtoId/unlink
+```
+
+Rules:
+
+```txt
+- soft-deletes the junction record only.
+- does not delete the DTO itself.
+- if this was the primary shipment_id on the DTO, the DTO retains the FK for historical reference.
+```
+
+## 13.3 DTO Statuses
 
 ```txt
 DRAFT
@@ -806,6 +866,24 @@ Close rule:
 ```txt
 DTO can close only after POD_RECEIVED or delivery confirmation.
 ```
+
+## 13.4 DTO Response Enrichment
+
+Every DTO response must include:
+
+```json
+{
+  "shipment_id": "shp_001",
+  "shipment": { ... },
+  "shipments": [
+    { "id": "shp_001", "shipment_no": "SHP-KBI-2026-001", ... },
+    { "id": "shp_003", "shipment_no": "SHP-KBI-2026-003", ... }
+  ]
+}
+```
+
+- `shipment` (single object): primary linked shipment, kept for backward compat.
+- `shipments[]` (array): all linked shipments from junction table, unioned with primary FK.
 
 Return DTO detail DTO.
 
@@ -901,4 +979,8 @@ Backend implementation is correct when:
 - Customs clear updates Shipment to CUSTOMS_CLEARED.
 - Carrier DO creation is allowed only after CUSTOMS_CLEARED.
 - DTO creation is allowed only after CUSTOMS_CLEARED.
+- GET /api/v1/shipments/:id/domestic-transport-orders returns all linked DTOs.
+- POST /api/v1/shipments/:id/domestic-transport-orders/link links an existing DTO to a Shipment.
+- DELETE /api/v1/shipments/:id/domestic-transport-orders/:dtoId/unlink soft-deletes the junction record.
+- DTO response includes shipments[] array with all linked shipments.
 ```

@@ -307,6 +307,9 @@ DTO:
 - `GET /api/v1/domestic-transport-orders`
 - `GET /api/v1/domestic-transport-orders/:id`
 - `POST /api/v1/shipments/:shipmentId/domestic-transport-orders`
+- `GET /api/v1/shipments/:shipmentId/domestic-transport-orders` — list all DTOs linked to a shipment (via junction table or primary shipment_id)
+- `POST /api/v1/shipments/:shipmentId/domestic-transport-orders/link` — link an existing DTO to a shipment; body `{ dto_id }`
+- `DELETE /api/v1/shipments/:shipmentId/domestic-transport-orders/:dtoId/unlink` — unlink a DTO from a shipment
 - `PATCH /api/v1/domestic-transport-orders/:id`
 - `POST /api/v1/domestic-transport-orders/:id/quote-pending`
 - `POST /api/v1/domestic-transport-orders/:id/confirm-quote`
@@ -316,14 +319,18 @@ DTO:
 - `POST /api/v1/domestic-transport-orders/:id/close`
 - `POST /api/v1/domestic-transport-orders/:id/cancel`
 
+The Shipment–DTO relationship is many-to-many (n:n). The junction collection `shipment-dto-links` holds `{ shipment_id, dto_id }` pairs. One Shipment can have many DTOs (multiple truck runs), and one DTO can be linked to multiple Shipments (LCL consolidation). Creating a DTO via `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` automatically inserts a junction record.
+
 Domestic transport order list/detail responses include frontend-ready fields for DTO screens:
 
-- `shipment`, `carrier_delivery_order`, `truck_vendor`
+- `shipment` — primary shipment (backward compat, kept from `shipment_id` FK)
+- `shipments[]` — all linked shipments (via junction table; includes primary)
+- `carrier_delivery_order`, `truck_vendor`
 - `lines[]` enriched with `item`, `purchase_order_line`, `item_customs_profile`, `lot`, `shipment_line`
 - line display fields: `item_code`, `item_name`, `item_description`, `hs_code`, `lot_no`, `qty_ordered`, `gross_weight_kg`
 - header totals: `total_qty`, `total_gross_weight_kg`
 
-`GET /api/v1/domestic-transport-orders` supports `page`, `limit`, `search`/`q`, `status`, `shipment_id`, and `truck_vendor_id`. Search matches DTO number, shipment number, truck vendor, driver, vehicle, origin, destination, and warehouse. The response meta includes `total` and `pagination`.
+`GET /api/v1/domestic-transport-orders` supports `page`, `limit`, `search`/`q`, `status`, `shipment_id`, and `truck_vendor_id`. The `shipment_id` filter matches both the primary FK and junction-linked DTOs. Search matches DTO number, shipment number, truck vendor, driver, vehicle, origin, destination, and warehouse. The response meta includes `total` and `pagination`.
 
 Mock Debug:
 

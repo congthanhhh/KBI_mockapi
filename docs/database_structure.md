@@ -25,6 +25,7 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `delivery-orders` | `mock-data/delivery-orders.json` | 14 |
 | `domestic-transport-order-lines` | `mock-data/domestic-transport-order-lines.json` | 14 |
 | `domestic-transport-orders` | `mock-data/domestic-transport-orders.json` | 14 |
+| `shipment-dto-links` | `mock-data/shipment-dto-links.json` | 14 |
 | `incoterms` | `mock-data/incoterms.json` | 4 |
 | `item-customs-profiles` | `mock-data/item-customs-profiles.json` | 14 |
 | `item-groups` | `mock-data/item-groups.json` | 4 |
@@ -221,6 +222,22 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `qty` | `number` | required |  |
 | `unit` | `string` | required |  |
 | `sort_order` | `number` | required |  |
+
+### shipment-dto-links
+
+- Source: `mock-data/shipment-dto-links.json`
+- Current mock records: 14
+- Purpose: Junction table for the **n:n relationship** between Shipments and DTOs. One DTO can serve multiple Shipments (LCL consolidation), and one Shipment can have multiple DTOs (multiple truck runs).
+
+| Field | Type | Presence | Notes |
+| --- | --- | --- | --- |
+| `create_at` | `string` | required | Audit timestamp |
+| `update_at` | `string` | required | Audit timestamp |
+| `delete_at` | `null` | nullable | Soft delete |
+| `is_delete` | `boolean` | required | Soft delete |
+| `id` | `string` | required | Mock primary key (`sdl_001`) |
+| `shipment_id` | `string` | required | Inferred FK -> shipments.id |
+| `dto_id` | `string` | required | Inferred FK -> domestic-transport-orders.id |
 
 ### domestic-transport-orders
 
@@ -845,9 +862,11 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `domestic-transport-order-lines` | `purchase_order_line_id` | `purchase-order-lines.id` |
 | `domestic-transport-order-lines` | `po_lot_id` | `po-lots.id` |
 | `domestic-transport-order-lines` | `item_id` | `item-master.id` |
-| `domestic-transport-orders` | `shipment_id` | `shipments.id` |
+| `domestic-transport-orders` | `shipment_id` | `shipments.id` (primary FK, kept for backward compat) |
 | `domestic-transport-orders` | `carrier_delivery_order_id` | `carrier-delivery-orders.id` |
 | `domestic-transport-orders` | `truck_vendor_id` | `suppliers.id` |
+| `shipment-dto-links` | `shipment_id` | `shipments.id` |
+| `shipment-dto-links` | `dto_id` | `domestic-transport-orders.id` |
 | `item-customs-profiles` | `item_id` | `item-master.id` |
 | `item-master` | `item_group_id` | `item-groups.id` |
 | `po-delivery-slots` | `purchase_order_id` | `purchase-orders.id` |
@@ -894,3 +913,4 @@ It does not export sample data; it only lists mock tables/files and their fields
 - Screen DTO files are not normalized tables; they are frontend-ready payloads persisted as JSON for `GET /api/v1/tasks`, `GET /api/v1/tasks/:id`, and `GET /api/v1/purchase-orders/:id/tasks`.
 - `quotations.ref_id` is polymorphic; read it together with `ref_type` to identify the source entity.
 - `po-delivery-slots` still exists in mock-data as historical mock data, but current LOT runtime does not use Slot per `AGENTS.md`.
+- `shipment-dto-links` is the junction table for the **Shipment ↔ DTO n:n relationship**. `domestic-transport-orders.shipment_id` is kept as the primary FK for the originating shipment but is NOT the sole source of truth for linked shipments. Always consult `shipment-dto-links` for the full set of shipments a DTO is serving.

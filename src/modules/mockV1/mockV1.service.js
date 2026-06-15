@@ -34,6 +34,7 @@ const collections = {
     carrierDeliveryOrders: "carrier-delivery-orders",
     domesticTransportOrders: "domestic-transport-orders",
     domesticTransportOrderLines: "domestic-transport-order-lines",
+    shipmentDtoLinks: "shipment-dto-links",
     logisticsTasks: "logistics-tasks",
     taskListScreen: "screens/task-list"
 };
@@ -69,6 +70,7 @@ const collectionAliases = Object.freeze({
     carrier_delivery_orders: collections.carrierDeliveryOrders,
     domestic_transport_orders: collections.domesticTransportOrders,
     domestic_transport_order_lines: collections.domesticTransportOrderLines,
+    shipment_dto_links: collections.shipmentDtoLinks,
     logistics_tasks: collections.logisticsTasks
 });
 
@@ -1894,6 +1896,13 @@ export async function createDomesticTransportOrder(shipmentId, body) {
             sort_order: index + 1
         });
     }
+    // Insert junction record for n:n relationship
+    const allLinks = await active(collections.shipmentDtoLinks);
+    await repo.insert(collections.shipmentDtoLinks, {
+        id: nextId(allLinks, "sdl"),
+        shipment_id: shipment.id,
+        dto_id: dto.id
+    });
     return getDomesticTransportOrder(dto.id);
 }
 
@@ -1910,7 +1919,12 @@ export async function listDomesticTransportOrders(query = {}) {
     const items = context.domesticTransportOrders
         .filter((order) => {
             if (query.status && order.status !== query.status) return false;
-            if (query.shipment_id && order.shipment_id !== query.shipment_id) return false;
+            if (query.shipment_id) {
+                const isLinked = context.shipmentDtoLinks.some(
+                    (link) => link.dto_id === order.id && link.shipment_id === query.shipment_id
+                );
+                if (order.shipment_id !== query.shipment_id && !isLinked) return false;
+            }
             if (query.truck_vendor_id && order.truck_vendor_id !== query.truck_vendor_id) return false;
             if (!search) return true;
 
@@ -1999,6 +2013,60 @@ export async function closeDomesticTransportOrder(id) {
 
 export async function cancelDomesticTransportOrder(id) {
     return updateDomesticTransportOrderStatus(id, "CANCELLED");
+}
+
+export async function listShipmentDomesticTransportOrders(shipmentId, query = {}) {
+    // Validate shipment exists
+    await requireRecord(collections.shipments, shipmentId, "Shipment not found");
+    // Find all DTO IDs linked to this shipment via junction table
+    const allLinks = await active(collections.shipmentDtoLinks);
+    const dtoIds = new Set(
+        allLinks
+            .filter((link) => link.shipment_id === shipmentId)
+            .map((link) => link.dto_id)
+    );
+    // Also include DTOs whose primary shipment_id matches (backward compat)
+    const allDtos = await active(collections.domesticTransportOrders);
+    allDtos.filter((dto) => dto.shipment_id === shipmentId).forEach((dto) => dtoIds.add(dto.id));
+
+    const context = await getDomesticTransportOrderContext();
+    const items = [...dtoIds]
+        .map((id) => context.domesticTransportOrders.find((dto) => dto.id === id))
+        .filter(Boolean)
+        .map((dto) => enrichDomesticTransportOrder(dto, context));
+    return paginateResult(items, query);
+}
+
+export async function linkDtoToShipment(shipmentId, body) {
+    const { dto_id } = body;
+    if (!dto_id) throw apiError("VALIDATION_ERROR", "dto_id is required", {}, 400);
+    await requireRecord(collections.shipments, shipmentId, "Shipment not found");
+    await requireRecord(collections.domesticTransportOrders, dto_id, "Domestic transport order not found");
+
+    // Check not already linked
+    const allLinks = await active(collections.shipmentDtoLinks);
+    const exists = allLinks.some((link) => link.shipment_id === shipmentId && link.dto_id === dto_id);
+    if (exists) throw apiError("STATE_CONFLICT", "DTO is already linked to this shipment", {}, 409);
+
+    const newId = nextId(allLinks, "sdl");
+    await repo.insert(collections.shipmentDtoLinks, {
+        id: newId,
+        shipment_id: shipmentId,
+        dto_id
+    });
+    return getDomesticTransportOrder(dto_id);
+}
+
+export async function unlinkDtoFromShipment(shipmentId, dtoId) {
+    await requireRecord(collections.shipments, shipmentId, "Shipment not found");
+    await requireRecord(collections.domesticTransportOrders, dtoId, "Domestic transport order not found");
+
+    const allLinks = await active(collections.shipmentDtoLinks);
+    const link = allLinks.find((l) => l.shipment_id === shipmentId && l.dto_id === dtoId);
+    if (!link) throw apiError("NOT_FOUND", "DTO is not linked to this shipment", {}, 404);
+
+    await repo.softDelete(collections.shipmentDtoLinks, link.id);
+    return getDomesticTransportOrder(dtoId);
 }
 
 async function updatePurchaseOrderStatus(id, status) {
@@ -2385,7 +2453,8 @@ async function getDomesticTransportOrderContext() {
         purchaseOrderLines,
         lots,
         items,
-        itemCustomsProfiles
+        itemCustomsProfiles,
+        shipmentDtoLinks
     ] = await Promise.all([
         active(collections.domesticTransportOrders),
         active(collections.domesticTransportOrderLines),
@@ -2396,7 +2465,8 @@ async function getDomesticTransportOrderContext() {
         active(collections.purchaseOrderLines),
         active(collections.lots),
         active(collections.items),
-        active(collections.itemCustomsProfiles)
+        active(collections.itemCustomsProfiles),
+        active(collections.shipmentDtoLinks)
     ]);
 
     return {
@@ -2409,7 +2479,8 @@ async function getDomesticTransportOrderContext() {
         purchaseOrderLines,
         lots,
         items,
-        itemCustomsProfiles
+        itemCustomsProfiles,
+        shipmentDtoLinks
     };
 }
 
@@ -2422,9 +2493,18 @@ function enrichDomesticTransportOrder(order, context) {
         .sort(bySortOrder)
         .map((line) => enrichDomesticTransportOrderLine(line, context));
 
+    // Find all shipment_ids linked to this DTO via junction table
+    const linkedShipmentIds = (context.shipmentDtoLinks || [])
+        .filter((link) => link.dto_id === order.id)
+        .map((link) => link.shipment_id);
+    // Union with primary shipment_id for backward compat
+    const allShipmentIds = [...new Set([order.shipment_id, ...linkedShipmentIds].filter(Boolean))];
+    const shipments = allShipmentIds.map((id) => context.shipments.find((s) => s.id === id) || null).filter(Boolean);
+
     return {
         ...order,
         shipment,
+        shipments,
         carrier_delivery_order: carrierDeliveryOrder,
         truck_vendor: truckVendor,
         lines,
@@ -2631,7 +2711,8 @@ function idPrefixForCollection(collectionName) {
         customs_declaration_lines: "cd_line",
         carrier_delivery_orders: "cdo",
         domestic_transport_orders: "dto",
-        domestic_transport_order_lines: "dto_line"
+        domestic_transport_order_lines: "dto_line",
+        shipment_dto_links: "sdl"
     };
 
     return special[tableName] || tableName.split("_").map((part) => part[0]).join("");
