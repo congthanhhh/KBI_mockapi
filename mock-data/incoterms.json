@@ -15,6 +15,17 @@
     "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
+    "id": "inc_fca",
+    "incoterm_code": "FCA",
+    "incoterm_name": "Free Carrier",
+    "description": "Supplier delivers goods to the carrier at the named origin point.",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
     "id": "inc_fob",
     "incoterm_code": "FOB",
     "incoterm_name": "Free On Board",
@@ -26,21 +37,10 @@
     "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
-    "id": "inc_cif",
-    "incoterm_code": "CIF",
-    "incoterm_name": "Cost Insurance Freight",
-    "description": "Supplier arranges freight and insurance.",
-    "is_active": true
-  },
-  {
-    "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "inc_ddp",
-    "incoterm_code": "DDP",
-    "incoterm_name": "Delivered Duty Paid",
-    "description": "Supplier delivers duty paid.",
+    "id": "inc_cfr",
+    "incoterm_code": "CFR",
+    "incoterm_name": "Cost and Freight",
+    "description": "Supplier pays freight to the destination port; buyer pays destination charges.",
     "is_active": true
   }
 ]

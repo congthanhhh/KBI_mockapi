@@ -126,20 +126,29 @@
     "dto_id": "dto_014"
   },
   {
-    "create_at": "2026-06-15T06:35:14.683Z",
-    "update_at": "2026-06-15T06:35:14.683Z",
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "sdl_015",
-    "shipment_id": "shp_002",
+    "shipment_id": "shp_008",
     "dto_id": "dto_015"
   },
   {
-    "create_at": "2026-06-15T06:35:22.762Z",
-    "update_at": "2026-06-15T06:35:22.762Z",
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "sdl_016",
+    "shipment_id": "shp_002",
+    "dto_id": "dto_016"
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "sdl_017",
     "shipment_id": "shp_007",
     "dto_id": "dto_016"
   }

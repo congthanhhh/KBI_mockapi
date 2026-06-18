@@ -283,7 +283,7 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `delete_at` | `null` | nullable | Soft delete |
 | `is_delete` | `boolean` | required | Soft delete |
 | `id` | `string` | required | Mock primary key |
-| `incoterm_code` | `string` | required |  |
+| `incoterm_code` | `string` | required | Working set: `EXW`, `FCA`, `FOB`, `CFR` (drives the Incoterms-aware quotation form) |
 | `incoterm_name` | `string` | required |  |
 | `description` | `string` | required |  |
 | `is_active` | `boolean` | required |  |
@@ -634,7 +634,7 @@ It does not export sample data; it only lists mock tables/files and their fields
 ### quotation-charge-lines
 
 - Source: `mock-data/quotation-charge-lines.json`
-- Current mock records: 17
+- Current mock records: 23
 
 | Field | Type | Presence | Notes |
 | --- | --- | --- | --- |
@@ -644,7 +644,7 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `is_delete` | `boolean` | required | Soft delete |
 | `id` | `string` | required | Mock primary key |
 | `quotation_id` | `string` | required | Inferred FK -> quotations.id |
-| `charge_type` | `string` | required |  |
+| `charge_type` | `string` | required | Incoterms-aware vocabulary: `OCEAN_FREIGHT`, `AIR_FREIGHT`, `BREAKBULK_FREIGHT`, `ORIGIN_CHARGE`, `DO_FEE`, `HANDLING`, `THC`, `CIC`, `EMC_EMF`, `CLEANING`, `CFS`, `LOCAL_CHARGE`, `CUSTOMS_FEE`, `TRUCKING`, `LOWERING_FEE`, `LOADING_FEE`, `DEMURRAGE`, `DETENTION`, `WAREHOUSE`, `DOCUMENT_FEE`, `OTHER` (unknown → `OTHER`) |
 | `description` | `string` | required |  |
 | `quantity` | `number` | required |  |
 | `unit_price` | `number` | required |  |

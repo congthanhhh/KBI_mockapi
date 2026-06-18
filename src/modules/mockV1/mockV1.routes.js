@@ -84,10 +84,13 @@ router.get("/shipments/:id/milestones", asyncHandler(controller.listShipmentMile
 router.post("/shipments/:id/milestones/:code/done", asyncHandler(controller.markShipmentMilestoneDone));
 router.get("/shipments/:id/documents", asyncHandler(controller.listShipmentDocuments));
 router.post("/shipments/:id/documents", asyncHandler(controller.createShipmentDocument));
+router.get("/shipments/:id/containers", asyncHandler(controller.listShipmentContainers));
+router.post("/shipments/:id/containers", asyncHandler(controller.createShipmentContainer));
 router.post("/shipments/:id/cancel", asyncHandler(controller.cancelShipment));
 router.patch("/shipments/:id", asyncHandler(controller.updateShipment));
 router.get("/shipments/:shipmentId/customs-declarations", asyncHandler(controller.listCustomsDeclarationsByShipment));
 router.post("/shipments/:shipmentId/customs-declarations", asyncHandler(controller.createCustomsDeclaration));
+router.get("/shipments/:shipmentId/carrier-delivery-orders", asyncHandler(controller.listShipmentCarrierDeliveryOrders));
 router.post("/shipments/:shipmentId/carrier-delivery-orders", asyncHandler(controller.createCarrierDeliveryOrder));
 router.get("/shipments/:shipmentId/domestic-transport-orders", asyncHandler(controller.listShipmentDomesticTransportOrders));
 router.post("/shipments/:shipmentId/domestic-transport-orders/link", asyncHandler(controller.linkDtoToShipment));
@@ -96,6 +99,8 @@ router.post("/shipments/:shipmentId/domestic-transport-orders", asyncHandler(con
 router.get("/shipments/:id", asyncHandler(controller.getShipment));
 router.patch("/shipment-documents/:documentId", asyncHandler(controller.updateShipmentDocument));
 router.delete("/shipment-documents/:documentId", asyncHandler(controller.deleteShipmentDocument));
+router.patch("/shipment-containers/:containerId", asyncHandler(controller.updateShipmentContainer));
+router.delete("/shipment-containers/:containerId", asyncHandler(controller.deleteShipmentContainer));
 
 router.get("/customs-declarations/:id/lines", asyncHandler(controller.listCustomsDeclarationLines));
 router.post("/customs-declarations/:id/lines", asyncHandler(controller.createCustomsDeclarationLine));

@@ -107,7 +107,7 @@
     "purchase_order_line_id": "po_line_008",
     "po_lot_id": "lot_008",
     "item_id": "item_008",
-    "qty": 800,
+    "qty": 400,
     "unit": "KIT",
     "sort_order": 1
   },
@@ -196,12 +196,26 @@
     "sort_order": 1
   },
   {
-    "create_at": "2026-06-15T06:35:14.682Z",
-    "update_at": "2026-06-15T06:35:14.682Z",
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_line_015",
     "domestic_transport_order_id": "dto_015",
+    "purchase_order_line_id": "po_line_008",
+    "po_lot_id": "lot_008",
+    "item_id": "item_008",
+    "qty": 400,
+    "unit": "KIT",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "dto_line_016",
+    "domestic_transport_order_id": "dto_016",
     "purchase_order_line_id": "po_line_003",
     "po_lot_id": "lot_004",
     "item_id": "item_004",
@@ -210,17 +224,17 @@
     "sort_order": 1
   },
   {
-    "create_at": "2026-06-15T06:35:22.760Z",
-    "update_at": "2026-06-15T06:35:22.760Z",
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
-    "id": "dto_line_016",
+    "id": "dto_line_017",
     "domestic_transport_order_id": "dto_016",
     "purchase_order_line_id": "po_line_007",
     "po_lot_id": "lot_007",
     "item_id": "item_007",
     "qty": 240,
     "unit": "SET",
-    "sort_order": 1
+    "sort_order": 2
   }
 ]

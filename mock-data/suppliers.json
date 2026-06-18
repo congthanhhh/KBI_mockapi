@@ -58,5 +58,35 @@
     "email": "dispatch@vntrucking.example",
     "phone": "+84-24-1000-0004",
     "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "sup_haiphong_trucking",
+    "supplier_code": "HP-TRK",
+    "supplier_name": "Hai Phong Port Trucking",
+    "supplier_type": "TRUCKING",
+    "country": "VN",
+    "contact_name": "Tran Thi Bich",
+    "email": "dispatch@hptrucking.example",
+    "phone": "+84-225-1000-0005",
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "sup_north_trucking",
+    "supplier_code": "NT-TRK",
+    "supplier_name": "Northern Logistics Trucking",
+    "supplier_type": "TRUCKING",
+    "country": "VN",
+    "contact_name": "Le Van Cuong",
+    "email": "ops@northlog.example",
+    "phone": "+84-24-1000-0006",
+    "is_active": true
   }
 ]

@@ -2,96 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## Read AGENTS.md first
+
+**[AGENTS.md](./AGENTS.md) is the single source of truth for working in this repository** — project overview, structure, data layer, business flow, API style, response shapes, LOT rules, commands, verification, deployment, and security. It is the shared, cross-agent guide (Claude Code, Codex, and others), so guidance lives there once instead of being duplicated and drifting out of sync.
+
+Before doing any work here, read [AGENTS.md](./AGENTS.md) and follow it. Everything that used to be in this file now lives there.
+
+## Commands (quick reference)
 
 ```bash
-# Start development server with hot-reload
-npm run dev
-
-# Start production server
-npm start
-
-# Reset all mock data to seed state
-npm run mock:seed
-
-# Smoke-test the running API
-npm run mock:smoke
+npm run dev         # development server with hot-reload (nodemon)
+npm start           # production server
+npm run mock:seed   # reset all mock data to seed state
+npm run mock:smoke  # smoke-test the running API
 ```
 
-The server runs on port `3001` by default (configurable via `PORT` env var). CORS is set to `http://localhost:5173` by default (`CORS_ORIGIN` env var).
-
-## Architecture
-
-This is an **Express 5 mock API** for a freight/logistics management system (KBI). It uses **ES modules** (`"type": "module"` in package.json) — always use `.js` extensions in imports.
-
-### Data layer
-
-All persistence is file-based JSON. `MockJsonRepository` (`src/repositories/MockJsonRepository.js`) is the single data access point. It reads from and writes to `mock-data/*.json` files and supports:
-- `findAll(name, filter)` — returns active records (excludes `is_delete: true`)
-- `findById`, `insert`, `update`, `softDelete`, `replaceAll`
-
-Soft-delete is the standard deletion pattern — `is_delete: true` + `delete_at` timestamp. All records carry `create_at`, `update_at`, `delete_at`, `is_delete` base fields.
-
-### Module structure
-
-```
-src/
-  app.js                 # Express app setup (CORS, JSON, routes, error handlers)
-  server.js              # Entry point — binds to port
-  config/env.js          # Env vars (PORT, CORS_ORIGIN, DATA_SOURCE)
-  repositories/MockJsonRepository.js
-  modules/
-    mockV1/              # Main business logic module
-      mockV1.routes.js   # All domain routes (PO, DO, quotation, shipment, etc.)
-      mockV1.controller.js  # Thin controllers — call service, wrap with success()
-      mockV1.service.js  # All business logic (large file, ~2600 lines)
-      mockV1.constants.js
-    mockMasterData/      # Master data CRUD (currencies, incoterms, items, etc.)
-  middlewares/
-    errorHandler.js      # Global error handler
-    notFound.js
-  utils/
-    apiResponse.js       # success(data, meta) and error(code, message, details, httpStatus)
-    asyncHandler.js      # Wraps async route handlers
-    pagination.js        # parsePagination, buildPaginationMeta
-    queryParams.js
-    requestFields.js
-  routes/mock.js         # Top-level router: /api/health, /api/v1/*, /api/*
-```
-
-All routes are mounted under `/api`. Domain routes are at `/api/v1/`. Master data routes are at `/api/` (no version prefix).
-
-### API response envelope
-
-Every response follows this shape:
-
-```json
-{ "data": ..., "meta": {}, "errors": [] }
-```
-
-List endpoints with pagination include `meta.page`, `meta.limit`, `meta.total`, `meta.totalPages`. Errors thrown via `apiError()` are caught by the global error handler and returned as HTTP errors.
-
-### Collection aliases
-
-`mockV1.service.js` defines a `collections` map (snake_case → kebab-case filename, e.g. `deliveryOrders → "delivery-orders"`). The generic `/api/v1/mock/:collection` endpoint also accepts snake_case names via `collectionAliases`. Use the collection keys from the `collections` const when writing service code.
-
-### Business flow
-
-The domain models follow this lifecycle:
-
-1. **Purchase Order** (DRAFT → SENT → CONFIRMED → READY_TO_SHIP → SHIPPED)
-2. **PO Lots** — group PO lines for shipping; can be split/moved/reordered
-3. **Delivery Order** — created from lots; tracks freight from origin to warehouse
-4. **Quotation** — freight quote linked to a DO or Shipment; versioned via `quotation_group_id`
-5. **Shipment** — created from a QUOTATION_CONFIRMED DO; progresses through milestones
-6. **Customs Declaration** — linked to shipment
-7. **Carrier DO** — issued after customs cleared
-8. **Domestic Transport Order (DTO)** — last-mile delivery to warehouse
-
-### Seed data
-
-`scripts/seed-mock-data.js` is the source of truth for initial data. Run `npm run mock:seed` to overwrite all `mock-data/*.json` files with the seed. The `mock-data/screens/` subfolder holds pre-built screen-level response fixtures (task list, task detail, PO task board) that the service reads directly when a matching screen file exists.
-
-### ID conventions
-
-IDs follow the pattern `<prefix>_<zero-padded-number>` (e.g. `po_001`, `lot_line_019`). New IDs are generated by `nextId(rows, prefix)` which finds the current max number and increments. Document numbers use `nextDocumentNo("PREFIX-YYYY", count)`.
+The server runs on port `3001` by default (`PORT` env var). CORS defaults to `http://localhost:5173` (`CORS_ORIGIN` env var). For everything else, see [AGENTS.md](./AGENTS.md).

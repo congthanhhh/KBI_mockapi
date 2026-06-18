@@ -259,6 +259,15 @@ Quotations:
 
 Quotation detail responses include `supplier`, `currency`, `charge_lines`, and `events`. Charge lines are normalized with `line_no`, `unit`, `tax_amount`, and `total_amount` so quotation tables can render totals even when older mock rows only contain base amounts.
 
+Charge-line `charge_type` is an open string (unknown values default to `OTHER`), but the Incoterms-aware quotation form emits a known vocabulary so each fee renders as a typed line:
+
+- Freight / origin: `OCEAN_FREIGHT`, `AIR_FREIGHT`, `BREAKBULK_FREIGHT`, `ORIGIN_CHARGE`
+- Vietnam local: `DO_FEE`, `HANDLING`, `THC`, `CIC`, `EMC_EMF`, `CLEANING`, `CFS`, `LOCAL_CHARGE`
+- Customs & domestic transport: `CUSTOMS_FEE`, `TRUCKING`, `LOWERING_FEE` (Hạ xa), `LOADING_FEE` (bốc xếp xe → pallet)
+- Other: `DEMURRAGE`, `DETENTION`, `WAREHOUSE`, `DOCUMENT_FEE`, `OTHER`
+
+Which fees apply depends on the originating PO Incoterms group (EXW/FCA, FOB, CFR) and the shipping mode (FCL/LCL/AIR); see `docs/quotation_Incoterms.md`. The `unit` field carries the pricing basis (`CONT`, `RT`, `KGS`, `BL`, `DECLARATION`).
+
 Marking a quotation final sets `quotation.status = CONFIRMED_BY_KBI`, `quotation.is_final = true`, clears `is_final` from other quotations in the same `quotation_group_id`, and updates the linked delivery order to `QUOTATION_CONFIRMED`. `POST /api/v1/quotations/:id/confirm-by-kbi` follows the same finalization rule for compatibility.
 
 Shipments:
@@ -274,9 +283,19 @@ Shipments:
 - `POST /api/v1/shipments/:id/documents`
 - `PATCH /api/v1/shipment-documents/:documentId`
 - `DELETE /api/v1/shipment-documents/:documentId`
+- `GET /api/v1/shipments/:id/containers`
+- `POST /api/v1/shipments/:id/containers`
+- `PATCH /api/v1/shipment-containers/:containerId`
+- `DELETE /api/v1/shipment-containers/:containerId`
 - `POST /api/v1/shipments/:id/cancel`
 
+Shipment containers model the physical transport units of a shipment. Each container record carries `shipment_id`, `container_no` (required on create), `container_type` (e.g. `20GP`, `40GP`, `40HC`), `seal_no`, `tare_weight_kg`, `gross_weight_kg`, `volume_cbm`, `status`, `note`, and `dto_id` (the DTO currently hauling it, or `null`). `status` is one of `PLANNED` | `STUFFED` | `GATED_IN` | `DISCHARGED` | `RETURNED` (default `PLANNED` on create). `GET /api/v1/shipments/:id` embeds the shipment's `containers` array alongside `lines`, `milestones`, and `documents`.
+
+Shipment documents carry a lifecycle `status` (`DRAFT` | `RECEIVED` | `VERIFIED` | `REJECTED` | `CANCELLED`). `POST .../documents` creates the document with `status = DRAFT` by default. Editable fields on create/update are `milestone_id`, `milestone_code`, `document_type`, `document_no`, `file_url`, `file_name`, `mime_type`, `issued_date`, `received_at`, `status`, and `notes`. The Verify action sets `status = VERIFIED`; the Reject action sets `status = REJECTED` and stores the reason in `notes`.
+
 `GET /api/v1/shipments` supports `page`, `limit`, `search`/`q`, `status`, `mode`, `delivery_order_id`, `purchase_order_id`, `forwarder_id`, `transport_mode_id`, `from_date`, and `to_date`. The response meta includes `total` and `pagination`.
+
+`GET /api/v1/shipments` and `GET /api/v1/shipments/:id` enrich each shipment with `customs_channel` (`GREEN` | `YELLOW` | `RED` | `null`). The value is derived from the shipment's representative customs declaration — the most recently created/cleared non-cancelled declaration linked via `shipment_id`. It is `null` when the shipment has no customs declaration yet. The channel is assigned when a declaration is opened and persists after clearance.
 
 Customs:
 
@@ -297,6 +316,7 @@ Carrier DO:
 
 - `GET /api/v1/carrier-delivery-orders`
 - `GET /api/v1/carrier-delivery-orders/:id`
+- `GET /api/v1/shipments/:shipmentId/carrier-delivery-orders`
 - `POST /api/v1/shipments/:shipmentId/carrier-delivery-orders`
 - `POST /api/v1/carrier-delivery-orders/:id/issue`
 - `POST /api/v1/carrier-delivery-orders/:id/release`
@@ -319,7 +339,9 @@ DTO:
 - `POST /api/v1/domestic-transport-orders/:id/close`
 - `POST /api/v1/domestic-transport-orders/:id/cancel`
 
-The Shipment–DTO relationship is many-to-many (n:n). The junction collection `shipment-dto-links` holds `{ shipment_id, dto_id }` pairs. One Shipment can have many DTOs (multiple truck runs), and one DTO can be linked to multiple Shipments (LCL consolidation). Creating a DTO via `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` automatically inserts a junction record.
+The Shipment–DTO relationship is many-to-many (n:n). The junction collection `shipment-dto-links` holds `{ shipment_id, dto_id }` pairs. One Shipment can have many DTOs (multiple truck runs), and one DTO can be linked to multiple Shipments (LCL consolidation). Creating a DTO via `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` automatically inserts a junction record. The source shipment must be `CUSTOMS_CLEARED`.
+
+`POST /api/v1/shipments/:shipmentId/domestic-transport-orders` accepts an optional `container_ids: string[]` to allocate specific shipment containers to the new DTO. When supplied, every id must belong to the shipment (otherwise `VALIDATION_ERROR`); the chosen containers have their `dto_id` set to the new DTO and the DTO's `container_no` is populated from their container numbers. When omitted, `container_no` falls back to the request body `container_no` (or `null`).
 
 Domestic transport order list/detail responses include frontend-ready fields for DTO screens:
 

@@ -29,6 +29,7 @@ const collections = {
     shipmentLines: "shipment-lines",
     shipmentMilestones: "shipment-milestones",
     shipmentDocuments: "shipment-documents",
+    shipmentContainers: "shipment-containers",
     customsDeclarations: "customs-declarations",
     customsDeclarationLines: "customs-declaration-lines",
     carrierDeliveryOrders: "carrier-delivery-orders",
@@ -61,6 +62,7 @@ const collectionAliases = Object.freeze({
     quotation_events: collections.quotationEvents,
     quotations: collections.quotations,
     shipment_documents: collections.shipmentDocuments,
+    shipment_containers: collections.shipmentContainers,
     shipment_lines: collections.shipmentLines,
     shipment_milestones: collections.shipmentMilestones,
     shipments: collections.shipments,
@@ -237,6 +239,8 @@ export async function listPurchaseOrders(query = {}) {
     const search = searchTerm(query);
     const status = String(query.status || "").trim();
     const supplierId = String(query.supplier_id || "").trim();
+    const fromDate = String(query.from_date || "").trim();
+    const toDate = String(query.to_date || "").trim();
 
     const items = purchaseOrders
         .map((purchaseOrder) => enrichPurchaseOrder(purchaseOrder, {
@@ -244,8 +248,11 @@ export async function listPurchaseOrders(query = {}) {
             suppliers
         }))
         .filter((purchaseOrder) => {
+            const filterDate = String(purchaseOrder.expected_etd || purchaseOrder.expected_eta || purchaseOrder.create_at || "");
             if (status && purchaseOrder.status !== status) return false;
             if (supplierId && purchaseOrder.supplier_id !== supplierId) return false;
+            if (fromDate && filterDate < fromDate) return false;
+            if (toDate && filterDate > toDate) return false;
             if (!search) return true;
             return purchaseOrderMatchesSearch(purchaseOrder, context, search);
         })
@@ -1492,10 +1499,11 @@ export async function createShipmentFromDeliveryOrder(body) {
 }
 
 export async function listShipments(query = {}) {
-    const [shipments, deliveryOrders, purchaseOrders] = await Promise.all([
+    const [shipments, deliveryOrders, purchaseOrders, declarations] = await Promise.all([
         active(collections.shipments),
         active(collections.deliveryOrders),
-        active(collections.purchaseOrders)
+        active(collections.purchaseOrders),
+        active(collections.customsDeclarations)
     ]);
     const search = searchTerm(query);
 
@@ -1528,23 +1536,31 @@ export async function listShipments(query = {}) {
                 purchaseOrder.po_no
             ].some((value) => String(value || "").toLowerCase().includes(search));
         })
-        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")))
+        .map((shipment) => ({
+            ...shipment,
+            customs_channel: pickShipmentCustomsChannel(declarations, shipment.id)
+        }));
 
     return paginateResult(items, query);
 }
 
 export async function getShipment(id) {
     const shipment = await requireRecord(collections.shipments, id, "Shipment not found");
-    const [lines, milestones, documents] = await Promise.all([
+    const [lines, milestones, documents, containers, declarations] = await Promise.all([
         active(collections.shipmentLines),
         active(collections.shipmentMilestones),
-        active(collections.shipmentDocuments)
+        active(collections.shipmentDocuments),
+        active(collections.shipmentContainers),
+        active(collections.customsDeclarations)
     ]);
     return {
         ...shipment,
+        customs_channel: pickShipmentCustomsChannel(declarations, id),
         lines: lines.filter((line) => line.shipment_id === id),
         milestones: milestones.filter((milestone) => milestone.shipment_id === id).sort(bySortOrder),
-        documents: documents.filter((document) => document.shipment_id === id)
+        documents: documents.filter((document) => document.shipment_id === id),
+        containers: containers.filter((container) => container.shipment_id === id).sort(bySortOrder)
     };
 }
 
@@ -1588,19 +1604,23 @@ export async function createShipmentDocument(id, body) {
     return repo.insert(collections.shipmentDocuments, {
         id: nextId(documents, "shp_doc"),
         shipment_id: id,
+        milestone_id: body.milestone_id || null,
+        milestone_code: body.milestone_code || null,
         document_type: body.document_type || "OTHER",
         document_no: body.document_no || null,
         file_url: body.file_url || null,
         file_name: body.file_name || null,
+        mime_type: body.mime_type || null,
         issued_date: body.issued_date || null,
-        received_date: body.received_date || null,
-        note: body.note || null
+        received_at: body.received_at || null,
+        status: body.status || "DRAFT",
+        notes: body.notes || null
     });
 }
 
 export async function updateShipmentDocument(documentId, body) {
     await requireRecord(collections.shipmentDocuments, documentId, "Shipment document not found");
-    const allowedFields = ["document_type", "document_no", "file_url", "file_name", "issued_date", "received_date", "note"];
+    const allowedFields = ["milestone_id", "milestone_code", "document_type", "document_no", "file_url", "file_name", "mime_type", "issued_date", "received_at", "status", "notes"];
     return repo.update(collections.shipmentDocuments, documentId, pick(body, allowedFields));
 }
 
@@ -1608,6 +1628,69 @@ export async function deleteShipmentDocument(documentId) {
     const deleted = await repo.softDelete(collections.shipmentDocuments, documentId);
     if (!deleted) {
         throw apiError("NOT_FOUND", "Shipment document not found", { id: documentId }, 404);
+    }
+    return deleted;
+}
+
+const containerStatuses = ["PLANNED", "STUFFED", "GATED_IN", "DISCHARGED", "RETURNED"];
+
+export async function listShipmentContainers(id) {
+    await requireRecord(collections.shipments, id, "Shipment not found");
+    return (await active(collections.shipmentContainers))
+        .filter((container) => container.shipment_id === id)
+        .sort(bySortOrder);
+}
+
+export async function createShipmentContainer(id, body) {
+    await requireRecord(collections.shipments, id, "Shipment not found");
+    if (!body.container_no) {
+        throw apiError("VALIDATION_ERROR", "container_no is required", {}, 400);
+    }
+    if (body.status && !containerStatuses.includes(body.status)) {
+        throw apiError("VALIDATION_ERROR", "Invalid container status", { status: body.status }, 400);
+    }
+    const containers = await active(collections.shipmentContainers);
+    const shipmentContainers = containers.filter((container) => container.shipment_id === id);
+    return repo.insert(collections.shipmentContainers, {
+        id: nextId(containers, "cont"),
+        shipment_id: id,
+        dto_id: body.dto_id || null,
+        container_no: body.container_no,
+        container_type: body.container_type || null,
+        seal_no: body.seal_no || null,
+        tare_weight_kg: body.tare_weight_kg ?? null,
+        gross_weight_kg: body.gross_weight_kg ?? null,
+        volume_cbm: body.volume_cbm ?? null,
+        status: body.status || "PLANNED",
+        note: body.note || null,
+        sort_order: maxSort(shipmentContainers) + 1
+    });
+}
+
+export async function updateShipmentContainer(containerId, body) {
+    await requireRecord(collections.shipmentContainers, containerId, "Shipment container not found");
+    if (body.status && !containerStatuses.includes(body.status)) {
+        throw apiError("VALIDATION_ERROR", "Invalid container status", { status: body.status }, 400);
+    }
+    const allowedFields = [
+        "dto_id",
+        "container_no",
+        "container_type",
+        "seal_no",
+        "tare_weight_kg",
+        "gross_weight_kg",
+        "volume_cbm",
+        "status",
+        "note",
+        "sort_order"
+    ];
+    return repo.update(collections.shipmentContainers, containerId, pick(body, allowedFields));
+}
+
+export async function deleteShipmentContainer(containerId) {
+    const deleted = await repo.softDelete(collections.shipmentContainers, containerId);
+    if (!deleted) {
+        throw apiError("NOT_FOUND", "Shipment container not found", { id: containerId }, 404);
     }
     return deleted;
 }
@@ -1837,6 +1920,14 @@ export async function listCarrierDeliveryOrders() {
     return active(collections.carrierDeliveryOrders);
 }
 
+export async function listCarrierDeliveryOrdersByShipment(shipmentId) {
+    await requireRecord(collections.shipments, shipmentId, "Shipment not found");
+    const deliveryOrders = await active(collections.carrierDeliveryOrders);
+    return deliveryOrders
+        .filter((order) => order.shipment_id === shipmentId)
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
+}
+
 export async function getCarrierDeliveryOrder(id) {
     return requireRecord(collections.carrierDeliveryOrders, id, "Carrier delivery order not found");
 }
@@ -1856,6 +1947,21 @@ export async function cancelCarrierDeliveryOrder(id) {
 export async function createDomesticTransportOrder(shipmentId, body) {
     const shipment = await requireRecord(collections.shipments, shipmentId, "Shipment not found");
     ensureShipmentCleared(shipment);
+    const allContainers = await active(collections.shipmentContainers);
+    const shipmentContainers = allContainers.filter((container) => container.shipment_id === shipment.id);
+    const requestedContainerIds = Array.isArray(body.container_ids) ? body.container_ids : [];
+    const selectedContainers = requestedContainerIds.length
+        ? shipmentContainers.filter((container) => requestedContainerIds.includes(container.id))
+        : [];
+    if (requestedContainerIds.length && selectedContainers.length !== requestedContainerIds.length) {
+        throw apiError("VALIDATION_ERROR", "One or more containers do not belong to this shipment", {
+            shipment_id: shipment.id,
+            container_ids: requestedContainerIds
+        }, 400);
+    }
+    const containerNos = selectedContainers.length
+        ? selectedContainers.map((container) => container.container_no)
+        : (body.container_no || null);
     const dtos = await active(collections.domesticTransportOrders);
     const dto = await repo.insert(collections.domesticTransportOrders, {
         id: nextId(dtos, "dto"),
@@ -1870,6 +1976,7 @@ export async function createDomesticTransportOrder(shipmentId, body) {
         vehicle_plate: body.vehicle_plate || null,
         driver_name: body.driver_name || null,
         driver_phone: body.driver_phone || null,
+        container_no: containerNos,
         scheduled_pickup_at: body.scheduled_pickup_at || null,
         actual_pickup_at: null,
         scheduled_delivery_at: body.scheduled_delivery_at || null,
@@ -1878,6 +1985,9 @@ export async function createDomesticTransportOrder(shipmentId, body) {
         status: "DRAFT",
         note: body.note || null
     });
+    for (const container of selectedContainers) {
+        await repo.update(collections.shipmentContainers, container.id, { dto_id: dto.id });
+    }
     const [shipmentLines, dtoLines] = await Promise.all([
         active(collections.shipmentLines),
         active(collections.domesticTransportOrderLines)
@@ -2327,6 +2437,18 @@ async function active(collectionName) {
 
 function searchTerm(query = {}) {
     return String(query.search || query.q || "").trim().toLowerCase();
+}
+
+// Pick the representative customs declaration for a shipment: skip cancelled
+// ones and prefer the most recently created/cleared. The channel (luong) is
+// assigned when a declaration is opened and persists after clearance, so it is
+// surfaced whenever any active declaration exists.
+function pickShipmentCustomsChannel(declarations, shipmentId) {
+    const candidates = declarations
+        .filter((row) => row.shipment_id === shipmentId && row.status !== "CANCELLED")
+        .sort((left, right) => String(right.cleared_at || right.create_at || "")
+            .localeCompare(String(left.cleared_at || left.create_at || "")));
+    return candidates[0]?.customs_channel ?? null;
 }
 
 function positiveInteger(value, fallback) {

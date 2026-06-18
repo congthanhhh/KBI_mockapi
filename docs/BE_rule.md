@@ -727,13 +727,18 @@ Internal DO
 DTO
 ```
 
-Endpoint:
+Endpoints:
 
 ```txt
-POST /api/v1/shipments/:shipmentId/carrier-delivery-orders
+GET    /api/v1/shipments/:shipmentId/carrier-delivery-orders   (list for a shipment)
+POST   /api/v1/shipments/:shipmentId/carrier-delivery-orders   (create, requires CUSTOMS_CLEARED)
+GET    /api/v1/carrier-delivery-orders/:id
+POST   /api/v1/carrier-delivery-orders/:id/issue               (PENDING -> ISSUED)
+POST   /api/v1/carrier-delivery-orders/:id/release             (ISSUED -> RELEASED)
+POST   /api/v1/carrier-delivery-orders/:id/cancel
 ```
 
-Rules:
+Create rules:
 
 ```txt
 - shipment must exist.
@@ -800,6 +805,21 @@ Rules:
 - copy shipment_lines into domestic_transport_order_lines.
 - auto-insert a shipment-dto-links record linking the new DTO to the shipment.
 ```
+
+Optional body fields (used by the shared container-aware create modal):
+
+```txt
+- container_ids[]   : containers of THIS shipment to allocate to the new DTO. Each must belong
+                      to the shipment (else VALIDATION_ERROR); selected containers get dto_id set
+                      and their container_no copied onto the DTO.
+- truck_vendor_id   : trucking vendor (default sup_vn_trucking).
+- warehouse         : destination warehouse (default "KBI Main Warehouse").
+- scheduled_pickup_at, note, etc.
+```
+
+For multi-shipment consolidation (LCL) the frontend creates the DTO on the primary shipment, then
+calls the link endpoint for each other shipment and re-allocates their containers — there is no
+dedicated "consolidate" endpoint.
 
 ### List DTOs linked to a Shipment
 
@@ -978,6 +998,7 @@ Backend implementation is correct when:
 - Shipment creation creates 10 milestones.
 - Customs clear updates Shipment to CUSTOMS_CLEARED.
 - Carrier DO creation is allowed only after CUSTOMS_CLEARED.
+- GET /api/v1/shipments/:id/carrier-delivery-orders returns the carrier DOs for that shipment.
 - DTO creation is allowed only after CUSTOMS_CLEARED.
 - GET /api/v1/shipments/:id/domestic-transport-orders returns all linked DTOs.
 - POST /api/v1/shipments/:id/domestic-transport-orders/link links an existing DTO to a Shipment.

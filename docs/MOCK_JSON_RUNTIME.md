@@ -11,7 +11,7 @@ Use this mode for:
 - LOT drag/drop and split/move behavior.
 - Internal Delivery Order.
 - Quotation.
-- Shipment milestones and documents.
+- Shipment milestones, documents, and containers.
 - Customs declaration.
 - Carrier Delivery Order.
 - Domestic Transport Order.
@@ -99,6 +99,7 @@ Core database-table coverage:
 - `quotation_charge_lines`
 - `quotation_events`
 - `quotations`
+- `shipment_containers`
 - `shipment_documents`
 - `shipment_lines`
 - `shipment_milestones`

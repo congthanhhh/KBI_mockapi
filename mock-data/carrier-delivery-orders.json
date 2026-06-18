@@ -86,8 +86,8 @@
     "container_no": "MSKU7654321",
     "local_charge_amount": 4200000,
     "currency_code": "VND",
-    "status": "PENDING",
-    "note": "Pending customs clearance."
+    "status": "RELEASED",
+    "note": "Released after customs clearance refresh."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",

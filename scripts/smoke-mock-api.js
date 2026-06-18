@@ -56,6 +56,7 @@ try {
     const declaration = await post(`/shipments/${shipment.id}/customs-declarations`, {});
     await post(`/customs-declarations/${declaration.id}/clear`, {});
     const carrierDeliveryOrder = await post(`/shipments/${shipment.id}/carrier-delivery-orders`, {});
+    await get(`/shipments/${shipment.id}/carrier-delivery-orders`);
     await post(`/carrier-delivery-orders/${carrierDeliveryOrder.id}/issue`, {});
     await post(`/carrier-delivery-orders/${carrierDeliveryOrder.id}/release`, {});
     await post(`/shipments/${shipment.id}/domestic-transport-orders`, {});

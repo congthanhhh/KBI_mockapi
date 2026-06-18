@@ -1,5 +1,5 @@
 ---
-name: agent-skill-builder
+name: skill-builder
 description: >
   Creates well-structured, reusable SKILL.md files for agent workflows. Use whenever
   a user wants to: create a new skill, design an agent skill, turn a workflow or SOP
@@ -10,10 +10,25 @@ description: >
   a skill — not for general questions about skills or SKILL.md format.
 ---
 
-# Agent Skill Builder
+# Skill Builder
 
 Turns a user's workflow or task description into a complete, well-structured SKILL.md file
 ready for use as an agent skill.
+
+---
+
+## Project Conventions (this repo)
+
+Skills in this repo live at `<project-root>/agent/skills/<skill-name>/SKILL.md` — e.g.
+`kbi-mock-api/agent/skills/backend-api-endpoint/` and
+`PROJECT-PRODUCT/frontend/agent/skills/frontend-api-client/`.
+
+- The folder name MUST equal the frontmatter `name` (both kebab-case, identical).
+- Use the two skills above as the canonical templates for any codebase-bound skill.
+- For a skill that operates inside a codebase, add a `## Project Sources` section listing
+  the exact files to read first (routes, services, contracts, consuming pages).
+- Match the house style of the existing skills: a verb-first `## Workflow`, a
+  `## Validation Checklist` table, and a real `## Example` ending with an "Expected approach".
 
 ---
 
@@ -47,8 +62,11 @@ produce a draft immediately. Ask at most one clarifying question — never block
 9. Error Handling — responses to missing data, ambiguity, failures
 10. Example — a realistic, fully-written sample (not placeholder text)
 
-Keep SKILL.md under 150 lines. If the skill is complex, move reference content to a
-references/ subdirectory and link to it from the main file.
+For codebase-bound skills, also add a `## Project Sources` section (files to read first)
+and prefer the existing repo skills' structure over the generic template above.
+
+Keep SKILL.md focused — roughly 150–200 lines (the repo's existing skills run ~170–200).
+If it grows beyond that, move reference content to a `references/` subdirectory and link to it.
 
 ---
 
@@ -57,7 +75,7 @@ references/ subdirectory and link to it from the main file.
 Return results in this order — no long preamble unless the user asks for reasoning:
 
 1. Any assumptions made (brief, with `> Assumption:` prefix)
-2. Suggested file path: `<project-root>/skills/<skill-name>/SKILL.md`
+2. Suggested file path: `<project-root>/agent/skills/<skill-name>/SKILL.md`
 3. Complete SKILL.md in a single markdown code block
 4. One-line prompt: "Does the workflow match your mental model?"
 
@@ -101,10 +119,11 @@ Do not generate tool implementation code. Do not create folder structures unless
 - Scope must be narrow enough to describe in one sentence. If not, split into two skills.
 - Every workflow step must be actionable. No generic verbs without a specific object.
 - Example section must contain real content — no placeholder or TBD.
-- If refactoring: preserve the original name field exactly.
+- If refactoring an existing skill: preserve its original `name` field exactly (renaming
+  breaks its trigger). The only exception is fixing a `name` that does not match its folder.
 - If the skill involves destructive operations (delete, overwrite, deploy), add an explicit
   confirmation step in the workflow.
-- Always suggest a file path for the generated skill using the pattern: `<project-root>/skills/<skill-name>/SKILL.md`
+- Always suggest a file path using the pattern `<project-root>/agent/skills/<skill-name>/SKILL.md`, and make the folder name identical to the frontmatter `name`.
 - Do not generate tool implementation code inside a skill — skills are instructions,
   not implementations. If the skill depends on a tool, describe its required contract only.
 
@@ -121,7 +140,8 @@ Do not generate tool implementation code. Do not create folder structures unless
 | Workflow ordered | Steps numbered, verb-first, each produces something |
 | Example is real | No placeholders — actual names, steps, and content |
 | Error handling present | Covers missing input and ambiguous scope |
-| Under 150 lines | Or has references/ with clear pointers |
+| Path + name aligned | Path is `agent/skills/<name>/SKILL.md`; folder name === frontmatter `name` |
+| Focused length | ~150–200 lines, or has references/ with clear pointers |
 
 ---
 
@@ -144,7 +164,7 @@ Do not generate tool implementation code. Do not create folder structures unless
 > Assumption: TypeScript. Schema provided as SQL DDL or JSON object.
 > Assumption: Output follows MVC pattern (routes / controllers / services).
 
-**Suggested path:** `project/skills/express-crud-generator/SKILL.md`
+**Suggested path:** `project/agent/skills/express-crud-generator/SKILL.md`
 
 ```markdown
 ---

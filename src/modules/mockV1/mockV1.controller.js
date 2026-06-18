@@ -306,6 +306,22 @@ export async function deleteShipmentDocument(req, res) {
     res.json(success(await service.deleteShipmentDocument(req.params.documentId)));
 }
 
+export async function listShipmentContainers(req, res) {
+    res.json(success(await service.listShipmentContainers(req.params.id)));
+}
+
+export async function createShipmentContainer(req, res) {
+    res.status(201).json(success(await service.createShipmentContainer(req.params.id, req.body)));
+}
+
+export async function updateShipmentContainer(req, res) {
+    res.json(success(await service.updateShipmentContainer(req.params.containerId, req.body)));
+}
+
+export async function deleteShipmentContainer(req, res) {
+    res.json(success(await service.deleteShipmentContainer(req.params.containerId)));
+}
+
 export async function cancelShipment(req, res) {
     res.json(success(await service.cancelShipment(req.params.id)));
 }
@@ -368,6 +384,10 @@ export async function createCarrierDeliveryOrder(req, res) {
 
 export async function listCarrierDeliveryOrders(req, res) {
     res.json(success(await service.listCarrierDeliveryOrders()));
+}
+
+export async function listShipmentCarrierDeliveryOrders(req, res) {
+    res.json(success(await service.listCarrierDeliveryOrdersByShipment(req.params.shipmentId || req.params.id)));
 }
 
 export async function getCarrierDeliveryOrder(req, res) {
