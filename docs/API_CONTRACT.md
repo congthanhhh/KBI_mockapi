@@ -64,7 +64,28 @@ Master Data:
 - `GET /api/v1/items/:id`
 - `GET /api/v1/items/:id/customs-profiles`
 
-Master-data compatibility endpoints are mounted under `/api/*` at runtime and keep the list/detail/mutation response shapes used by the frontend. Supplier rows are normalized from legacy seed fields so the UI receives `supplier_roles`, `contact_email`, `contact_phone`, `default_currency`, `default_incoterm`, and `supplier_transport_modes`. Item rows are enriched with `item_group` and `customs_profiles`; tax profiles normalize legacy `preferential_tax_rate` into `preferential_import_duty_rate`.
+Master-data compatibility endpoints are mounted under `/api/*` at runtime and keep the list/detail/mutation response shapes used by the frontend:
+
+- list: `{ data, total, pagination }`
+- detail: `{ data }`
+- mutation: `{ data, message }`
+
+Compatibility CRUD routes:
+
+- `/api/currencies`
+- `/api/incoterms`
+- `/api/transport-modes`
+- `/api/suppliers`
+- `/api/item-groups`
+- `/api/items`
+- `/api/items/:id/tax-profile`
+- `/api/forwarders`
+- `/api/carriers`
+- `/api/task-templates`
+
+Each collection route supports `GET /`, `POST /`, `GET /:id`, `PATCH /:id`, and `DELETE /:id` unless noted by the current route file. Item groups and items keep their existing `PUT /:id` update compatibility route. Supplier rows use the documented Phase-1 schema (`supplier_name_en`, `supplier_type`, `city`, `contact_person`, `lead_time_production_days`, `bank_info`, `note`) while normalizing legacy `contact_name`, `email`, `phone`, and `lead_time_days`. Supplier logistics roles remain independent in `supplier_roles[]` and are not derived from the documented supplier type. Item rows use the documented Phase-1 schema (`item_name_en`, `item_category`, `base_uom`, `purchase_uom`, `uom_conversion`, `hs_code`, `country_of_origin`, `unit_price_usd`, `barcode`, `note`) while normalizing legacy `unit`, `origin_country`, and `item_description`. Item rows are enriched with `item_group` and `customs_profiles`; tax profiles normalize legacy `preferential_tax_rate` into `preferential_import_duty_rate`.
+
+Forwarder rows include `forwarder_code`, `forwarder_name`, `forwarder_type` (`SEA`, `AIR`, `TRUCKING`, `MULTI`), `country`, `contact_person`, `contact_email`, `contact_phone`, `is_primary`, and `note`. Carrier rows include `carrier_code`, `carrier_name`, `carrier_type` (`SHIPPING_LINE`, `AIRLINE`), `scac_iata_code`, `service_route_note`, `contact_booking`, `contact_email`, and `note`. Task template rows include `group_code`, `group_name`, `task_name`, `task_description`, `milestone_code`, `sla_hours`, `sla_text`, `department`, `assignee_code`, `related_documents`, `note`, and `sort_order`; the seed contains the 20 Phase-1 SOP tasks.
 
 Purchase Orders:
 

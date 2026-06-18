@@ -1849,7 +1849,7 @@ export async function createCustomsDeclarationLine(id, body) {
         hs_code: body.hs_code || profile.hs_code || null,
         item_description: body.item_description || item.item_name || null,
         quantity: Number(body.quantity || 0),
-        unit: body.unit || item.unit || "PCS",
+        unit: body.unit || item.base_uom || item.unit || "PCS",
         customs_value: Number(body.customs_value || 0),
         import_duty_rate: Number(body.import_duty_rate ?? profile.import_duty_rate ?? 0),
         vat_rate: Number(body.vat_rate ?? profile.vat_rate ?? 0),

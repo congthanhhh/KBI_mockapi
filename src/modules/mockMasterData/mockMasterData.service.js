@@ -12,14 +12,23 @@ const searchableFields = [
     "supplier_name",
     "supplier_type",
     "contact_name",
+    "contact_person",
     "contact_email",
     "contact_phone",
     "email",
     "phone",
+    "forwarder_code",
+    "forwarder_name",
+    "carrier_code",
+    "carrier_name",
+    "scac_iata_code",
+    "task_name",
+    "task_description",
     "group_code",
     "group_name",
     "item_code",
     "item_name",
+    "item_name_en",
     "hs_code"
 ];
 
@@ -218,6 +227,26 @@ function matchesQuery(row, query) {
         return false;
     }
 
+    if (query.forwarder_type && String(row.forwarder_type).toUpperCase() !== String(query.forwarder_type).toUpperCase()) {
+        return false;
+    }
+
+    if (query.carrier_type && String(row.carrier_type).toUpperCase() !== String(query.carrier_type).toUpperCase()) {
+        return false;
+    }
+
+    if (query.milestone_code && String(row.milestone_code || "") !== String(query.milestone_code)) {
+        return false;
+    }
+
+    if (query.department && String(row.department || "") !== String(query.department)) {
+        return false;
+    }
+
+    if (query.is_primary !== undefined && String(row.is_primary) !== String(query.is_primary)) {
+        return false;
+    }
+
     const search = String(query.q || query.search || "").trim().toLowerCase();
 
     if (!search) {
@@ -273,6 +302,10 @@ async function normalizeSupplier(row) {
     const defaultCurrency = findByIdOrCode(currencies, row.default_currency_id, row.default_currency_code, "currency_code");
     const defaultIncoterm = findByIdOrCode(incoterms, row.default_incoterm_id, row.default_incoterm_code, "incoterm_code");
     const normalizedTransportModes = transportModes.map(normalizeTransportMode);
+    const contactPerson = row.contact_person ?? row.contact_name ?? null;
+    const contactEmail = row.contact_email ?? row.email ?? null;
+    const contactPhone = row.contact_phone ?? row.phone ?? null;
+    const leadTimeProductionDays = row.lead_time_production_days ?? row.lead_time_days ?? null;
     const transportModeIds = new Set([
         ...supplierTransportModes
             .filter((mode) => mode.supplier_id === row.id)
@@ -283,11 +316,14 @@ async function normalizeSupplier(row) {
 
     return {
         ...row,
+        supplier_type: normalizeSupplierType(row),
         supplier_roles: normalizeSupplierRoles(row),
+        city: row.city ?? null,
         address: row.address ?? null,
-        contact_name: row.contact_name ?? null,
-        contact_email: row.contact_email ?? row.email ?? null,
-        contact_phone: row.contact_phone ?? row.phone ?? null,
+        contact_person: contactPerson,
+        contact_name: contactPerson,
+        contact_email: contactEmail,
+        contact_phone: contactPhone,
         payment_term: row.payment_term ?? null,
         default_currency_code: row.default_currency_code ?? defaultCurrency?.currency_code ?? null,
         default_incoterm_code: row.default_incoterm_code ?? defaultIncoterm?.incoterm_code ?? null,
@@ -295,7 +331,10 @@ async function normalizeSupplier(row) {
         default_incoterm_id: row.default_incoterm_id ?? defaultIncoterm?.id ?? null,
         default_currency: defaultCurrency ? normalizeCurrency(defaultCurrency) : null,
         default_incoterm: defaultIncoterm ?? null,
-        lead_time_days: row.lead_time_days ?? null,
+        lead_time_production_days: leadTimeProductionDays,
+        lead_time_days: leadTimeProductionDays,
+        bank_info: row.bank_info ?? null,
+        note: row.note ?? null,
         is_active: row.is_active !== false,
         supplier_transport_modes: Array.from(transportModeIds).map((transportModeId) => {
             const link = supplierTransportModes.find(
@@ -334,6 +373,14 @@ function normalizeSupplierPayload(body) {
 
     if (body.contact_phone !== undefined || body.phone !== undefined) {
         payload.contact_phone = body.contact_phone ?? body.phone;
+    }
+
+    if (body.contact_person !== undefined || body.contact_name !== undefined) {
+        payload.contact_person = body.contact_person ?? body.contact_name;
+    }
+
+    if (body.lead_time_production_days !== undefined || body.lead_time_days !== undefined) {
+        payload.lead_time_production_days = body.lead_time_production_days ?? body.lead_time_days;
     }
 
     return payload;
@@ -381,8 +428,13 @@ async function syncSupplierTransportModes(supplierId, body) {
 
 function normalizeSupplierRoles(row) {
     const roles = Array.isArray(row.supplier_roles) ? row.supplier_roles : [];
+
+    if (roles.length > 0) {
+        return Array.from(new Set(roles.map((role) => String(role).toUpperCase())));
+    }
+
     const legacyRole = mapLegacySupplierRole(row.supplier_type);
-    return Array.from(new Set([...roles, legacyRole].filter(Boolean).map((role) => String(role).toUpperCase())));
+    return legacyRole ? [legacyRole] : [];
 }
 
 function mapLegacySupplierRole(role) {
@@ -399,16 +451,54 @@ function mapLegacySupplierRole(role) {
     return normalized || null;
 }
 
+function normalizeSupplierType(row) {
+    const normalized = String(row.supplier_type || "").toUpperCase();
+    const currentTypes = ["OVERSEAS_SEA", "OVERSEAS_AIR", "DOMESTIC"];
+
+    if (currentTypes.includes(normalized)) {
+        return normalized;
+    }
+
+    if (normalized === "FORWARDER" || normalized === "TRUCKING") {
+        return "DOMESTIC";
+    }
+
+    if (normalized === "MANUFACTURER") {
+        return String(row.country || "").toUpperCase() === "VN" ? "DOMESTIC" : "OVERSEAS_SEA";
+    }
+
+    return normalized || null;
+}
+
 async function normalizeItem(row) {
     const [itemGroups, taxProfiles] = await Promise.all([
         active("item-groups"),
         active("item-customs-profiles")
     ]);
     const itemGroup = itemGroups.find((group) => group.id === row.item_group_id) || null;
+    const defaultTaxProfile = taxProfiles.find((profile) => profile.item_id === row.id && profile.is_default !== false)
+        || taxProfiles.find((profile) => profile.item_id === row.id)
+        || null;
+    const baseUom = row.base_uom ?? row.unit ?? null;
+    const countryOfOrigin = row.country_of_origin ?? row.origin_country ?? null;
+    const note = row.note ?? row.item_description ?? row.description ?? null;
 
     return {
         ...row,
-        item_description: row.item_description ?? row.description ?? null,
+        item_name_en: row.item_name_en ?? row.item_name ?? null,
+        item_category: row.item_category ?? null,
+        item_type: row.item_type ?? null,
+        base_uom: baseUom,
+        unit: baseUom,
+        purchase_uom: row.purchase_uom ?? baseUom,
+        uom_conversion: row.uom_conversion ?? 1,
+        hs_code: row.hs_code ?? defaultTaxProfile?.hs_code ?? null,
+        country_of_origin: countryOfOrigin,
+        origin_country: countryOfOrigin,
+        unit_price_usd: row.unit_price_usd ?? null,
+        barcode: row.barcode ?? null,
+        note,
+        item_description: note,
         is_new: row.is_new ?? true,
         lead_time_days: row.lead_time_days ?? null,
         moq: row.moq ?? null,

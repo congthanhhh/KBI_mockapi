@@ -79,11 +79,13 @@ Generic repository operations:
 Core database-table coverage:
 
 - `currencies`
+- `carriers`
 - `customs_declaration_lines`
 - `customs_declarations`
 - `delivery_order_lines`
 - `delivery_order_lots`
 - `delivery_orders`
+- `forwarders`
 - `logistics_tasks`
 - `incoterms`
 - `item_customs_profiles`
@@ -106,6 +108,7 @@ Core database-table coverage:
 - `shipments`
 - `supplier_transport_modes`
 - `suppliers`
+- `task_templates`
 - `transport_modes`
 
 Extended mock entities:
@@ -120,9 +123,9 @@ Screen DTO files:
 - `screens/task-detail-task_001`
 - `screens/po-tasks-po_001`
 
-Core flow collections seed realistic PO-to-DTO scenarios with at least 9 records for item, PO, DO, shipment, customs, carrier DO, and DTO tables. `shipment_milestones` has 90 records for 9 shipments times 10 milestones. Smaller reference collections such as currencies, incoterms, transport modes, suppliers, and item groups remain compact lookup sets.
+Core flow collections seed realistic PO-to-DTO scenarios with at least 9 records for item, PO, DO, shipment, customs, carrier DO, and DTO tables. `shipment_milestones` has 140 records for 14 shipments times 10 milestones. Smaller reference collections such as currencies, incoterms, transport modes, suppliers, and item groups remain compact lookup sets. Phase-1 master-data collections include 2 `forwarders`, 3 `carriers`, and 20 `task_templates`.
 
-Master-data APIs normalize compact legacy mock rows at runtime. Supplier endpoints map `supplier_type`, `email`, and `phone` into the frontend DTO fields and enrich `supplier_transport_modes` from `supplier-transport-modes.json`. Item endpoints enrich `item_group` and `customs_profiles`, including legacy tax profile fields such as `preferential_tax_rate`.
+Master-data APIs normalize compact legacy mock rows at runtime. Supplier endpoints expose the documented Phase-1 supplier schema while reading legacy `contact_name`, `email`, `phone`, and `lead_time_days`; `supplier_roles[]` and `supplier_transport_modes` stay as independent logistics axes. Item endpoints expose the documented Phase-1 item schema while reading legacy `unit`, `origin_country`, and `item_description`; they enrich `item_group` and `customs_profiles`, including legacy tax profile fields such as `preferential_tax_rate`. Forwarder, carrier, and task template endpoints use the master-data compatibility shape under `/api/*`.
 
 `logistics_tasks` seeds dashboard-ready work items across quotation, booking, document processing, customs declaration, warehouse delivery, and finance review so urgency cards, overdue task cards, task role progress, and monthly throughput do not render empty in the frontend demo.
 

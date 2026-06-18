@@ -17,15 +17,17 @@ It does not export sample data; it only lists mock tables/files and their fields
 | Mock table | File | Mock records |
 | --- | --- | ---: |
 | `carrier-delivery-orders` | `mock-data/carrier-delivery-orders.json` | 14 |
+| `carriers` | `mock-data/carriers.json` | 3 |
 | `currencies` | `mock-data/currencies.json` | 4 |
 | `customs-declaration-lines` | `mock-data/customs-declaration-lines.json` | 14 |
 | `customs-declarations` | `mock-data/customs-declarations.json` | 14 |
 | `delivery-order-lines` | `mock-data/delivery-order-lines.json` | 14 |
 | `delivery-order-lots` | `mock-data/delivery-order-lots.json` | 14 |
 | `delivery-orders` | `mock-data/delivery-orders.json` | 14 |
-| `domestic-transport-order-lines` | `mock-data/domestic-transport-order-lines.json` | 14 |
+| `domestic-transport-order-lines` | `mock-data/domestic-transport-order-lines.json` | 17 |
 | `domestic-transport-orders` | `mock-data/domestic-transport-orders.json` | 14 |
-| `shipment-dto-links` | `mock-data/shipment-dto-links.json` | 14 |
+| `forwarders` | `mock-data/forwarders.json` | 2 |
+| `shipment-dto-links` | `mock-data/shipment-dto-links.json` | 17 |
 | `incoterms` | `mock-data/incoterms.json` | 4 |
 | `item-customs-profiles` | `mock-data/item-customs-profiles.json` | 14 |
 | `item-groups` | `mock-data/item-groups.json` | 4 |
@@ -49,8 +51,9 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `screens/task-detail-task_001` | `mock-data/screens/task-detail-task_001.json` | 1 screen |
 | `screens/task-list` | `mock-data/screens/task-list.json` | 1 screen / 8 task items |
 | `supplier-transport-modes` | `mock-data/supplier-transport-modes.json` | 5 |
-| `suppliers` | `mock-data/suppliers.json` | 4 |
-| `transport-modes` | `mock-data/transport-modes.json` | 5 |
+| `suppliers` | `mock-data/suppliers.json` | 6 |
+| `task-templates` | `mock-data/task-templates.json` | 20 |
+| `transport-modes` | `mock-data/transport-modes.json` | 8 |
 
 ## Field Details
 
@@ -95,6 +98,27 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `symbol` | `string` | required |  |
 | `exchange_rate_to_vnd` | `number` | required |  |
 | `is_active` | `boolean` | required |  |
+
+### carriers
+
+- Source: `mock-data/carriers.json`
+- Current mock records: 3
+
+| Field | Type | Presence | Notes |
+| --- | --- | --- | --- |
+| `create_at` | `string` | required | Audit timestamp |
+| `update_at` | `string` | required | Audit timestamp |
+| `delete_at` | `null` | nullable | Soft delete |
+| `is_delete` | `boolean` | required | Soft delete |
+| `id` | `string` | required | Mock primary key |
+| `carrier_code` | `string` | required |  |
+| `carrier_name` | `string` | required |  |
+| `carrier_type` | `string` | required | `SHIPPING_LINE` or `AIRLINE` |
+| `scac_iata_code` | `string` | required | SCAC or IATA code |
+| `service_route_note` | `string` | required |  |
+| `contact_booking` | `string` | required |  |
+| `contact_email` | `string | null` | nullable |  |
+| `note` | `string | null` | nullable |  |
 
 ### customs-declaration-lines
 
@@ -206,7 +230,7 @@ It does not export sample data; it only lists mock tables/files and their fields
 ### domestic-transport-order-lines
 
 - Source: `mock-data/domestic-transport-order-lines.json`
-- Current mock records: 14
+- Current mock records: 17
 
 | Field | Type | Presence | Notes |
 | --- | --- | --- | --- |
@@ -226,7 +250,7 @@ It does not export sample data; it only lists mock tables/files and their fields
 ### shipment-dto-links
 
 - Source: `mock-data/shipment-dto-links.json`
-- Current mock records: 14
+- Current mock records: 17
 - Purpose: Junction table for the **n:n relationship** between Shipments and DTOs. One DTO can serve multiple Shipments (LCL consolidation), and one Shipment can have multiple DTOs (multiple truck runs).
 
 | Field | Type | Presence | Notes |
@@ -270,6 +294,28 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `status` | `string` | required |  |
 | `note` | `string | null` | nullable |  |
 | `delayed_days` | `number` | optional |  |
+
+### forwarders
+
+- Source: `mock-data/forwarders.json`
+- Current mock records: 2
+
+| Field | Type | Presence | Notes |
+| --- | --- | --- | --- |
+| `create_at` | `string` | required | Audit timestamp |
+| `update_at` | `string` | required | Audit timestamp |
+| `delete_at` | `null` | nullable | Soft delete |
+| `is_delete` | `boolean` | required | Soft delete |
+| `id` | `string` | required | Mock primary key |
+| `forwarder_code` | `string` | required |  |
+| `forwarder_name` | `string` | required |  |
+| `forwarder_type` | `string` | required | `SEA`, `AIR`, `TRUCKING`, or `MULTI` |
+| `country` | `string` | required |  |
+| `contact_person` | `string` | required |  |
+| `contact_email` | `string | null` | nullable |  |
+| `contact_phone` | `string | null` | nullable |  |
+| `is_primary` | `boolean` | required | One primary row in seed |
+| `note` | `string` | required |  |
 
 ### incoterms
 
@@ -337,9 +383,18 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `id` | `string` | required | Mock primary key |
 | `item_code` | `string` | required |  |
 | `item_name` | `string` | required |  |
+| `item_name_en` | `string` | required |  |
 | `item_group_id` | `string` | required | Inferred FK -> item-groups.id |
-| `unit` | `string` | required |  |
-| `origin_country` | `string` | required |  |
+| `item_category` | `string` | required | `NVL`, `BTP`, `TP`, `CCDC`, or `DONG_GOI` |
+| `item_type` | `string` | required | `RAW`, `SEMI`, `FG`, `CONSUMABLE`, or `PACKAGING` |
+| `base_uom` | `string` | required | Canonical item unit; legacy `unit` is normalized at API runtime |
+| `purchase_uom` | `string` | required |  |
+| `uom_conversion` | `number` | required | Purchase UoM to base UoM conversion |
+| `hs_code` | `string` | required | Mirrors the default item customs profile |
+| `country_of_origin` | `string` | required | Legacy `origin_country` is normalized at API runtime |
+| `unit_price_usd` | `number` | required | Reference unit price |
+| `barcode` | `string` | required |  |
+| `note` | `string | null` | nullable | Former item-description UI note |
 | `is_active` | `boolean` | required |  |
 
 ### logistics-tasks
@@ -806,7 +861,7 @@ It does not export sample data; it only lists mock tables/files and their fields
 ### suppliers
 
 - Source: `mock-data/suppliers.json`
-- Current mock records: 4
+- Current mock records: 6
 
 | Field | Type | Presence | Notes |
 | --- | --- | --- | --- |
@@ -817,17 +872,52 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `id` | `string` | required | Mock primary key |
 | `supplier_code` | `string` | required |  |
 | `supplier_name` | `string` | required |  |
-| `supplier_type` | `string` | required |  |
+| `supplier_name_en` | `string` | required |  |
+| `supplier_type` | `string` | required | `OVERSEAS_SEA`, `OVERSEAS_AIR`, or `DOMESTIC` |
+| `supplier_roles` | `array<string>` | required | Logistics roles, independent from `supplier_type` |
 | `country` | `string` | required |  |
-| `contact_name` | `string` | required |  |
-| `email` | `string` | required |  |
-| `phone` | `string` | required |  |
+| `city` | `string` | required |  |
+| `address` | `string` | required | Optional extra address text |
+| `contact_person` | `string` | required | Legacy `contact_name` is normalized at API runtime |
+| `contact_email` | `string` | required | Legacy `email` is normalized at API runtime |
+| `contact_phone` | `string` | required | Legacy `phone` is normalized at API runtime |
+| `payment_term` | `string` | required |  |
+| `default_currency_id` | `string` | required | Inferred FK -> currencies.id |
+| `default_incoterm_id` | `string` | required | Inferred FK -> incoterms.id |
+| `lead_time_production_days` | `number` | required | Legacy `lead_time_days` is normalized at API runtime |
+| `bank_info` | `string` | required |  |
+| `note` | `string` | required |  |
 | `is_active` | `boolean` | required |  |
+
+### task-templates
+
+- Source: `mock-data/task-templates.json`
+- Current mock records: 20
+
+| Field | Type | Presence | Notes |
+| --- | --- | --- | --- |
+| `create_at` | `string` | required | Audit timestamp |
+| `update_at` | `string` | required | Audit timestamp |
+| `delete_at` | `null` | nullable | Soft delete |
+| `is_delete` | `boolean` | required | Soft delete |
+| `id` | `string` | required | Mock primary key |
+| `group_code` | `string` | required | `GR1` through `GR8` |
+| `group_name` | `string` | required |  |
+| `task_name` | `string` | required |  |
+| `task_description` | `string` | required | Transcribed from Phase-1 task template |
+| `milestone_code` | `string | null` | nullable | Import tracking milestone or `PRE_SHIPMENT` |
+| `sla_hours` | `number | null` | nullable | Numeric SLA when available |
+| `sla_text` | `string | null` | nullable | Textual SLA when not numeric |
+| `department` | `string` | required | Owner department enum |
+| `assignee_code` | `string | null` | nullable | Primary role code; full role text is in `note` |
+| `related_documents` | `string` | required | Transcribed from Phase-1 task template |
+| `note` | `string` | required | Full assignee/SOP reference text |
+| `sort_order` | `number` | required |  |
 
 ### transport-modes
 
 - Source: `mock-data/transport-modes.json`
-- Current mock records: 5
+- Current mock records: 8
 
 | Field | Type | Presence | Notes |
 | --- | --- | --- | --- |
@@ -838,6 +928,9 @@ It does not export sample data; it only lists mock tables/files and their fields
 | `id` | `string` | required | Mock primary key |
 | `mode_code` | `string` | required |  |
 | `mode_name` | `string` | required |  |
+| `mode_type` | `string` | required | `SEA`, `AIR`, or `ROAD` |
+| `description` | `string` | required |  |
+| `is_international` | `boolean` | required |  |
 | `is_active` | `boolean` | required |  |
 
 ## Main Inferred Relations

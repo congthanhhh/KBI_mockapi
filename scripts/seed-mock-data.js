@@ -40,12 +40,21 @@ const files = {
         base({ id: "tm_road_van", mode_code: "ROAD_VAN", mode_name: "Van", mode_type: "ROAD", description: "Light van for small last-mile domestic deliveries.", is_international: false, is_active: true })
     ],
     "suppliers": [
-        base({ id: "sup_sdec", supplier_code: "SDEC", supplier_name: "SDEC Supplier", supplier_type: "MANUFACTURER", country: "CN", contact_name: "Li Wei", email: "sales@sdec.example", phone: "+86-21-1000-0001", is_active: true }),
-        base({ id: "sup_shanghai_oem", supplier_code: "SH-OEM", supplier_name: "Shanghai OEM Parts", supplier_type: "MANUFACTURER", country: "CN", contact_name: "Chen Ming", email: "export@shoem.example", phone: "+86-21-1000-0002", is_active: true }),
-        base({ id: "sup_fds_forwarder", supplier_code: "FDS-FWD", supplier_name: "FDS Forwarder", supplier_type: "FORWARDER", country: "VN", contact_name: "FDS Ops", email: "ops@fds.example", phone: "+84-24-1000-0003", is_active: true }),
-        base({ id: "sup_vn_trucking", supplier_code: "VN-TRK", supplier_name: "Vietnam Trucking Vendor", supplier_type: "TRUCKING", country: "VN", contact_name: "Nguyen Van An", email: "dispatch@vntrucking.example", phone: "+84-24-1000-0004", is_active: true }),
-        base({ id: "sup_haiphong_trucking", supplier_code: "HP-TRK", supplier_name: "Hai Phong Port Trucking", supplier_type: "TRUCKING", country: "VN", contact_name: "Tran Thi Bich", email: "dispatch@hptrucking.example", phone: "+84-225-1000-0005", is_active: true }),
-        base({ id: "sup_north_trucking", supplier_code: "NT-TRK", supplier_name: "Northern Logistics Trucking", supplier_type: "TRUCKING", country: "VN", contact_name: "Le Van Cuong", email: "ops@northlog.example", phone: "+84-24-1000-0006", is_active: true })
+        base({ id: "sup_sdec", supplier_code: "SDEC", supplier_name: "SDEC Supplier", supplier_name_en: "SDEC Supplier", supplier_type: "OVERSEAS_SEA", supplier_roles: ["SUPPLIER"], country: "CN", city: "Shanghai", address: "Shanghai supplier warehouse", contact_person: "Li Wei", contact_email: "sales@sdec.example", contact_phone: "+86-21-1000-0001", payment_term: "TT_ADVANCE", default_currency_id: "cur_usd", default_incoterm_id: "inc_fob", lead_time_production_days: 25, bank_info: "Bank of China | 9988776601 | BKCHCNBJ", note: "Main SDEC spare parts supplier.", is_active: true }),
+        base({ id: "sup_shanghai_oem", supplier_code: "SH-OEM", supplier_name: "Shanghai OEM Parts", supplier_name_en: "Shanghai OEM Parts", supplier_type: "OVERSEAS_AIR", supplier_roles: ["SUPPLIER"], country: "CN", city: "Shanghai", address: "Pudong industrial zone", contact_person: "Chen Ming", contact_email: "export@shoem.example", contact_phone: "+86-21-1000-0002", payment_term: "NET45", default_currency_id: "cur_usd", default_incoterm_id: "inc_exw", lead_time_production_days: 10, bank_info: "ICBC Shanghai | 9988776602 | ICBKCNBJ", note: "Urgent OEM parts, supports AIR shipment.", is_active: true }),
+        base({ id: "sup_fds_forwarder", supplier_code: "FDS-FWD", supplier_name: "FDS Forwarder", supplier_name_en: "Fado Solution Co., Ltd", supplier_type: "DOMESTIC", supplier_roles: ["FORWARDER"], country: "VN", city: "Ho Chi Minh City", address: "FDS operations office", contact_person: "FDS Ops", contact_email: "ops@fds.example", contact_phone: "+84-24-1000-0003", payment_term: "NET30", default_currency_id: "cur_vnd", default_incoterm_id: "inc_fob", lead_time_production_days: 1, bank_info: "Vietcombank | 1234567890 | BFTVVNVX", note: "Legacy forwarder partner row retained for DO/Shipment references.", is_active: true }),
+        base({ id: "sup_vn_trucking", supplier_code: "VN-TRK", supplier_name: "Vietnam Trucking Vendor", supplier_name_en: "Vietnam Trucking Vendor", supplier_type: "DOMESTIC", supplier_roles: ["TRUCKING_VENDOR"], country: "VN", city: "Ha Noi", address: "Northern dispatch center", contact_person: "Nguyen Van An", contact_email: "dispatch@vntrucking.example", contact_phone: "+84-24-1000-0004", payment_term: "NET30", default_currency_id: "cur_vnd", default_incoterm_id: "inc_exw", lead_time_production_days: 1, bank_info: "VietinBank | 2233445566 | ICBVVNVX", note: "Default domestic trucking vendor.", is_active: true }),
+        base({ id: "sup_haiphong_trucking", supplier_code: "HP-TRK", supplier_name: "Hai Phong Port Trucking", supplier_name_en: "Hai Phong Port Trucking", supplier_type: "DOMESTIC", supplier_roles: ["TRUCKING_VENDOR"], country: "VN", city: "Hai Phong", address: "Hai Phong port area", contact_person: "Tran Thi Bich", contact_email: "dispatch@hptrucking.example", contact_phone: "+84-225-1000-0005", payment_term: "NET30", default_currency_id: "cur_vnd", default_incoterm_id: "inc_exw", lead_time_production_days: 1, bank_info: "BIDV | 3344556677 | BIDVVNVX", note: "Backup trucking vendor for port pickups.", is_active: true }),
+        base({ id: "sup_north_trucking", supplier_code: "NT-TRK", supplier_name: "Northern Logistics Trucking", supplier_name_en: "Northern Logistics Trucking", supplier_type: "DOMESTIC", supplier_roles: ["TRUCKING_VENDOR"], country: "VN", city: "Bac Ninh", address: "Northern logistics depot", contact_person: "Le Van Cuong", contact_email: "ops@northlog.example", contact_phone: "+84-24-1000-0006", payment_term: "NET45", default_currency_id: "cur_vnd", default_incoterm_id: "inc_exw", lead_time_production_days: 1, bank_info: "MB Bank | 4455667788 | MSCBVNVX", note: "Regional trucking capacity for northern routes.", is_active: true })
+    ],
+    "forwarders": [
+        base({ id: "fwd_001", forwarder_code: "FWD-001", forwarder_name: "Fado Solution Co., Ltd (FDS)", forwarder_type: "MULTI", country: "VN", contact_person: "Chau Thi My Anh (Ops Manager)", contact_email: "anhctm@fadosolution.com", contact_phone: "0964929642", is_primary: true, note: "Forwarder chinh - SOP FDS x KBI R7" }),
+        base({ id: "fwd_002", forwarder_code: "FWD-002", forwarder_name: "DHL Global Forwarding Vietnam", forwarder_type: "AIR", country: "VN", contact_person: "(bo sung khi can)", contact_email: null, contact_phone: null, is_primary: false, note: "Backup AIR" })
+    ],
+    "carriers": [
+        base({ id: "carr_001", carrier_code: "COSCO", carrier_name: "COSCO Shipping Lines", carrier_type: "SHIPPING_LINE", scac_iata_code: "COSU", service_route_note: "CN->VN (HCM/Haiphong) SEA", contact_booking: "(FDS dat cho)", contact_email: null, note: "Hang tau chinh tuyen TQ-VN" }),
+        base({ id: "carr_002", carrier_code: "EVERGREEN", carrier_name: "Evergreen Marine Corp", carrier_type: "SHIPPING_LINE", scac_iata_code: "EGLV", service_route_note: "CN->VN / KR->VN SEA", contact_booking: "(FDS dat cho)", contact_email: null, note: null }),
+        base({ id: "carr_003", carrier_code: "VN", carrier_name: "Vietnam Airlines Cargo", carrier_type: "AIRLINE", scac_iata_code: "VN", service_route_note: "CN->SGN / KR->SGN AIR", contact_booking: "(FDS dat cho)", contact_email: null, note: "Uu tien khi hang gap" })
     ],
     "supplier-transport-modes": [
         base({ id: "stm_001", supplier_id: "sup_fds_forwarder", transport_mode_id: "tm_sea_fcl", service_level: "STANDARD", is_active: true }),
@@ -61,20 +70,20 @@ const files = {
         base({ id: "grp_consumables", group_code: "CONSUMABLE", group_name: "Consumables", is_active: true })
     ],
     "item-master": [
-        base({ id: "item_001", item_code: "ENG-001", item_name: "Diesel Engine Assembly", item_group_id: "grp_engine", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_002", item_code: "FLT-001", item_name: "Oil Filter Element", item_group_id: "grp_consumables", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_003", item_code: "ELC-001", item_name: "Control Cabinet", item_group_id: "grp_electrical", unit: "SET", origin_country: "CN", is_active: true }),
-        base({ id: "item_004", item_code: "HYD-001", item_name: "Hydraulic Pump", item_group_id: "grp_hydraulic", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_005", item_code: "ENG-TRB-002", item_name: "Turbocharger Cartridge", item_group_id: "grp_engine", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_006", item_code: "ELC-ALT-001", item_name: "Alternator Assembly 24V", item_group_id: "grp_electrical", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_007", item_code: "ENG-INJ-004", item_name: "Fuel Injector Nozzle Set", item_group_id: "grp_engine", unit: "SET", origin_country: "CN", is_active: true }),
-        base({ id: "item_008", item_code: "HYD-SEAL-010", item_name: "Hydraulic Seal Kit", item_group_id: "grp_hydraulic", unit: "KIT", origin_country: "CN", is_active: true }),
-        base({ id: "item_009", item_code: "ENG-RAD-003", item_name: "Radiator Core Assembly", item_group_id: "grp_engine", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_010", item_code: "ENG-GSK-011", item_name: "Engine Overhaul Gasket Kit", item_group_id: "grp_engine", unit: "KIT", origin_country: "CN", is_active: true }),
-        base({ id: "item_011", item_code: "ELC-STR-002", item_name: "Starter Motor 24V", item_group_id: "grp_electrical", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_012", item_code: "HYD-HOSE-020", item_name: "High Pressure Hydraulic Hose Assembly", item_group_id: "grp_hydraulic", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_013", item_code: "FLT-FWS-006", item_name: "Fuel Water Separator Filter", item_group_id: "grp_consumables", unit: "PCS", origin_country: "CN", is_active: true }),
-        base({ id: "item_014", item_code: "ELC-ECU-005", item_name: "Engine ECU Controller Module", item_group_id: "grp_electrical", unit: "PCS", origin_country: "CN", is_active: true })
+        base({ id: "item_001", item_code: "ENG-001", item_name: "Diesel Engine Assembly", item_name_en: "Diesel Engine Assembly", item_group_id: "grp_engine", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "84089090", country_of_origin: "CN", unit_price_usd: 8200, barcode: "8901234567801", note: null, is_active: true }),
+        base({ id: "item_002", item_code: "FLT-001", item_name: "Oil Filter Element", item_name_en: "Oil Filter Element", item_group_id: "grp_consumables", item_category: "CCDC", item_type: "CONSUMABLE", base_uom: "PCS", purchase_uom: "CTN", uom_conversion: 50, hs_code: "84212399", country_of_origin: "CN", unit_price_usd: 12, barcode: "8901234567802", note: "50 pcs/carton", is_active: true }),
+        base({ id: "item_003", item_code: "ELC-001", item_name: "Control Cabinet", item_name_en: "Control Cabinet", item_group_id: "grp_electrical", item_category: "BTP", item_type: "SEMI", base_uom: "SET", purchase_uom: "SET", uom_conversion: 1, hs_code: "85371099", country_of_origin: "CN", unit_price_usd: 1800, barcode: "8901234567803", note: null, is_active: true }),
+        base({ id: "item_004", item_code: "HYD-001", item_name: "Hydraulic Pump", item_name_en: "Hydraulic Pump", item_group_id: "grp_hydraulic", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "84136090", country_of_origin: "CN", unit_price_usd: 1200, barcode: "8901234567804", note: null, is_active: true }),
+        base({ id: "item_005", item_code: "ENG-TRB-002", item_name: "Turbocharger Cartridge", item_name_en: "Turbocharger Cartridge", item_group_id: "grp_engine", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "84148090", country_of_origin: "CN", unit_price_usd: 450, barcode: "8901234567805", note: null, is_active: true }),
+        base({ id: "item_006", item_code: "ELC-ALT-001", item_name: "Alternator Assembly 24V", item_name_en: "Alternator Assembly 24V", item_group_id: "grp_electrical", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "85115099", country_of_origin: "CN", unit_price_usd: 1850, barcode: "8901234567806", note: null, is_active: true }),
+        base({ id: "item_007", item_code: "ENG-INJ-004", item_name: "Fuel Injector Nozzle Set", item_name_en: "Fuel Injector Nozzle Set", item_group_id: "grp_engine", item_category: "BTP", item_type: "SEMI", base_uom: "SET", purchase_uom: "SET", uom_conversion: 1, hs_code: "84099979", country_of_origin: "CN", unit_price_usd: 38, barcode: "8901234567807", note: null, is_active: true }),
+        base({ id: "item_008", item_code: "HYD-SEAL-010", item_name: "Hydraulic Seal Kit", item_name_en: "Hydraulic Seal Kit", item_group_id: "grp_hydraulic", item_category: "CCDC", item_type: "CONSUMABLE", base_uom: "KIT", purchase_uom: "CTN", uom_conversion: 20, hs_code: "40169390", country_of_origin: "CN", unit_price_usd: 4.5, barcode: "8901234567808", note: "20 kits/carton", is_active: true }),
+        base({ id: "item_009", item_code: "ENG-RAD-003", item_name: "Radiator Core Assembly", item_name_en: "Radiator Core Assembly", item_group_id: "grp_engine", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "87089199", country_of_origin: "CN", unit_price_usd: 310, barcode: "8901234567809", note: null, is_active: true }),
+        base({ id: "item_010", item_code: "ENG-GSK-011", item_name: "Engine Overhaul Gasket Kit", item_name_en: "Engine Overhaul Gasket Kit", item_group_id: "grp_engine", item_category: "CCDC", item_type: "CONSUMABLE", base_uom: "KIT", purchase_uom: "CTN", uom_conversion: 12, hs_code: "84841000", country_of_origin: "CN", unit_price_usd: 32, barcode: "8901234567810", note: "12 kits/carton", is_active: true }),
+        base({ id: "item_011", item_code: "ELC-STR-002", item_name: "Starter Motor 24V", item_name_en: "Starter Motor 24V", item_group_id: "grp_electrical", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "85114099", country_of_origin: "CN", unit_price_usd: 680, barcode: "8901234567811", note: null, is_active: true }),
+        base({ id: "item_012", item_code: "HYD-HOSE-020", item_name: "High Pressure Hydraulic Hose Assembly", item_name_en: "High Pressure Hydraulic Hose Assembly", item_group_id: "grp_hydraulic", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "40092190", country_of_origin: "CN", unit_price_usd: 18.5, barcode: "8901234567812", note: null, is_active: true }),
+        base({ id: "item_013", item_code: "FLT-FWS-006", item_name: "Fuel Water Separator Filter", item_name_en: "Fuel Water Separator Filter", item_group_id: "grp_consumables", item_category: "CCDC", item_type: "CONSUMABLE", base_uom: "PCS", purchase_uom: "CTN", uom_conversion: 30, hs_code: "84212319", country_of_origin: "CN", unit_price_usd: 9.2, barcode: "8901234567813", note: "30 pcs/carton", is_active: true }),
+        base({ id: "item_014", item_code: "ELC-ECU-005", item_name: "Engine ECU Controller Module", item_name_en: "Engine ECU Controller Module", item_group_id: "grp_electrical", item_category: "BTP", item_type: "SEMI", base_uom: "PCS", purchase_uom: "PCS", uom_conversion: 1, hs_code: "85371099", country_of_origin: "CN", unit_price_usd: 1450, barcode: "8901234567814", note: "Anti-static packaging", is_active: true })
     ],
     "item-customs-profiles": [
         base({ id: "icp_001", item_id: "item_001", hs_code: "84089090", import_duty_rate: 5, vat_rate: 10, co_form: "E", preferential_tax_rate: 0 }),
@@ -91,6 +100,28 @@ const files = {
         base({ id: "icp_012", item_id: "item_012", hs_code: "40092190", import_duty_rate: 12, vat_rate: 10, co_form: "E", preferential_tax_rate: 5 }),
         base({ id: "icp_013", item_id: "item_013", hs_code: "84212319", import_duty_rate: 3, vat_rate: 10, co_form: "E", preferential_tax_rate: 0 }),
         base({ id: "icp_014", item_id: "item_014", hs_code: "85371099", import_duty_rate: 10, vat_rate: 10, co_form: "E", preferential_tax_rate: 5 })
+    ],
+    "task-templates": [
+        base({ id: "tt_001", group_code: "GR1", group_name: "Báo giá & Xác nhận dịch vụ", task_name: "Tiếp nhận yêu cầu báo giá từ KBI", task_description: "KBI gửi yêu cầu qua email. FDS Sales kiểm tra đủ thông tin: loại hàng, HS code, trọng lượng/kích thước, tuyến đường, Incoterm yêu cầu, thời gian ETD dự kiến.", milestone_code: "PRE_SHIPMENT", sla_hours: 4, sla_text: null, department: "FDS_SALES", assignee_code: "S01", related_documents: "—", note: "Assignees: S01 / S02. SOP §4 — Giai đoạn Báo giá", sort_order: 1 }),
+        base({ id: "tt_002", group_code: "GR1", group_name: "Báo giá & Xác nhận dịch vụ", task_name: "Chuẩn bị & gửi báo giá (Quotation)", task_description: "FDS Sales tính giá dựa trên route, mode, cargo type. Áp dụng nguyên tắc giá trucking §5 (36% cơ cấu xăng dầu). Gửi báo giá qua email chính thức. Giá cố định trừ các TH phát sinh theo SOP.", milestone_code: "PRE_SHIPMENT", sla_hours: null, sla_text: "Trước ngày hàng hàng đi 2 ngày", department: "FDS_SALES", assignee_code: "S01", related_documents: "Quotation email", note: "Assignees: S01 / S02 → S03 review. SOP §2, §5", sort_order: 2 }),
+        base({ id: "tt_003", group_code: "GR1", group_name: "Báo giá & Xác nhận dịch vụ", task_name: "Xác nhận dịch vụ & bàn giao Ops", task_description: "KBI xác nhận báo giá qua email. FDS Sales làm Handover note cho FDS Ops, ghi rõ: thông tin hàng, route, ETD/ETA dự kiến, yêu cầu đặc biệt, NCC liên quan.", milestone_code: "PRE_SHIPMENT", sla_hours: null, sla_text: "Trước ngày hàng hàng đi 1 ngày", department: "FDS_SALES", assignee_code: "S01", related_documents: "Handover note, Booking request", note: "Assignees: S01/S02 → O03. SOP §3 — Bàn giao Ops", sort_order: 3 }),
+        base({ id: "tt_004", group_code: "GR2", group_name: "Tạo & Quản lý PO", task_name: "Tạo PO trên hệ thống", task_description: "KBI tạo PO từ thông tin: supplier, item list, qty, unit price, currency, Incoterm, payment term, expected ETD. Gắn mode: SEA / AIR.", milestone_code: "PRE_SHIPMENT", sla_hours: 2, sla_text: null, department: "KBI_PURCHASING", assignee_code: null, related_documents: "PO document", note: "Assignees: (KBI – bổ sung sau). Phase 1 – PO module", sort_order: 4 }),
+        base({ id: "tt_005", group_code: "GR2", group_name: "Tạo & Quản lý PO", task_name: "Gửi PO & theo dõi xác nhận NCC", task_description: "PO được gửi cho NCC qua email (kèm file PDF). Theo dõi phản hồi xác nhận từ NCC (Confirmed). Cập nhật trạng thái PO trên hệ thống.", milestone_code: "PRE_SHIPMENT", sla_hours: 48, sla_text: null, department: "KBI_PURCHASING", assignee_code: null, related_documents: "PO signed/confirmed by supplier", note: "Assignees: (KBI – bổ sung sau)", sort_order: 5 }),
+        base({ id: "tt_006", group_code: "GR2", group_name: "Tạo & Quản lý PO", task_name: "Cập nhật trạng thái PO theo tiến độ NCC", task_description: "Theo dõi và cập nhật trạng thái PO: In-Production → Ready-to-Ship. Nếu NCC thông báo thay đổi ETD → cập nhật hệ thống và thông báo FDS Sales.", milestone_code: "PRE_SHIPMENT", sla_hours: 24, sla_text: null, department: "KBI_PURCHASING", assignee_code: null, related_documents: "NCC production update", note: "Assignees: (KBI – bổ sung sau)", sort_order: 6 }),
+        base({ id: "tt_007", group_code: "GR3", group_name: "Booking & Chuẩn bị hàng", task_name: "Booking tàu/chuyến bay với Carrier", task_description: "FDS Ops tiến hành booking với Carrier (hãng tàu/bay) theo route và ETD yêu cầu. Xác nhận booking number, vessel name hoặc flight number.", milestone_code: "MS1_BOOKING_CONFIRMED", sla_hours: 24, sla_text: null, department: "FDS_OPS", assignee_code: "O01", related_documents: "Booking confirmation", note: "Assignees: O01 / O02", sort_order: 7 }),
+        base({ id: "tt_008", group_code: "GR3", group_name: "Booking & Chuẩn bị hàng", task_name: "Thông báo Cargo Ready & kiểm tra hàng tại origin", task_description: "NCC thông báo hàng ready tại điểm xuất. FDS Ops / Agent xác nhận cargo condition, số kiện, trọng lượng, thể tích. Chụp ảnh nếu cần.", milestone_code: "MS2_CARGO_READY", sla_hours: 8, sla_text: null, department: "FDS_OPS", assignee_code: "O01", related_documents: "Cargo ready notice, Packing List draft", note: "Assignees: O01", sort_order: 8 }),
+        base({ id: "tt_009", group_code: "GR4", group_name: "Vận chuyển & Tracking", task_name: "Xác nhận hàng đã lên tàu / máy bay (Loaded)", task_description: "FDS Ops xác nhận Onboard confirmation từ Carrier. Cập nhật ATD thực tế, tên vessel/flight, voyage/flight number lên hệ thống. Thông báo KBI.", milestone_code: "MS3_LOADED", sla_hours: 4, sla_text: null, department: "FDS_OPS", assignee_code: "O01", related_documents: "Onboard B/L draft, Flight confirmation", note: "Assignees: O01", sort_order: 9 }),
+        base({ id: "tt_010", group_code: "GR4", group_name: "Vận chuyển & Tracking", task_name: "Theo dõi in-transit & cập nhật ETA", task_description: "FDS Ops cập nhật trạng thái in-transit định kỳ (mỗi 2 ngày với SEA, hàng ngày với AIR). Cập nhật ETA nếu có thay đổi, thông báo KBI qua email.", milestone_code: "MS4_IN_TRANSIT", sla_hours: 48, sla_text: null, department: "FDS_OPS", assignee_code: "O01", related_documents: "Tracking updates", note: "Assignees: O01 / O03. SOP §2 — thông báo qua email", sort_order: 10 }),
+        base({ id: "tt_011", group_code: "GR4", group_name: "Vận chuyển & Tracking", task_name: "Gửi Draft B/L hoặc Draft AWB cho KBI", task_description: "FDS Ops nhận Draft B/L (SEA) hoặc Draft AWB (AIR) từ Carrier. Gửi cho KBI kiểm tra thông tin: shipper, consignee, notify party, description of goods, HS code, weight, measure.", milestone_code: "MS3_LOADED", sla_hours: 24, sla_text: null, department: "FDS_OPS", assignee_code: "O02", related_documents: "Draft B/L / Draft AWB", note: "Assignees: O02 / O01. SOP §3 — FDS Ops xử lý chứng từ", sort_order: 11 }),
+        base({ id: "tt_012", group_code: "GR4", group_name: "Vận chuyển & Tracking", task_name: "KBI xác nhận / yêu cầu chỉnh sửa Draft B/L hoặc AWB", task_description: "KBI kiểm tra Draft B/L / AWB và phản hồi trong vòng SLA. Nếu có chỉnh sửa: ghi rõ nội dung cần sửa qua email, FDS Ops phối hợp Carrier sửa và gửi lại Draft để KBI re-confirm trước khi phát hành Final.", milestone_code: "MS5_ARRIVED_PORT", sla_hours: 24, sla_text: null, department: "KBI_PURCHASING", assignee_code: null, related_documents: "Draft B/L confirmation email", note: "Assignees: (KBI – bổ sung sau)", sort_order: 12 }),
+        base({ id: "tt_013", group_code: "GR5", group_name: "Thông quan (Customs)", task_name: "Chuẩn bị hồ sơ thông quan", task_description: "FDS Ops (O02 – Custom & Docs Manager) tổng hợp bộ chứng từ: Commercial Invoice, Packing List, B/L gốc hoặc Telex Release, C/O (nếu có), Catalogue/datasheet nếu hải quan yêu cầu.", milestone_code: "MS5_ARRIVED_PORT", sla_hours: 8, sla_text: null, department: "FDS_OPS_CUSTOMS", assignee_code: "O02", related_documents: "Invoice, Packing List, B/L, C/O", note: "Assignees: O02", sort_order: 13 }),
+        base({ id: "tt_014", group_code: "GR5", group_name: "Thông quan (Customs)", task_name: "Nộp tờ khai hải quan (Customs Declaration)", task_description: "FDS Ops nộp tờ khai VNACCS (thường qua đại lý hải quan). Ghi nhận số tờ khai, ngày nộp, loại luồng (xanh/vàng/đỏ). Cập nhật milestone lên hệ thống.", milestone_code: "MS6_CUSTOMS_SUBMITTED", sla_hours: 4, sla_text: null, department: "FDS_OPS_CUSTOMS", assignee_code: "O02", related_documents: "Customs declaration form", note: "Assignees: O02", sort_order: 14 }),
+        base({ id: "tt_015", group_code: "GR5", group_name: "Thông quan (Customs)", task_name: "Theo dõi & hoàn tất thông quan", task_description: "Theo dõi kết quả phân luồng. Phối hợp xử lý nếu luồng vàng/đỏ (cung cấp thêm chứng từ, giải trình). Xác nhận Customs Cleared. Thông báo KBI và cập nhật hệ thống.", milestone_code: "MS7_CUSTOMS_CLEARED", sla_hours: 24, sla_text: null, department: "FDS_OPS_CUSTOMS", assignee_code: "O02", related_documents: "Customs release order", note: "Assignees: O02 / O03. Phát sinh chi phí: SOP §2", sort_order: 15 }),
+        base({ id: "tt_016", group_code: "GR6", group_name: "Giao nhận & Kho", task_name: "Vận chuyển trucking từ cảng về kho KBI", task_description: "FDS Ops điều phối xe tải (trucking) lấy hàng tại cảng sau khi thông quan. Báo giá trucking theo nguyên tắc SOP §5 (update giá dầu ngày giao hàng nếu biến động). Xác nhận lịch giao với KBI.", milestone_code: "MS7_CUSTOMS_CLEARED", sla_hours: 8, sla_text: null, department: "FDS_OPS", assignee_code: "O01", related_documents: "Delivery order, Truck booking", note: "Assignees: O01 / O03. SOP §5 — điều chỉnh giá xăng dầu", sort_order: 16 }),
+        base({ id: "tt_017", group_code: "GR6", group_name: "Giao nhận & Kho", task_name: "Giao hàng tại cổng kho KBI (Gate-in)", task_description: "Xe tải đến kho KBI. Ghi nhận ATA thực tế. KBI kiểm đếm số kiện, kiểm tra tình trạng hàng hóa. Ký xác nhận giao nhận. Cập nhật milestone MS-8 lên hệ thống.", milestone_code: "MS8_DELIVERED_GATE", sla_hours: 2, sla_text: null, department: "FDS_OPS", assignee_code: "O01", related_documents: "Delivery receipt / Biên bản giao nhận", note: "Assignees: O01 + (KBI – bổ sung sau)", sort_order: 17 }),
+        base({ id: "tt_018", group_code: "GR7", group_name: "Chứng từ hoàn chỉnh", task_name: "Thu thập & gửi bộ chứng từ gốc cho KBI", task_description: "FDS Ops tập hợp bộ chứng từ hoàn chỉnh sau khi hàng về kho: Original B/L hoặc Seaway Bill, Final Invoice, Packing List, C/O gốc, Customs Declaration cleared, Debit Note. Gửi cho KBI qua email hoặc courier.", milestone_code: "MS8_DELIVERED_GATE", sla_hours: 48, sla_text: null, department: "FDS_OPS", assignee_code: "O02", related_documents: "Full document set", note: "Assignees: O02 / O01. SOP §3 — FDS Ops hoàn tất hồ sơ", sort_order: 18 }),
+        base({ id: "tt_019", group_code: "GR8", group_name: "Công nợ & Hóa đơn", task_name: "Phát hành Debit Note / Hóa đơn dịch vụ", task_description: "FDS Kế toán tổng hợp chi phí phát sinh theo lô hàng: cước biển/hàng không, phí local, phí thông quan, trucking. Phát hành Debit Note gửi KBI qua email kế toán.", milestone_code: "MS8_DELIVERED_GATE", sla_hours: 48, sla_text: null, department: "FDS_ACCOUNTING", assignee_code: "A01", related_documents: "Debit Note, Tax invoice", note: "Assignees: A01 / A02. SOP §3 — FDS Kế toán", sort_order: 19 }),
+        base({ id: "tt_020", group_code: "GR8", group_name: "Công nợ & Hóa đơn", task_name: "Đối chiếu công nợ & xác nhận thanh toán", task_description: "KBI đối chiếu Debit Note với báo giá ban đầu. Nếu có chênh lệch: KBI email yêu cầu giải trình → FDS Kế toán / Sales phối hợp giải quyết. Xác nhận thanh toán và lưu hồ sơ.", milestone_code: null, sla_hours: 72, sla_text: null, department: "FDS_ACCOUNTING", assignee_code: "A02", related_documents: "Payment confirmation, Bank transfer slip", note: "Assignees: A02 + (KBI – bổ sung sau). SOP §3, §6", sort_order: 20 })
     ],
     "purchase-orders": [
         base({ id: "po_001", po_no: "PO-KBI-2026-001", supplier_id: "sup_sdec", po_type: "IMPORT", incoterm_id: "inc_fob", payment_term: "30% deposit, 70% before shipment", currency_code: "USD", exchange_rate: 25000, status: "CONFIRMED", expected_etd: "2026-07-03", expected_eta: "2026-07-10", notes: "Multi-item split LOT demo PO for drag/drop testing." }),
@@ -538,7 +569,8 @@ if (process.argv[1] === scriptPath) {
 
 function buildScreenFiles(seedFiles) {
     const purchaseOrdersById = Object.fromEntries(seedFiles["purchase-orders"].map((purchaseOrder) => [purchaseOrder.id, purchaseOrder]));
-    const items = [
+    const taskTemplatesById = Object.fromEntries((seedFiles["task-templates"] || []).map((template) => [template.id, template]));
+    const rawItems = [
         taskScreenItem({
             id: "task_001",
             task_no: "TASK-001",
@@ -661,6 +693,7 @@ function buildScreenFiles(seedFiles) {
             note: "Dispatch truck after carrier DO release."
         })
     ];
+    const items = rawItems.map((item) => applyTaskTemplate(item, taskTemplatesById));
     const poTaskScreen = buildPoTaskScreen(purchaseOrdersById.po_001, items);
 
     return {
@@ -704,7 +737,46 @@ function taskScreenItem(record) {
         ref_type: "PURCHASE_ORDER",
         completed_at: null,
         blocked_reason: null,
+        task_template_id: null,
+        milestone_code: null,
+        department: null,
+        sla_hours: null,
+        sla_text: null,
+        related_documents: null,
+        template_group_code: null,
+        template_group_name: null,
         ...record
+    };
+}
+
+function applyTaskTemplate(item, templatesById) {
+    // Runtime PO-stage task -> SOP Task Template (master data) linkage.
+    // Each operational task is mapped to the closest SOP task template so the Tasks
+    // screen can surface milestone / department / SLA / required documents from the
+    // canonical master-data catalog instead of duplicating that knowledge.
+    const links = {
+        task_001: "tt_005", // Supplier confirmation -> Gui PO & theo doi xac nhan NCC
+        task_002: "tt_006", // LOT planning          -> Cap nhat trang thai PO theo tien do NCC
+        task_003: "tt_003", // Internal DO           -> Xac nhan dich vu & ban giao Ops
+        task_004: "tt_002", // Quotation             -> Chuan bi & gui bao gia (Quotation)
+        task_005: "tt_007", // Shipment booking      -> Booking tau/chuyen bay voi Carrier (MS1)
+        task_006: "tt_013", // Customs declaration   -> Chuan bi ho so thong quan (MS5)
+        task_007: "tt_015", // Carrier DO / release  -> Theo doi & hoan tat thong quan (MS7)
+        task_008: "tt_016"  // DTO dispatch          -> Van chuyen trucking tu cang ve kho KBI
+    };
+    const templateId = links[item.id] || null;
+    const template = templateId ? templatesById[templateId] : null;
+
+    return {
+        ...item,
+        task_template_id: templateId,
+        milestone_code: template ? template.milestone_code ?? null : null,
+        department: template ? template.department ?? null : null,
+        sla_hours: template ? template.sla_hours ?? null : null,
+        sla_text: template ? template.sla_text ?? null : null,
+        related_documents: template ? template.related_documents ?? null : null,
+        template_group_code: template ? template.group_code ?? null : null,
+        template_group_name: template ? template.group_name ?? null : null
     };
 }
 

@@ -1,0 +1,34 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "fwd_001",
+    "forwarder_code": "FWD-001",
+    "forwarder_name": "Fado Solution Co., Ltd (FDS)",
+    "forwarder_type": "MULTI",
+    "country": "VN",
+    "contact_person": "Chau Thi My Anh (Ops Manager)",
+    "contact_email": "anhctm@fadosolution.com",
+    "contact_phone": "0964929642",
+    "is_primary": true,
+    "note": "Forwarder chinh - SOP FDS x KBI R7"
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "fwd_002",
+    "forwarder_code": "FWD-002",
+    "forwarder_name": "DHL Global Forwarding Vietnam",
+    "forwarder_type": "AIR",
+    "country": "VN",
+    "contact_person": "(bo sung khi can)",
+    "contact_email": null,
+    "contact_phone": null,
+    "is_primary": false,
+    "note": "Backup AIR"
+  }
+]

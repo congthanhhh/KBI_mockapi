@@ -1005,3 +1005,60 @@ Backend implementation is correct when:
 - DELETE /api/v1/shipments/:id/domestic-transport-orders/:dtoId/unlink soft-deletes the junction record.
 - DTO response includes shipments[] array with all linked shipments.
 ```
+
+---
+
+# 17. Master Data Rules
+
+Master data uses **compatibility endpoints under `/api`** (NOT `/api/v1`) and the
+compat response shapes: list `{ data, total, pagination }`, detail `{ data }`,
+mutation `{ data, message }`. Handlers live in `src/modules/mockMasterData`.
+
+Collections and deterministic IDs:
+
+```txt
+item-master        item_001   (base_uom, country_of_origin, hs_code, item_category,
+                               item_type, unit_price_usd, barcode, ...)
+suppliers          sup_*      (supplier_type, city, contact_person, bank_info,
+                               lead_time_production_days, ...)
+forwarders         fwd_*      (forwarder_type SEA|AIR|TRUCKING|MULTI, is_primary)
+carriers           carr_*     (carrier_type SHIPPING_LINE|AIRLINE, scac_iata_code)
+task-templates     tt_001..tt_020
+currencies / incoterms / transport-modes   (reference data)
+```
+
+Rules:
+
+```txt
+- Source of truth is scripts/seed-mock-data.js; run `npm run mock:seed` after
+  edits, then `npm run mock:smoke`.
+- Keep system fields (create_at, update_at, delete_at, is_delete) on every record.
+- Endpoints: GET/POST /api/<collection>, GET/PATCH/DELETE /api/<collection>/:id
+  for forwarders, carriers, task-templates (mirroring suppliers/items).
+- Item/Supplier field renames are entity-scoped; do not touch line-level
+  unit / lead_time_* on PO / DO / Shipment lines.
+```
+
+---
+
+# 18. Task Template ↔ Runtime Task Linkage
+
+`task-templates` is the SOP catalog (20 tasks). The runtime task-list screen
+(`screens/task-list`, served by `GET /api/v1/tasks`) is **linked** to it:
+
+```txt
+- Each task screen item carries task_template_id plus template-derived fields:
+  milestone_code, department, sla_hours, sla_text, related_documents,
+  template_group_code, template_group_name.
+- The seed (buildScreenFiles / applyTaskTemplate) maps each operational task to
+  the closest SOP template, e.g. task_005 -> tt_007 (Booking, MS1),
+  task_007 -> tt_015 (Customs cleared / release).
+- Derived fields are pulled from the linked template at seed time so they stay
+  consistent. When you change a task template's milestone/department/SLA,
+  re-run `npm run mock:seed` so linked runtime tasks update too.
+- task patch (PATCH /tasks/:id) must preserve the template fields (it only
+  patches status/progress/note/etc.).
+```
+
+Out of scope unless requested: auto-generating runtime tasks per PO/Shipment
+from templates, and a real SLA engine.

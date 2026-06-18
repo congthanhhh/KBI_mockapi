@@ -22,6 +22,24 @@ export const createTransportMode = create("transport-modes", "tm");
 export const updateTransportMode = update("transport-modes");
 export const deleteTransportMode = remove("transport-modes");
 
+export const listForwarders = list("forwarders");
+export const getForwarder = detail("forwarders");
+export const createForwarder = create("forwarders", "fwd");
+export const updateForwarder = update("forwarders");
+export const deleteForwarder = remove("forwarders");
+
+export const listCarriers = list("carriers");
+export const getCarrier = detail("carriers");
+export const createCarrier = create("carriers", "carr");
+export const updateCarrier = update("carriers");
+export const deleteCarrier = remove("carriers");
+
+export const listTaskTemplates = list("task-templates");
+export const getTaskTemplate = detail("task-templates");
+export const createTaskTemplate = create("task-templates", "tt");
+export const updateTaskTemplate = update("task-templates");
+export const deleteTaskTemplate = remove("task-templates");
+
 export async function listSuppliers(req, res) {
     res.json(await service.listSuppliers(req.query));
 }

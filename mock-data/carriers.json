@@ -1,0 +1,47 @@
+[
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "carr_001",
+    "carrier_code": "COSCO",
+    "carrier_name": "COSCO Shipping Lines",
+    "carrier_type": "SHIPPING_LINE",
+    "scac_iata_code": "COSU",
+    "service_route_note": "CN->VN (HCM/Haiphong) SEA",
+    "contact_booking": "(FDS dat cho)",
+    "contact_email": null,
+    "note": "Hang tau chinh tuyen TQ-VN"
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "carr_002",
+    "carrier_code": "EVERGREEN",
+    "carrier_name": "Evergreen Marine Corp",
+    "carrier_type": "SHIPPING_LINE",
+    "scac_iata_code": "EGLV",
+    "service_route_note": "CN->VN / KR->VN SEA",
+    "contact_booking": "(FDS dat cho)",
+    "contact_email": null,
+    "note": null
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "carr_003",
+    "carrier_code": "VN",
+    "carrier_name": "Vietnam Airlines Cargo",
+    "carrier_type": "AIRLINE",
+    "scac_iata_code": "VN",
+    "service_route_note": "CN->SGN / KR->SGN AIR",
+    "contact_booking": "(FDS dat cho)",
+    "contact_email": null,
+    "note": "Uu tien khi hang gap"
+  }
+]
