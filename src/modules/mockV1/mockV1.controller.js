@@ -172,6 +172,10 @@ export async function listPurchaseOrderTasks(req, res) {
     res.json(success(await service.listPurchaseOrderTasks(req.params.id)));
 }
 
+export async function createTask(req, res) {
+    res.status(201).json(success(await service.createTask(req.body)));
+}
+
 export async function updateTask(req, res) {
     res.json(success(await service.updateTask(req.params.id, req.body)));
 }
@@ -279,7 +283,7 @@ export async function getShipment(req, res) {
 }
 
 export async function markShipmentMilestoneDone(req, res) {
-    res.json(success(await service.markShipmentMilestoneDone(req.params.id, req.params.code)));
+    res.json(success(await service.markShipmentMilestoneDone(req.params.id, req.params.code, req.body)));
 }
 
 export async function listShipmentLines(req, res) {

@@ -151,5 +151,23 @@
     "id": "sdl_017",
     "shipment_id": "shp_007",
     "dto_id": "dto_016"
+  },
+  {
+    "create_at": "2026-06-19T09:14:46.522Z",
+    "update_at": "2026-06-19T09:14:46.522Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "sdl_018",
+    "shipment_id": "shp_015",
+    "dto_id": "dto_017"
+  },
+  {
+    "create_at": "2026-06-19T09:16:59.896Z",
+    "update_at": "2026-06-19T09:19:33.324Z",
+    "delete_at": "2026-06-19T09:19:33.324Z",
+    "is_delete": true,
+    "id": "sdl_019",
+    "shipment_id": "shp_015",
+    "dto_id": "dto_018"
   }
 ]

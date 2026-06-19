@@ -20,6 +20,7 @@ Express server.
 Read these first when the task touches API behavior:
 
 - `kbi-mock-api/AGENTS.md`
+- `kbi-mock-api/docs/BE_rule.md` — **canonical business rules** (flow, statuses, per-endpoint validation). When a rule here conflicts with this skill or AGENTS.md, `BE_rule.md` wins.
 - `kbi-mock-api/docs/API_CONTRACT.md`
 - `kbi-mock-api/docs/MOCK_JSON_RUNTIME.md`
 - `kbi-mock-api/src/routes/mock.js`
@@ -95,6 +96,8 @@ seed record shape, endpoint payload, or frontend-visible API surface:
    or example payload changes.
 3. Update `docs/MOCK_JSON_RUNTIME.md` when a collection, relationship,
    generated JSON file, or runtime mock rule changes.
+3b. Update `docs/BE_rule.md` when a business rule, status flow, validation, or
+   status-gate changes — it is the canonical business-rule reference.
 4. Update `scripts/seed-mock-data.js` as the source of truth; do not treat
    `mock-data/*.json` hand edits as durable because `npm run mock:seed`
    regenerates them.
@@ -128,26 +131,32 @@ Do not invent old database-first action routes such as `/move-slot`,
 `/delivery-slots`, `/submit-to-kbi`, `/confirm-quotation`,
 `/assign-to-shipment`, or `/mark-ready-to-ship` unless the contract is updated.
 
-## LOT Rules
+## Business Rules (LOT, DO, Quotation, Shipment, Customs, Carrier DO, DTO)
 
-- Active LOT Planning has no Slot runtime.
-- `po-delivery-slots.json` may exist only as legacy table coverage.
-- Do not expose slots in `GET /api/v1/purchase-orders/:id/lot-planning`.
-- Do not require or write `delivery_slot_id` or `slot_id` in active LOT logic.
-- A new PO creates default `LOT-001`.
-- Initial PO lines belong to `LOT-001`.
-- A PO line can appear in multiple LOTs only through split quantity.
-- Move line: move the full LOT line to target LOT and merge quantities when the
-  target already has the same `purchase_order_line_id`.
-- Split line: `split_qty > 0`, `split_qty < source.qty_lotted`, source and
-  target LOTs must be unlocked, then reduce source and create or merge target.
-- Total `qty_lotted` by `purchase_order_line_id` must not exceed `qty_ordered`.
-- Locked LOT statuses are `ASSIGNED_TO_SHIPMENT`, `SHIPPED`, and `CANCELLED`.
+`docs/BE_rule.md` is the single source of truth for per-entity flow, statuses,
+and validation — read it before changing any business behavior. Do not restate
+its rules here; keep them in one place to avoid drift.
+
+Hard guardrails (safety invariants, even if the doc is not open):
+
+- LOT Planning has **no Slot runtime** — never expose/require `slot_id`,
+  `delivery_slot_id`, `/delivery-slots`, or `/move-slot` in active LOT logic
+  (`po-delivery-slots.json` is legacy table coverage only).
+- Every PO has a default `LOT-001`; a PO line appears in multiple LOTs only via
+  split; `sum(qty_lotted)` per `purchase_order_line_id` must not exceed
+  `qty_ordered`.
+- Locked LOT statuses (`ASSIGNED_TO_SHIPMENT`, `SHIPPED`, `CANCELLED`) reject
+  move/split/delete/reorder.
+- Status-gated creation: Carrier DO and DTO require `shipment.status =
+  CUSTOMS_CLEARED`; Shipment requires `delivery_order.status =
+  QUOTATION_CONFIRMED`. For exact transitions and payloads, see `BE_rule.md`.
 
 ## Workflow
 
 1. Read the contract and existing implementation - inspect the docs, route file,
-   controller, service, repository, and affected mock JSON files.
+   controller, service, repository, and affected mock JSON files. Apply
+   `docs/BE_rule.md` for the affected entity (flow, statuses, validation) before
+   designing behavior; treat it as the source of truth on any conflict.
 2. Choose the endpoint family - use `/api/v1` business routes when present;
    use `/api` only for compatibility master data; use `/api/v1/mock` only as
    documented fallback/debug behavior.
@@ -162,7 +171,9 @@ Do not invent old database-first action routes such as `/move-slot`,
    writes; keep file I/O out of controllers.
 7. Update seed and docs - change `scripts/seed-mock-data.js`,
    `docs/API_CONTRACT.md`, or `docs/MOCK_JSON_RUNTIME.md` when routes, fields,
-   data, or flows change.
+   data, or flows change. **Update `docs/BE_rule.md` whenever a business rule,
+   status flow, validation, or status-gate changes** — it is the canonical rules
+   doc and must not fall behind the implementation.
 8. Validate - run syntax checks for changed JS files, run `npm run mock:seed`
    when seed changed, and run `npm run mock:smoke` for flow-impacting changes.
 
@@ -175,6 +186,7 @@ Do not invent old database-first action routes such as `/move-slot`,
 | Response aligned | `/api/v1` uses `{ data, meta, errors }` |
 | Data persisted | Mutations update mock JSON through `MockJsonRepository` |
 | LOT safe | No active slot fields/routes are introduced |
+| Rules aligned | Behavior follows `BE_rule.md`; that doc is updated if a rule/flow changed |
 | Seed stable | Required collections and deterministic IDs are preserved |
 | Docs aligned | Contract docs match implemented routes and payloads |
 | Verified | `node --check` and relevant mock smoke checks are reported |

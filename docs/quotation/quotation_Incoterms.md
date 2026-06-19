@@ -11,11 +11,14 @@ Với điều kiện này, người mua phải chịu toàn bộ chi phí từ x
 *   **Cước vận chuyển quốc tế:** Tên hãng chuyên chở (Carrier) với đơn giá tính theo `CONT`, `RT`, hoặc `KGS` tùy hình thức.
 *   **Phí địa phương tại Việt Nam:**
     *   Hàng biển (FCL/LCL) luôn có: `D/O`, `Handling fee`, `THC`, và `CIC`. Riêng FCL có thêm `EMC / EMF` và `CLEANING`. Riêng LCL có thêm `CFS`.
+    *   Ghi chú LCL: thứ tự hiển thị theo template là `D/O`, `Handling fee`, `THC`, `CFS`, `CIC` (CFS nằm giữa THC và CIC).
     *   Hàng Air thường chỉ có duy nhất: `Handling fee`.
 *   **Phí TTHQ & Vận chuyển tại VN:**
     *   `Thủ tục hải quan` (Tờ khai Luồng Xanh/Vàng/Đỏ) và `Trucking` (vận chuyển nội địa).
     *   `Hạ xa` (chỉ dành riêng cho hàng nguyên cont FCL).
     *   `Phí bốc xếp từ xe xuống pallet` (chỉ dành riêng cho hàng Air).
+
+Ghi chú dữ liệu thật: mẫu AIR `Quote_Line_3U` có thể gộp 2 dòng origin thành 1 dòng `EXW Charge` tính theo `LÔ`; phạm vi hiện tại vẫn giữ template tổng quát tách origin theo per-BL và per-KGS.
 
 ### 2. Nhóm FOB (Giao lên tàu)
 Với điều kiện FOB, người bán đã thanh toán mọi chi phí tại cảng xuất. Trách nhiệm trả phí của người mua bắt đầu từ lúc hàng lên tàu chở về Việt Nam. Vì vậy, báo giá nhóm FOB **không có "Phí địa phương tại cảng xuất"**:

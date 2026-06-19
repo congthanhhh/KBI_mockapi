@@ -208,5 +208,35 @@
     "qty_shipped": 20,
     "unit": "PCS",
     "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-19T08:57:56.281Z",
+    "update_at": "2026-06-19T08:57:56.281Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "shp_line_015",
+    "shipment_id": "shp_015",
+    "delivery_order_line_id": "do_line_015",
+    "purchase_order_line_id": "po_line_018",
+    "po_lot_id": "lot_016",
+    "item_id": "item_002",
+    "qty_shipped": 1,
+    "unit": "PCS",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-19T08:57:56.283Z",
+    "update_at": "2026-06-19T08:57:56.283Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "shp_line_016",
+    "shipment_id": "shp_015",
+    "delivery_order_line_id": "do_line_016",
+    "purchase_order_line_id": "po_line_019",
+    "po_lot_id": "lot_016",
+    "item_id": "item_004",
+    "qty_shipped": 4,
+    "unit": "PCS",
+    "sort_order": 2
   }
 ]

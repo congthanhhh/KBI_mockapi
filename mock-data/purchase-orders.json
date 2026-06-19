@@ -12,16 +12,17 @@
     "payment_term": "30% deposit, 70% before shipment",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "CONFIRMED",
+    "status": "DRAFT",
     "expected_etd": "2026-07-03",
     "expected_eta": "2026-07-10",
     "notes": "Multi-item split LOT demo PO for drag/drop testing.",
     "contract_no": "KBI-CN-2026-001",
     "transport_mode_id": "tm_sea_fcl",
-    "actual_etd": "2026-07-03",
-    "actual_eta": "2026-07-10",
+    "actual_etd": null,
+    "actual_eta": null,
     "expected_warehouse_eta": "2026-07-10T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-10T09:00:00.000Z"
+    "actual_warehouse_ata": null,
+    "lifecycle_status": "DRAFT"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -36,7 +37,7 @@
     "payment_term": "Net 30",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "READY_TO_SHIP",
+    "status": "SENT",
     "expected_etd": "2026-07-08",
     "expected_eta": "2026-07-16",
     "notes": "Ready cargo from Shanghai OEM.",
@@ -45,7 +46,8 @@
     "actual_etd": "2026-07-08",
     "actual_eta": "2026-07-16",
     "expected_warehouse_eta": "2026-07-17T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-17T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-17T09:00:00.000Z",
+    "lifecycle_status": "SENT"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -60,7 +62,7 @@
     "payment_term": "LC at sight",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "SHIPPED",
+    "status": "CONFIRMED",
     "expected_etd": "2026-06-24",
     "expected_eta": "2026-07-02",
     "notes": "Already shipped demo.",
@@ -69,7 +71,8 @@
     "actual_etd": "2026-06-24",
     "actual_eta": "2026-07-02",
     "expected_warehouse_eta": "2026-06-27T14:00:00.000Z",
-    "actual_warehouse_ata": "2026-06-27T13:40:00.000Z"
+    "actual_warehouse_ata": "2026-06-27T13:40:00.000Z",
+    "lifecycle_status": "CONFIRMED"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -84,7 +87,7 @@
     "payment_term": "Net 45",
     "currency_code": "CNY",
     "exchange_rate": 3500,
-    "status": "CONFIRMED",
+    "status": "IN_PRODUCTION",
     "expected_etd": "2026-07-18",
     "expected_eta": "2026-07-26",
     "notes": "Confirmed, pending LOT planning.",
@@ -93,7 +96,8 @@
     "actual_etd": "2026-07-20",
     "actual_eta": "2026-07-21",
     "expected_warehouse_eta": "2026-07-22T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-22T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-22T09:00:00.000Z",
+    "lifecycle_status": "IN_PRODUCTION"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -117,7 +121,8 @@
     "actual_etd": "2026-07-22",
     "actual_eta": "2026-07-30",
     "expected_warehouse_eta": "2026-07-31T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-31T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-31T09:00:00.000Z",
+    "lifecycle_status": "READY_TO_SHIP"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -132,7 +137,7 @@
     "payment_term": "Net 45 after invoice",
     "currency_code": "CNY",
     "exchange_rate": 3500,
-    "status": "CONFIRMED",
+    "status": "READY_TO_SHIP",
     "expected_etd": "2026-08-04",
     "expected_eta": "2026-08-05",
     "notes": "Air freight for alternator shortage.",
@@ -141,7 +146,8 @@
     "actual_etd": "2026-08-04",
     "actual_eta": "2026-08-05",
     "expected_warehouse_eta": "2026-08-05T10:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-05T10:00:00.000Z"
+    "actual_warehouse_ata": "2026-08-05T10:00:00.000Z",
+    "lifecycle_status": "CARGO_READY"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -156,7 +162,7 @@
     "payment_term": "LC at sight",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "SHIPPED",
+    "status": "READY_TO_SHIP",
     "expected_etd": "2026-06-30",
     "expected_eta": "2026-07-08",
     "notes": "Fuel injector shipment already on water.",
@@ -165,7 +171,8 @@
     "actual_etd": "2026-06-30",
     "actual_eta": "2026-07-08",
     "expected_warehouse_eta": "2026-07-09T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-09T08:50:00.000Z"
+    "actual_warehouse_ata": "2026-07-09T08:50:00.000Z",
+    "lifecycle_status": "PICKED_UP"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -189,7 +196,8 @@
     "actual_etd": "2026-07-14",
     "actual_eta": "2026-07-22",
     "expected_warehouse_eta": "2026-07-23T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-23T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-23T09:00:00.000Z",
+    "lifecycle_status": "BL_ISSUED"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -204,7 +212,7 @@
     "payment_term": "20% deposit, 80% against BL copy",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "CONFIRMED",
+    "status": "READY_TO_SHIP",
     "expected_etd": "2026-08-12",
     "expected_eta": "2026-08-14",
     "notes": "Cross-border trucking option for radiator assemblies.",
@@ -213,7 +221,8 @@
     "actual_etd": "2026-08-12",
     "actual_eta": "2026-08-14",
     "expected_warehouse_eta": "2026-08-14T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-14T08:30:00.000Z"
+    "actual_warehouse_ata": "2026-08-14T08:30:00.000Z",
+    "lifecycle_status": "GATE_IN_POL"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -228,7 +237,7 @@
     "payment_term": "30% deposit, balance before vessel departure",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "SHIPPED",
+    "status": "READY_TO_SHIP",
     "expected_etd": "2026-08-18",
     "expected_eta": "2026-08-26",
     "notes": "Gasket kits shipped by LCL for overhaul campaign.",
@@ -237,7 +246,8 @@
     "actual_etd": "2026-08-18",
     "actual_eta": "2026-08-26",
     "expected_warehouse_eta": "2026-08-27T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-27T08:55:00.000Z"
+    "actual_warehouse_ata": "2026-08-27T08:55:00.000Z",
+    "lifecycle_status": "IN_TRANSIT"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -252,7 +262,7 @@
     "payment_term": "Net 30 after pickup confirmation",
     "currency_code": "CNY",
     "exchange_rate": 3500,
-    "status": "CONFIRMED",
+    "status": "READY_TO_SHIP",
     "expected_etd": "2026-09-03",
     "expected_eta": "2026-09-04",
     "notes": "Starter motors moved by air due to urgent service demand.",
@@ -261,7 +271,8 @@
     "actual_etd": "2026-09-03",
     "actual_eta": "2026-09-04",
     "expected_warehouse_eta": "2026-09-04T11:00:00.000Z",
-    "actual_warehouse_ata": "2026-09-04T11:00:00.000Z"
+    "actual_warehouse_ata": "2026-09-04T11:00:00.000Z",
+    "lifecycle_status": "ARRIVED"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -285,7 +296,8 @@
     "actual_etd": "2026-09-08",
     "actual_eta": "2026-09-18",
     "expected_warehouse_eta": "2026-09-19T10:00:00.000Z",
-    "actual_warehouse_ata": "2026-09-19T10:00:00.000Z"
+    "actual_warehouse_ata": "2026-09-19T10:00:00.000Z",
+    "lifecycle_status": "CUSTOMS_DRAFT"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -300,7 +312,7 @@
     "payment_term": "Net 45",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "SHIPPED",
+    "status": "READY_TO_SHIP",
     "expected_etd": "2026-08-05",
     "expected_eta": "2026-08-13",
     "notes": "Fuel water separator filters delivered to replenish maintenance stock.",
@@ -309,7 +321,8 @@
     "actual_etd": "2026-08-05",
     "actual_eta": "2026-08-13",
     "expected_warehouse_eta": "2026-08-14T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-14T09:15:00.000Z"
+    "actual_warehouse_ata": "2026-08-14T09:15:00.000Z",
+    "lifecycle_status": "CUSTOMS_CLEARED"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -324,7 +337,7 @@
     "payment_term": "50% deposit, 50% after QC release",
     "currency_code": "USD",
     "exchange_rate": 25000,
-    "status": "SHIPPED",
+    "status": "READY_TO_SHIP",
     "expected_etd": "2026-08-28",
     "expected_eta": "2026-08-29",
     "notes": "ECU modules shipped by air with anti-static packaging.",
@@ -333,6 +346,76 @@
     "actual_etd": "2026-08-28",
     "actual_eta": "2026-08-29",
     "expected_warehouse_eta": "2026-08-29T13:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-29T12:45:00.000Z"
+    "actual_warehouse_ata": "2026-08-29T12:45:00.000Z",
+    "lifecycle_status": "DELIVERED"
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "po_015",
+    "po_no": "PO-KBI-2026-015",
+    "supplier_id": "sup_shanghai_oem",
+    "po_type": "IMPORT",
+    "incoterm_id": "inc_fob",
+    "payment_term": "Net 30",
+    "currency_code": "USD",
+    "exchange_rate": 25000,
+    "status": "CANCELLED",
+    "lifecycle_status": "CANCELLED",
+    "expected_etd": "2026-09-20",
+    "expected_eta": "2026-09-28",
+    "notes": "Cancelled by buyer after supplier missed cargo-ready deadline.",
+    "contract_no": "KBI-CN-2026-015",
+    "transport_mode_id": "tm_sea_fcl",
+    "actual_etd": null,
+    "actual_eta": null,
+    "expected_warehouse_eta": "2026-09-29T09:00:00.000Z",
+    "actual_warehouse_ata": null,
+    "cancelled_at": "2026-07-01T00:00:00.000Z",
+    "cancel_reason": "Supplier missed cargo-ready deadline."
+  },
+  {
+    "create_at": "2026-06-19T08:25:00.004Z",
+    "update_at": "2026-06-19T08:31:29.651Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "po_016",
+    "po_no": "PO-2026-294156",
+    "contract_no": "contact-123",
+    "supplier_id": "sup_sdec",
+    "po_type": "SEA",
+    "incoterm_id": "inc_fob",
+    "payment_term": "TT_ADVANCE",
+    "currency_code": "USD",
+    "currency_id": "cur_usd",
+    "exchange_rate": 1,
+    "status": "CONFIRMED",
+    "expected_etd": "2026-06-20",
+    "expected_eta": "2026-06-27",
+    "transport_mode_id": "tm_sea_fcl",
+    "notes": "test flow"
+  },
+  {
+    "create_at": "2026-06-19T10:14:31.590Z",
+    "update_at": "2026-06-19T10:15:05.178Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "po_017",
+    "po_no": "PO-2026-1234567",
+    "contract_no": "contact1234567",
+    "supplier_id": "sup_shanghai_oem",
+    "po_type": "SEA",
+    "incoterm_id": "inc_exw",
+    "payment_term": "NET45",
+    "currency_code": "USD",
+    "currency_id": "cur_usd",
+    "exchange_rate": 1,
+    "status": "CONFIRMED",
+    "expected_etd": "2026-06-20",
+    "expected_eta": "2026-06-27",
+    "transport_mode_id": "tm_sea_fcl",
+    "notes": null
   }
 ]

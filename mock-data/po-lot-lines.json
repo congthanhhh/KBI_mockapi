@@ -264,5 +264,47 @@
     "qty_lotted": 80,
     "unit": "KIT",
     "sort_order": 3
+  },
+  {
+    "create_at": "2026-06-19T08:25:00.012Z",
+    "update_at": "2026-06-19T08:25:00.012Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_line_020",
+    "po_lot_id": "lot_016",
+    "purchase_order_line_id": "po_line_018",
+    "item_id": "item_002",
+    "qty_lotted": 1,
+    "unit": "PCS",
+    "notes": null,
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-19T08:25:00.014Z",
+    "update_at": "2026-06-19T08:25:00.014Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_line_021",
+    "po_lot_id": "lot_016",
+    "purchase_order_line_id": "po_line_019",
+    "item_id": "item_004",
+    "qty_lotted": 4,
+    "unit": "PCS",
+    "notes": null,
+    "sort_order": 2
+  },
+  {
+    "create_at": "2026-06-19T10:14:31.595Z",
+    "update_at": "2026-06-19T10:14:31.595Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_line_022",
+    "po_lot_id": "lot_017",
+    "purchase_order_line_id": "po_line_020",
+    "item_id": "item_002",
+    "qty_lotted": 2,
+    "unit": "PCS",
+    "notes": null,
+    "sort_order": 1
   }
 ]

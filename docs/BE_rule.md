@@ -583,7 +583,16 @@ Endpoint:
 
 ```txt
 POST /api/v1/shipments/:id/milestones/:code/done
+body (optional): { actual_at, notes }
 ```
+
+Marking a milestone done:
+- sets the milestone `actual_at` from `body.actual_at` (falls back to now) and `status = DONE`;
+- mirrors the actual date onto the shipment so downstream consumers (PO logistics
+  timeline reads `firstShipment.atd/ata`) show it:
+  - `ATD` → `shipment.atd`
+  - `ARRIVAL_NOTICE` → `shipment.ata`
+  - warehouse ATA is NOT set here — it comes from the DTO `actual_delivery_at`.
 
 Status mapping:
 
@@ -1056,8 +1065,23 @@ Rules:
 - Derived fields are pulled from the linked template at seed time so they stay
   consistent. When you change a task template's milestone/department/SLA,
   re-run `npm run mock:seed` so linked runtime tasks update too.
-- task patch (PATCH /tasks/:id) must preserve the template fields (it only
-  patches status/progress/note/etc.).
+
+Manual create / edit endpoints (write to the `screens/task-list` DTO):
+
+```txt
+POST  /api/v1/tasks          create a task; task_name required; optional
+                             task_template_id derives milestone/department/sla/
+                             related_documents/group via resolveTaskTemplateFields.
+PATCH /api/v1/tasks/:id      edit status/progress/note + task_name/role/stage/
+                             ref_*/priority/assignee; passing task_template_id
+                             re-derives the template snapshot (null clears it).
+```
+
+```txt
+- createTask assigns the next task_XXX id and appends to the task-list screen,
+  then rebuilds summary.
+- buildTaskPatch only copies provided fields, so partial PATCH stays safe and
+  template fields persist when not edited.
 ```
 
 Out of scope unless requested: auto-generating runtime tasks per PO/Shipment

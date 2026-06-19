@@ -119,20 +119,22 @@ Domain models follow this lifecycle:
   - detail: `{ data }`
   - mutation: `{ data, message }`
 
-## LOT Rules
+## Business Rules
 
-- No Slot runtime.
-- Do not add `/delivery-slots`.
-- Do not add `/move-slot`.
-- Do not add `po_delivery_slots`, `slot_id`, or `delivery_slot_id` to mock LOT runtime.
-- A new PO creates default `LOT-001`.
-- Initial PO lines belong to `LOT-001`.
-- A PO line can appear in multiple LOTs when quantity is split.
-- Total `qty_lotted` by `purchase_order_line_id` must not exceed `qty_ordered`.
-- Locked LOT statuses:
-  - `ASSIGNED_TO_SHIPMENT`
-  - `SHIPPED`
-  - `CANCELLED`
+**`docs/BE_rule.md` is the canonical, per-entity business-rule reference** (LOT,
+DO, Quotation, Shipment, Customs, Carrier DO, DTO — flow, statuses, validation,
+exact payloads). Read it before changing business behavior, and update it when a
+rule changes. The summaries in this file are orientation only; on any conflict,
+`BE_rule.md` wins.
+
+LOT hard invariants (kept here as a safety guardrail):
+
+- No Slot runtime — never add `po_delivery_slots`, `slot_id`, `delivery_slot_id`,
+  `/delivery-slots`, or `/move-slot` to mock LOT runtime.
+- Default `LOT-001`; a PO line spans multiple LOTs only via split;
+  `sum(qty_lotted)` per `purchase_order_line_id` must not exceed `qty_ordered`.
+- Locked LOT statuses (`ASSIGNED_TO_SHIPMENT`, `SHIPPED`, `CANCELLED`) are
+  read-only. For everything else, see `docs/BE_rule.md`.
 
 ## Commands
 

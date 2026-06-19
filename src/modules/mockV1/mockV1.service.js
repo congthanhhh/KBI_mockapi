@@ -1045,14 +1045,118 @@ export async function listPurchaseOrderTasks(purchaseOrderId) {
     return buildPurchaseOrderTaskScreen(purchaseOrder, taskList.items || []);
 }
 
+export async function createTask(body = {}) {
+    const taskName = String(body.task_name || "").trim();
+
+    if (!taskName) {
+        throw apiError("VALIDATION_ERROR", "task_name is required", { field: "task_name" }, 400);
+    }
+
+    if (body.status !== undefined && !taskStatuses.includes(body.status)) {
+        throw apiError("VALIDATION_ERROR", "Invalid task status", { status: body.status }, 400);
+    }
+
+    const screen = await readTaskListScreen();
+    const items = screen.items || [];
+    const id = nextTaskId(items);
+    const templateFields = await resolveTaskTemplateFields(body.task_template_id || null);
+    const nowIso = new Date().toISOString();
+    const refNo = body.ref_no || body.ref_id || "";
+
+    const task = {
+        create_at: nowIso,
+        update_at: nowIso,
+        delete_at: null,
+        is_delete: false,
+        id,
+        task_no: body.task_no || id.toUpperCase().replace("_", "-"),
+        task_name: taskName,
+        ref_type: body.ref_type || "PURCHASE_ORDER",
+        ref_id: body.ref_id || refNo,
+        ref_no: refNo,
+        stage: body.stage || "SUPPLIER_CONFIRMATION",
+        role: body.role || "BUYER",
+        assignee: {
+            id: body.assignee?.id ?? null,
+            name: body.assignee?.name || "Unassigned",
+            department: body.assignee?.department ?? null
+        },
+        status: body.status || "PENDING",
+        priority: body.priority || "MEDIUM",
+        due_at: body.due_at || null,
+        completed_at: null,
+        progress: Number(body.progress) || 0,
+        blocked_reason: null,
+        note: body.note || body.notes || null,
+        ...templateFields
+    };
+
+    screen.items = [...items, task];
+    screen.summary = buildTaskSummary(screen.items);
+    await repo.writeCollection(collections.taskListScreen, screen);
+
+    return getTask(id);
+}
+
 export async function updateTask(id, body) {
     const patch = buildTaskPatch(body);
+
+    if (body.task_template_id !== undefined) {
+        Object.assign(patch, await resolveTaskTemplateFields(body.task_template_id || null));
+    }
+
     return persistTaskPatch(id, patch);
 }
 
 export async function assignTask(id, body) {
     const assignee = normalizeAssignee(body);
     return persistTaskPatch(id, { assignee });
+}
+
+function nextTaskId(items) {
+    let max = 0;
+    for (const item of items) {
+        const match = /^task_(\d+)$/.exec(item.id || "");
+        if (match) {
+            max = Math.max(max, Number(match[1]));
+        }
+    }
+    return `task_${String(max + 1).padStart(3, "0")}`;
+}
+
+// Resolve the SOP Task Template (master data) fields a runtime task should snapshot.
+async function resolveTaskTemplateFields(templateId) {
+    const fields = {
+        task_template_id: templateId || null,
+        milestone_code: null,
+        department: null,
+        sla_hours: null,
+        sla_text: null,
+        related_documents: null,
+        template_group_code: null,
+        template_group_name: null
+    };
+
+    if (!templateId) {
+        return fields;
+    }
+
+    const template = await repo.findById("task-templates", templateId);
+
+    if (!template) {
+        return fields;
+    }
+
+    return {
+        ...fields,
+        milestone_code: template.milestone_code ?? null,
+        department: template.department ?? null,
+        sla_hours: template.sla_hours ?? null,
+        sla_text: template.sla_text ?? null,
+        related_documents: template.related_documents ?? null,
+        template_group_code: template.group_code ?? null,
+        template_group_name: template.group_name ?? null
+    };
 }
 
 export async function getDeliveryOrder(id) {
@@ -1564,7 +1668,7 @@ export async function getShipment(id) {
     };
 }
 
-export async function markShipmentMilestoneDone(shipmentId, code) {
+export async function markShipmentMilestoneDone(shipmentId, code, body = {}) {
     const shipment = await requireRecord(collections.shipments, shipmentId, "Shipment not found");
     const milestones = await active(collections.shipmentMilestones);
     const milestone = milestones.find((row) => row.shipment_id === shipmentId && row.milestone_code === code);
@@ -1573,13 +1677,19 @@ export async function markShipmentMilestoneDone(shipmentId, code) {
         throw apiError("NOT_FOUND", "Shipment milestone not found", { code }, 404);
     }
 
+    const actualAt = body.actual_at || new Date().toISOString();
     await repo.update(collections.shipmentMilestones, milestone.id, {
         status: "DONE",
-        actual_at: new Date().toISOString()
+        actual_at: actualAt,
+        notes: body.notes ?? milestone.notes ?? null
     });
-    await repo.update(collections.shipments, shipment.id, {
-        status: shipmentStatusByMilestone[code] || code
-    });
+    // Mirror the departure/arrival milestones onto the shipment's atd/ata so the
+    // PO logistics timeline (and any consumer reading firstShipment.atd/ata) shows
+    // the actual dates. Warehouse ATA comes from the DTO's actual_delivery_at.
+    const shipmentPatch = { status: shipmentStatusByMilestone[code] || code };
+    if (code === "ATD") shipmentPatch.atd = actualAt;
+    if (code === "ARRIVAL_NOTICE") shipmentPatch.ata = actualAt;
+    await repo.update(collections.shipments, shipment.id, shipmentPatch);
     return getShipment(shipment.id);
 }
 
@@ -2304,10 +2414,30 @@ function buildTaskPatch(body = {}) {
         patch.progress = progress;
     }
 
-    for (const field of ["note", "blocked_reason", "priority", "due_at", "completed_at"]) {
+    for (const field of [
+        "note",
+        "blocked_reason",
+        "priority",
+        "due_at",
+        "completed_at",
+        "task_name",
+        "role",
+        "stage",
+        "ref_type",
+        "ref_id",
+        "ref_no"
+    ]) {
         if (body[field] !== undefined) {
             patch[field] = body[field];
         }
+    }
+
+    if (body.assignee !== undefined) {
+        patch.assignee = {
+            id: body.assignee?.id ?? null,
+            name: body.assignee?.name || "Unassigned",
+            department: body.assignee?.department ?? null
+        };
     }
 
     if (body.notes !== undefined && body.note === undefined) {

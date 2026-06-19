@@ -306,5 +306,27 @@
     "atd": "2026-08-28",
     "ata": "2026-08-29",
     "status": "DELIVERED"
+  },
+  {
+    "create_at": "2026-06-19T08:57:56.278Z",
+    "update_at": "2026-06-19T09:46:55.616Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "shp_015",
+    "shipment_no": "SHP-thanh-123",
+    "delivery_order_id": "do_015",
+    "mode": "SEA",
+    "forwarder_id": "sup_fds_forwarder",
+    "carrier": "ThanhBoard",
+    "vessel_flight": "thanh123",
+    "bl_awb_no": "BLthanh",
+    "container_no": null,
+    "pol": "Shanghai Port",
+    "pod": "CatLai Port",
+    "etd": "2026-06-20",
+    "eta": "2026-06-27",
+    "atd": "2026-06-24T00:00:00.000Z",
+    "ata": "2026-06-25T00:00:00.000Z",
+    "status": "ARRIVED"
   }
 ]

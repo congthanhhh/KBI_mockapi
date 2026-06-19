@@ -250,5 +250,41 @@
     "vat_rate": 10,
     "co_form": "E",
     "preferential_tax_rate": 5
+  },
+  {
+    "create_at": "2026-06-19T09:05:55.805Z",
+    "update_at": "2026-06-19T09:05:55.805Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cd_line_015",
+    "customs_declaration_id": "cd_015",
+    "item_id": "item_002",
+    "hs_code": "84212399",
+    "item_description": "Oil Filter Element",
+    "quantity": 1,
+    "unit": "PCS",
+    "customs_value": 0,
+    "import_duty_rate": 3,
+    "vat_rate": 10,
+    "co_form": "E",
+    "preferential_tax_rate": 0
+  },
+  {
+    "create_at": "2026-06-19T09:05:55.806Z",
+    "update_at": "2026-06-19T09:05:55.806Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cd_line_016",
+    "customs_declaration_id": "cd_015",
+    "item_id": "item_004",
+    "hs_code": "84136090",
+    "item_description": "Hydraulic Pump",
+    "quantity": 4,
+    "unit": "PCS",
+    "customs_value": 0,
+    "import_duty_rate": 5,
+    "vat_rate": 10,
+    "co_form": "E",
+    "preferential_tax_rate": 0
   }
 ]

@@ -238,5 +238,37 @@
     "planned_eta": "2026-08-29",
     "sort_order": 1,
     "notes": "High-value electronics lot."
+  },
+  {
+    "create_at": "2026-06-19T08:25:00.007Z",
+    "update_at": "2026-06-19T08:32:53.492Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_016",
+    "purchase_order_id": "po_016",
+    "lot_no": "LOT-001",
+    "lot_name": "Default Lot",
+    "status": "ASSIGNED_TO_SHIPMENT",
+    "planned_cargo_ready_date": "2026-06-23",
+    "planned_etd": "2026-06-20",
+    "planned_eta": "2026-06-27",
+    "sort_order": 1,
+    "notes": "Default LOT created with PO."
+  },
+  {
+    "create_at": "2026-06-19T10:14:31.592Z",
+    "update_at": "2026-06-19T10:15:09.289Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_017",
+    "purchase_order_id": "po_017",
+    "lot_no": "LOT-001",
+    "lot_name": "Default Lot",
+    "status": "ASSIGNED_TO_SHIPMENT",
+    "planned_cargo_ready_date": "2026-06-23",
+    "planned_etd": "2026-06-20",
+    "planned_eta": "2026-06-27",
+    "sort_order": 1,
+    "notes": "Default LOT created with PO."
   }
 ]

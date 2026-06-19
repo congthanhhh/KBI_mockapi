@@ -152,5 +152,16 @@
     "event_code": "MARK_FINAL",
     "event_at": "2026-07-26T04:00:00.000Z",
     "note": "High-value air quote accepted."
+  },
+  {
+    "create_at": "2026-06-19T08:54:34.579Z",
+    "update_at": "2026-06-19T08:54:34.579Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_015",
+    "quotation_id": "qt_015",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-19T08:54:34.579Z",
+    "note": "Marked final in mock flow."
   }
 ]
