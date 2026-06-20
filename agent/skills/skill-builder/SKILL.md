@@ -20,8 +20,8 @@ ready for use as an agent skill.
 ## Project Conventions (this repo)
 
 Skills in this repo live at `<project-root>/agent/skills/<skill-name>/SKILL.md` — e.g.
-`kbi-mock-api/agent/skills/backend-api-endpoint/` and
-`PROJECT-PRODUCT/frontend/agent/skills/frontend-api-client/`.
+`kbi-mock-api/agent/skills/backend-api-endpoint/`. The frontend keeps its skills under
+a hidden folder instead: `PROJECT-PRODUCT/frontend/.agents/skills/frontend-api-client/`.
 
 - The folder name MUST equal the frontmatter `name` (both kebab-case, identical).
 - Use the two skills above as the canonical templates for any codebase-bound skill.

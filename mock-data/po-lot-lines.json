@@ -2,7 +2,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-20T03:58:04.127Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_001",
@@ -11,7 +11,7 @@
     "item_id": "item_001",
     "qty_lotted": 60,
     "unit": "PCS",
-    "sort_order": 1
+    "sort_order": 3
   },
   {
     "notes": null,
@@ -212,7 +212,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-20T03:58:04.123Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_016",
@@ -221,7 +221,7 @@
     "item_id": "item_005",
     "qty_lotted": 6,
     "unit": "PCS",
-    "sort_order": 2
+    "sort_order": 1
   },
   {
     "notes": null,
@@ -240,7 +240,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-20T03:58:04.126Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_018",
@@ -249,7 +249,7 @@
     "item_id": "item_007",
     "qty_lotted": 240,
     "unit": "SET",
-    "sort_order": 3
+    "sort_order": 2
   },
   {
     "notes": null,
