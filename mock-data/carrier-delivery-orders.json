@@ -250,23 +250,5 @@
     "currency_code": "VND",
     "status": "RELEASED",
     "note": "Priority release for high-value air cargo."
-  },
-  {
-    "create_at": "2026-06-19T09:10:11.784Z",
-    "update_at": "2026-06-19T09:10:19.266Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "cdo_015",
-    "shipment_id": "shp_015",
-    "carrier_do_no": "CDO-KBI-2026-015",
-    "forwarder_id": "sup_sdec",
-    "issued_date": "2026-06-25",
-    "expired_date": "2026-06-26",
-    "release_location": "Hai phong cảng",
-    "container_no": "container-1234",
-    "local_charge_amount": 500000,
-    "currency_code": "VND",
-    "status": "RELEASED",
-    "note": null
   }
 ]

@@ -170,7 +170,9 @@ LOT Planning:
 Delivery Orders:
 
 - `GET /api/v1/delivery-orders`
+- `GET /api/v1/delivery-orders/screen` — backend-shaped DO screen-DTO list (registered before `:id`)
 - `GET /api/v1/delivery-orders/:id`
+- `GET /api/v1/delivery-orders/:id/screen` — backend-shaped DO screen-DTO detail
 - `POST /api/v1/delivery-orders/from-lots`
 - `GET /api/v1/purchase-orders/:id/delivery-orders`
 - `GET /api/v1/delivery-orders/:id/lots`
@@ -198,6 +200,8 @@ Delivery order rows include frontend-ready logistics fields for the DO board:
 Delivery order line rows include joined `item`, `purchase_order_line`, `item_code`, `item_name`, `hs_code`, `qty_ordered`, and `gross_weight_kg` so allocation, weight, and item metadata can be rendered without placeholder data. They also include line-level logistics context from linked shipment data: `lot`, `lot_no`, `shipment`, `shipment_line`, `shipment_number`, `container_no`, `route_origin`, `route_destination`, `etd`, and `eta`.
 
 `PATCH /api/v1/delivery-orders/:id` updates editable DO header fields such as `status`, `transport_mode_id`, planned dates, route addresses, `warehouse_name`, and `notes`, then returns the enriched DO detail with lots and lines.
+
+`GET /api/v1/delivery-orders/screen` and `/:id/screen` return the **DO screen-DTO** the frontend renders directly (the backend owns this shape; the frontend no longer joins lots/lines or synthesizes fields). Each screen object nests `order_info`, `product_details`, `source_lines`, `sap_integration`, `logistics_shipping`, `warehouse_tracking`, `finance_tax`, `flow_tags`, and a **real** `task_summary` (`total_tasks`/`completed_tasks`/`blocked_tasks`/`required_tasks_remaining`) computed from `logistics-tasks` by `do_number`. `logistics_shipping.missing_documents` is derived from REJECTED shipment documents, and `warehouse_tracking.actual_entry_date` from a linked DTO that reached `POD_RECEIVED`/`CLOSED`.
 
 Dashboard Tasks:
 
@@ -348,6 +352,7 @@ DTO:
 - `GET /api/v1/domestic-transport-orders`
 - `GET /api/v1/domestic-transport-orders/:id`
 - `POST /api/v1/shipments/:shipmentId/domestic-transport-orders`
+- `POST /api/v1/domestic-transport-orders/consolidate` — atomically create one DTO serving multiple customs-cleared shipments (registered before `:id`)
 - `GET /api/v1/shipments/:shipmentId/domestic-transport-orders` — list all DTOs linked to a shipment (via junction table or primary shipment_id)
 - `POST /api/v1/shipments/:shipmentId/domestic-transport-orders/link` — link an existing DTO to a shipment; body `{ dto_id }`
 - `DELETE /api/v1/shipments/:shipmentId/domestic-transport-orders/:dtoId/unlink` — unlink a DTO from a shipment
@@ -357,10 +362,17 @@ DTO:
 - `POST /api/v1/domestic-transport-orders/:id/dispatch`
 - `POST /api/v1/domestic-transport-orders/:id/start-transit`
 - `POST /api/v1/domestic-transport-orders/:id/deliver`
+- `POST /api/v1/domestic-transport-orders/:id/pod-received` — `DELIVERED` -> `POD_RECEIVED`
 - `POST /api/v1/domestic-transport-orders/:id/close`
 - `POST /api/v1/domestic-transport-orders/:id/cancel`
 
 The Shipment–DTO relationship is many-to-many (n:n). The junction collection `shipment-dto-links` holds `{ shipment_id, dto_id }` pairs. One Shipment can have many DTOs (multiple truck runs), and one DTO can be linked to multiple Shipments (LCL consolidation). Creating a DTO via `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` automatically inserts a junction record. The source shipment must be `CUSTOMS_CLEARED`.
+
+`POST /api/v1/domestic-transport-orders/consolidate` creates **one** DTO serving several shipments in a single atomic call. Body: `{ shipment_ids: string[], primary_shipment_id?, container_ids?, truck_vendor_id?, warehouse?, scheduled_pickup_at?, note? }`. It requires at least two shipments, validates every shipment is `CUSTOMS_CLEARED` and shares the same `pod` (else `BUSINESS_RULE_VIOLATION`), creates the DTO on the primary shipment, then links the remaining shipments and reassigns their selected containers — replacing the previous client-side multi-call sequence.
+
+`POST /api/v1/domestic-transport-orders/:id/pod-received` moves a DTO from `DELIVERED` to `POD_RECEIVED` (otherwise `BUSINESS_RULE_VIOLATION`). `PATCH /api/v1/domestic-transport-orders/:id` additionally accepts `quote_amount` and `quote_currency` for the inland freight quote.
+
+`POST /api/v1/shipments/from-delivery-order` auto-generates `shipment_no` (e.g. `SHP-KBI-2026-xxxx`) when the field is omitted.
 
 `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` accepts an optional `container_ids: string[]` to allocate specific shipment containers to the new DTO. When supplied, every id must belong to the shipment (otherwise `VALIDATION_ERROR`); the chosen containers have their `dto_id` set to the new DTO and the DTO's `container_no` is populated from their container numbers. When omitted, `container_no` falls back to the request body `container_no` (or `null`).
 

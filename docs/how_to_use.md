@@ -490,19 +490,16 @@ Rule quan trọng:
 
 ### 7.6. Các action trạng thái DO
 
-Tùy trạng thái DO, UI có thể cho phép:
+Nút ở phần header của DO detail (tùy trạng thái):
 
-- Ready for quotation.
-- Confirm quotation.
-- Close DO.
-- Cancel DO.
+- **Ready for quotation** — chỉ hiện khi DO ở `DRAFT`; chuyển DO sang `READY_FOR_QUOTATION` để bắt đầu lấy báo giá.
+- **Create Shipment** — hiện khi DO ở `QUOTATION_CONFIRMED`; mở modal tạo shipment prefill từ DO (xem mục 8.1).
+- **Close DO** — hiện khi DO ở `ASSIGNED_TO_SHIPMENT`; nhấn sẽ mở **hộp thoại xác nhận kèm checklist đóng DO** (đã link shipment, đủ chứng từ, không task blocked, task bắt buộc đã xong, đã có POD/nhập kho) trước khi đóng.
+- **Cancel** — hiện khi DO ở `DRAFT`, `READY_FOR_QUOTATION` hoặc `QUOTATION_CONFIRMED`.
 
-Ý nghĩa:
+Xác nhận báo giá (chuyển DO sang `QUOTATION_CONFIRMED`) **không** nằm ở header mà thực hiện trong tab `Quotations` bằng nút **Mark final** trên dòng quote.
 
-- `Ready for quotation`: DO đã đủ thông tin để lấy báo giá.
-- `Confirm quotation`: báo giá đã được KBI xác nhận.
-- `Close DO`: DO hoàn tất.
-- `Cancel DO`: DO bị hủy, không tiếp tục xử lý.
+> **Lưu ý:** Checklist trong hộp thoại đóng DO mang tính nhắc việc; một số mục (task bắt buộc, nhập kho) dựa trên dữ liệu mock nên có thể chưa "tích xanh" — bạn vẫn xác nhận đóng được. Hệ thống chưa hard-enforce.
 
 ## 8. Shipments
 
@@ -519,23 +516,24 @@ Bạn dùng màn hình này để:
 - Theo dõi chi phí logistics.
 - Theo dõi task shipment.
 
-### 8.1. Khi nào tạo Shipment?
+### 8.1. Khi nào và tạo Shipment ở đâu?
 
-Shipment được tạo từ DO sau khi quotation đã final/confirmed.
+Shipment được tạo từ DO sau khi quotation đã final/confirmed (DO ở trạng thái `QUOTATION_CONFIRMED`).
 
-Luồng:
+Luồng nghiệp vụ:
 
 ```txt
 DO -> Quotation confirmed -> Shipment
 ```
 
-Trong backend:
+Có **hai cách** tạo trên UI (đều gọi `POST /api/v1/shipments/from-delivery-order`):
 
-```http
-POST /api/v1/shipments/from-delivery-order
-```
+- **Từ DO detail (khuyến nghị):** khi DO ở `QUOTATION_CONFIRMED`, nhấn nút **Create Shipment** ở header DO. Modal mở ra **đã prefill** route/ngày từ DO; chỉ cần bổ sung carrier/vessel/BL nếu có rồi **Create shipment**. Tạo xong tự chuyển sang shipment mới.
+- **Từ màn hình Shipments:** nhấn **Create Shipment**, chọn **Linked DO** (chỉ liệt kê DO `QUOTATION_CONFIRMED`) — hệ thống tự điền PO/mode/POL/POD/ETD/ETA.
 
-Sau khi shipment được tạo, DO nguồn sẽ được cập nhật trạng thái tương ứng.
+Lưu ý: **Shipment number để trống sẽ được tự sinh** (ví dụ `SHP-KBI-2026-xxxx`); chỉ nhập tay khi cần số cụ thể.
+
+Sau khi tạo: backend tạo shipment + lines + 10 milestones; DO nguồn chuyển sang `ASSIGNED_TO_SHIPMENT`.
 
 ### 8.2. Danh sách Shipment
 
@@ -653,8 +651,13 @@ Khi declaration được tạo, backend có thể copy shipment lines sang custo
 Một declaration thường đi qua:
 
 ```txt
-DRAFT -> OPENED_DRAFT -> OPENED_OFFICIAL -> CLEARED
+DRAFT -> DRAFT_OPENED -> OFFICIAL_OPENED -> CLEARED
 ```
+
+Lưu ý thực tế trên UI:
+
+- Tên nút: **Open draft** (`DRAFT -> DRAFT_OPENED`), **Open official** (yêu cầu đã nhập "Official no."; chấp nhận từ `DRAFT` hoặc `DRAFT_OPENED`, nên có thể bỏ qua bước draft), **Clear** (thông quan).
+- **Clear** bật khi declaration ở `OFFICIAL_OPENED` (hoặc `SUBMITTED` / `INSPECTION` nếu dữ liệu có các trạng thái này — UI không có nút riêng để chuyển sang chúng).
 
 Có thể hủy nếu sai hoặc không tiếp tục:
 
@@ -823,6 +826,8 @@ CLOSED
 CANCELLED
 ```
 
+> `POD_RECEIVED` đạt được bằng nút **Mark POD received** (bật khi DTO ở `DELIVERED`). Luồng: `DELIVERED -> POD_RECEIVED -> CLOSED` (vẫn có thể `DELIVERED -> CLOSED` trực tiếp).
+
 ### 11.5. Luồng sử dụng DTO đầy đủ
 
 **Trường hợp 1: FCL — 1 Shipment, nhiều chuyến xe**
@@ -858,8 +863,10 @@ CANCELLED
 5. **Dispatch** — điều xe; chỉ bật khi đang ở `QUOTE_CONFIRMED` (`DISPATCHED`).
 6. **Start transit** — xe lên đường (`IN_TRANSIT`).
 7. **Deliver** — ghi nhận giao hàng thành công (`DELIVERED`).
-8. Nhập **POD document** ở form bên dưới rồi **Save** để lưu chứng từ giao nhận (`POD_RECEIVED`).
+8. (Tùy chọn) Nhập **POD document** ở form "Dispatch and POD" rồi **Save**; sau đó nhấn **Mark POD received** để chuyển DTO sang `POD_RECEIVED`.
 9. **Close** — đóng DTO (`CLOSED`); nút Close bật khi DTO ở `DELIVERED` hoặc `POD_RECEIVED`.
+
+> Có thể ghi **Quote amount / Quote currency** (cước nội địa) ở form "Dispatch and POD" để lưu giá đã chốt.
 
 **Rules quan trọng:**
 
@@ -1021,20 +1028,20 @@ Kết quả: logistics team có một DO nội bộ để xử lý quotation, sh
 
 1. Mở DO detail.
 2. Kiểm tra Overview, Source lines, Documents, Tasks.
-3. Chuyển DO sang ready for quotation nếu đủ thông tin.
-4. Tạo quotation từ carrier/forwarder.
-5. So sánh quotation nếu có nhiều báo giá.
-6. Confirm quotation.
+3. Chuyển DO sang ready for quotation nếu đủ thông tin (nút **Ready for quotation**).
+4. Trong tab `Quotations`, tạo quotation từ carrier/forwarder (nút **Create quote**).
+5. So sánh quotation nếu có nhiều báo giá; gửi bằng **Send**.
+6. Chốt báo giá bằng nút **Mark final** trên dòng quote → DO tự chuyển sang `QUOTATION_CONFIRMED`.
 
 Kết quả: DO đã có báo giá logistics được xác nhận.
 
 ### Bước 7: Tạo Shipment
 
-1. Tạo shipment từ DO đã quotation confirmed.
-2. Kiểm tra carrier, mode, route, ETD/ETA.
-3. Theo dõi shipment trong màn hình `Shipments`.
+1. Cách nhanh: trong **DO detail** (DO `QUOTATION_CONFIRMED`) nhấn **Create Shipment**; hoặc vào màn `Shipments` -> **Create Shipment** rồi chọn DO (chi tiết mục 8.1).
+2. Shipment number có thể để trống (tự sinh); kiểm tra/bổ sung carrier/mode/route/ETD/ETA.
+3. Nhấn **Create shipment**, sau đó theo dõi shipment trong danh sách `Shipments`.
 
-Kết quả: hàng đã bước sang giai đoạn vận chuyển quốc tế.
+Kết quả: hàng đã bước sang giai đoạn vận chuyển quốc tế; DO nguồn chuyển sang `ASSIGNED_TO_SHIPMENT`.
 
 ### Bước 8: Cập nhật Milestones và Documents
 
@@ -1075,7 +1082,7 @@ Sau customs cleared:
    - **Dispatch** xe (chỉ khi đã `QUOTE_CONFIRMED`).
    - **Start transit** — theo dõi xe trên đường.
    - **Deliver** — ghi nhận đã giao.
-   - Nhập **POD document** + **Save**.
+   - Nhập **POD document** + **Save**, rồi **Mark POD received**.
    - **Close** DTO.
 
 Kết quả: hàng được đưa về kho KBI và quy trình vận hành có thể đóng.
@@ -1093,6 +1100,8 @@ Trước khi close DO, kiểm tra:
 - DTO/POD nếu thuộc phạm vi vận hành đã đủ.
 
 Sau đó close DO.
+
+> Lưu ý: nhấn **Close DO** sẽ mở hộp thoại xác nhận hiển thị checklist trên; các mục là nhắc việc, hệ thống **chưa** hard-enforce nên bạn vẫn xác nhận đóng được.
 
 ## 14. Cách đọc trạng thái và rủi ro
 

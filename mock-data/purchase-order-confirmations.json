@@ -208,35 +208,5 @@
     "is_full_shipment": true,
     "allow_partial_shipment": false,
     "note": "Anti-static packing and QC photos provided."
-  },
-  {
-    "create_at": "2026-06-19T08:31:29.645Z",
-    "update_at": "2026-06-19T08:31:29.645Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "poc_015",
-    "purchase_order_id": "po_016",
-    "confirmed_by": "thanh",
-    "confirmed_at": "2026-06-19T08:31:29.645Z",
-    "supplier_ref_no": "thanhabc",
-    "cargo_ready_date": null,
-    "is_full_shipment": true,
-    "allow_partial_shipment": false,
-    "note": null
-  },
-  {
-    "create_at": "2026-06-19T10:15:05.175Z",
-    "update_at": "2026-06-19T10:15:05.175Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "poc_016",
-    "purchase_order_id": "po_017",
-    "confirmed_by": "ti",
-    "confirmed_at": "2026-06-19T10:15:05.175Z",
-    "supplier_ref_no": "tisupplier",
-    "cargo_ready_date": null,
-    "is_full_shipment": true,
-    "allow_partial_shipment": false,
-    "note": null
   }
 ]

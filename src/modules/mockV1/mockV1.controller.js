@@ -188,6 +188,30 @@ export async function getDeliveryOrder(req, res) {
     res.json(success(await service.getDeliveryOrder(req.params.id)));
 }
 
+export async function listDeliveryOrderScreens(req, res) {
+    res.json(success(await service.listDeliveryOrderScreens()));
+}
+
+export async function getDeliveryOrderScreen(req, res) {
+    res.json(success(await service.getDeliveryOrderScreen(req.params.id)));
+}
+
+export async function listDeliveryOrderDocuments(req, res) {
+    res.json(success(await service.listDeliveryOrderDocuments(req.params.id)));
+}
+
+export async function createDeliveryOrderDocument(req, res) {
+    res.status(201).json(success(await service.createDeliveryOrderDocument(req.params.id, req.body)));
+}
+
+export async function updateDeliveryOrderDocument(req, res) {
+    res.json(success(await service.updateDeliveryOrderDocument(req.params.documentId, req.body)));
+}
+
+export async function deleteDeliveryOrderDocument(req, res) {
+    res.json(success(await service.deleteDeliveryOrderDocument(req.params.documentId)));
+}
+
 export async function listDeliveryOrdersByPurchaseOrder(req, res) {
     res.json(success(await service.listDeliveryOrdersByPurchaseOrder(req.params.id)));
 }
@@ -326,6 +350,22 @@ export async function deleteShipmentContainer(req, res) {
     res.json(success(await service.deleteShipmentContainer(req.params.containerId)));
 }
 
+export async function listShipmentCosts(req, res) {
+    res.json(success(await service.listShipmentCosts(req.params.id)));
+}
+
+export async function createShipmentCost(req, res) {
+    res.status(201).json(success(await service.createShipmentCost(req.params.id, req.body)));
+}
+
+export async function updateShipmentCost(req, res) {
+    res.json(success(await service.updateShipmentCost(req.params.costId, req.body)));
+}
+
+export async function deleteShipmentCost(req, res) {
+    res.json(success(await service.deleteShipmentCost(req.params.costId)));
+}
+
 export async function cancelShipment(req, res) {
     res.json(success(await service.cancelShipment(req.params.id)));
 }
@@ -414,6 +454,10 @@ export async function createDomesticTransportOrder(req, res) {
     res.status(201).json(success(await service.createDomesticTransportOrder(req.params.shipmentId || req.params.id, req.body)));
 }
 
+export async function consolidateDomesticTransportOrder(req, res) {
+    res.status(201).json(success(await service.consolidateDomesticTransportOrder(req.body)));
+}
+
 export async function listDomesticTransportOrders(req, res) {
     const result = await service.listDomesticTransportOrders(req.query);
     res.json(success(result.data, result.meta));
@@ -445,6 +489,10 @@ export async function startDomesticTransportOrderTransit(req, res) {
 
 export async function deliverDomesticTransportOrder(req, res) {
     res.json(success(await service.deliverDomesticTransportOrder(req.params.id)));
+}
+
+export async function markDomesticTransportOrderPodReceived(req, res) {
+    res.json(success(await service.markDomesticTransportOrderPodReceived(req.params.id)));
 }
 
 export async function closeDomesticTransportOrder(req, res) {

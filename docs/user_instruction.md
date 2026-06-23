@@ -105,11 +105,18 @@ Vào đây để **bổ sung trước** nhà cung cấp, mặt hàng (kèm mã H
 
 > Chỉ một báo giá được chốt. Giá thay đổi thì tạo báo giá mới thay vì sửa đè.
 
-**Nút trạng thái thường gặp:** **Ready for quotation** (đủ thông tin để lấy báo giá) → **Close DO** (đóng lệnh) / **Cancel** (hủy).
+**Nút trạng thái thường gặp:** **Ready for quotation** (đủ thông tin để lấy báo giá) → **Create Shipment** (khi đã chốt báo giá) → **Close DO** (đóng lệnh) / **Cancel** (hủy). Xác nhận báo giá làm trong tab **Báo giá** (nút **Mark final**). Nhấn **Close DO** sẽ mở hộp thoại xác nhận kèm checklist trước khi đóng.
 
 ### 3.5. Lô hàng (Shipment)
 
-Lô vận chuyển được tạo **từ một DO đã chốt báo giá**. Các tab: Tổng quan, Milestones, Documents, Customs, Landed Cost, PO Tasks, Carrier DO, DTOs.
+Lô vận chuyển được tạo **từ một DO đã chốt báo giá**. Các tab: Tổng quan, Milestones, Documents, Containers, Customs, Chi phí (Landed Cost), Công việc (PO Tasks), Carrier DO, DTOs.
+
+**Tạo lô vận chuyển (hai cách):**
+
+- *Nhanh:* mở **Lô hàng (DO)** đã chốt báo giá → nhấn **Create Shipment** ở đầu trang; cửa sổ đã điền sẵn tuyến/ngày từ DO.
+- *Hoặc:* vào **Lô hàng (Shipment)** → **Create Shipment** → chọn **DO đã chốt báo giá** (tự điền đơn mua, phương thức, tuyến, ngày).
+
+Bổ sung hãng tàu, tên tàu/chuyến, số BL/AWB nếu có. **Số lô vận chuyển để trống sẽ được tự sinh.** Nhấn **Create shipment**.
 
 **Cập nhật mốc hành trình (Milestones):**
 
@@ -151,10 +158,10 @@ Trong cửa sổ tạo DTO: chọn container cho chuyến xe nếu cần (contai
 3. **Dispatch** — điều xe (chỉ bật sau khi đã chốt báo giá).
 4. **Start transit** — xe lên đường.
 5. **Deliver** — ghi nhận đã giao.
-6. Nhập **POD document** → **Save**.
+6. Nhập **POD document** → **Save**; rồi nhấn **Mark POD received** để ghi nhận đã có chứng từ.
 7. **Close** — đóng lệnh.
 
-> Nhập biển số xe, loại xe, tài xế, kho đến, lịch lấy/giao hàng trong phần thông tin → nhớ **Save**.
+> Nhập biển số xe, loại xe, tài xế, kho đến, lịch lấy/giao hàng, **cước nội địa (Quote amount/Currency)** trong phần thông tin → nhớ **Save**.
 
 **Hai tình huống:**
 
@@ -183,7 +190,7 @@ Trong cửa sổ tạo DTO: chọn container cho chuyến xe nếu cần (contai
 
 **Bước 6 — Xử lý lệnh và báo giá.** Mở chi tiết lệnh → **Ready for quotation** → tạo và so sánh báo giá → **chốt báo giá**.
 
-**Bước 7 — Tạo lô vận chuyển quốc tế (Shipment).** Từ lệnh đã chốt báo giá, tạo lô vận chuyển và kiểm tra hãng vận chuyển/tuyến/ngày.
+**Bước 7 — Tạo lô vận chuyển quốc tế (Shipment).** Trong **Lô hàng (DO)** đã chốt báo giá nhấn **Create Shipment** (hoặc vào **Lô hàng (Shipment)** → **Create Shipment** rồi chọn DO). Số lô để trống sẽ tự sinh; bổ sung hãng tàu/tuyến/ngày → **Create shipment**.
 
 **Bước 8 — Cập nhật mốc và chứng từ.** Trong chi tiết lô: cập nhật mốc, thêm/duyệt chứng từ.
 
@@ -194,6 +201,6 @@ Trong cửa sổ tạo DTO: chọn container cho chuyến xe nếu cần (contai
 1. Trong **chi tiết lô → tab Carrier DO**: **Create carrier DO → Issue → Release**.
 2. Tạo DTO (Cách A hoặc B ở mục 3.6) cho lô đã thông quan; chọn container nếu cần.
 3. Nếu nhiều lô đi chung một xe: trong **Lô hàng (Shipment)** tích chọn các lô cùng cảng → **Consolidate DTO (N)**.
-4. Xử lý DTO: Quote pending → Confirm quote → Dispatch → Start transit → Deliver → nhập POD + Save → Close.
+4. Xử lý DTO: Quote pending → Confirm quote → Dispatch → Start transit → Deliver → nhập POD + Save → **Mark POD received** → Close.
 
 **Bước 11 — Đóng lệnh giao hàng (DO).** Kiểm tra: đã giao/đủ điều kiện, đã thông quan, chứng từ đủ, công việc bắt buộc đã xong, có POD nếu cần → **Close DO**.

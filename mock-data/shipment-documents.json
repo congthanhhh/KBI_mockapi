@@ -264,5 +264,24 @@
     "received_at": "2026-08-28T00:00:00.000Z",
     "status": "VERIFIED",
     "notes": "High-value electronics air waybill."
+  },
+  {
+    "create_at": "2026-06-22T14:22:56.607Z",
+    "update_at": "2026-06-22T14:22:56.607Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "shp_doc_015",
+    "shipment_id": "shp_001",
+    "milestone_id": null,
+    "milestone_code": null,
+    "document_type": "OTHER",
+    "document_no": null,
+    "file_url": null,
+    "file_name": null,
+    "mime_type": null,
+    "issued_date": null,
+    "received_at": null,
+    "status": "DRAFT",
+    "notes": null
   }
 ]

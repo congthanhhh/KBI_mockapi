@@ -158,7 +158,7 @@ There is no Slot in PO LOT Planning.
 
 Backend must not expose active Slot concepts in LOT Planning response.
 
-Deprecated / legacy concepts:
+Deprecated / legacy concepts (do not reintroduce):
 
 ```txt
 po_delivery_slots
@@ -166,6 +166,9 @@ delivery_slot_id
 move-slot
 delivery-slots
 ```
+
+The legacy `po-delivery-slots` collection has been **removed** from the seed, mock-data, and
+`collections`/alias maps — it is no longer part of the runtime schema.
 
 If old routes exist, backend should either:
 
@@ -487,6 +490,24 @@ delivery_order.status = READY_FOR_QUOTATION or DRAFT
 ```
 
 Return DO detail screen DTO.
+
+## DO screen-DTO (backend-owned)
+
+The backend serves the DO screen-DTO the frontend renders directly:
+
+```txt
+GET /api/v1/delivery-orders/screen        (list)
+GET /api/v1/delivery-orders/:id/screen    (detail)
+```
+
+The frontend no longer synthesizes screen fields; the backend computes the real values:
+
+```txt
+- task_summary       : from logistics-tasks matched by do_number
+                       (total / completed / blocked / required_tasks_remaining).
+- missing_documents  : REJECTED shipment documents of the DO's linked shipment(s).
+- actual_entry_date  : from a linked DTO that reached POD_RECEIVED / CLOSED.
+```
 
 ---
 
@@ -826,9 +847,20 @@ Optional body fields (used by the shared container-aware create modal):
 - scheduled_pickup_at, note, etc.
 ```
 
-For multi-shipment consolidation (LCL) the frontend creates the DTO on the primary shipment, then
-calls the link endpoint for each other shipment and re-allocates their containers — there is no
-dedicated "consolidate" endpoint.
+For multi-shipment consolidation (LCL) use the dedicated atomic endpoint:
+
+```txt
+POST /api/v1/domestic-transport-orders/consolidate
+Body: { shipment_ids[], primary_shipment_id?, container_ids?, truck_vendor_id?, warehouse?, scheduled_pickup_at?, note? }
+```
+
+Rules:
+
+```txt
+- requires >= 2 shipments; all must be CUSTOMS_CLEARED and share the same pod (else BUSINESS_RULE_VIOLATION).
+- creates the DTO on the primary shipment, then links the others and reassigns their selected containers.
+- one server-side call replaces the old client-side create + link + container loop (atomic from the UI's view).
+```
 
 ### List DTOs linked to a Shipment
 
@@ -888,6 +920,14 @@ Dispatch rule:
 
 ```txt
 DTO cannot move to DISPATCHED unless status = QUOTE_CONFIRMED.
+```
+
+POD rule:
+
+```txt
+POST /api/v1/domestic-transport-orders/:id/pod-received moves DELIVERED -> POD_RECEIVED
+(otherwise BUSINESS_RULE_VIOLATION). PATCH also accepts quote_amount / quote_currency
+for the inland freight quote.
 ```
 
 Close rule:

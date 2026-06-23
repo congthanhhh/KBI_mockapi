@@ -28,7 +28,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-19T08:39:57.010Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "sup_shanghai_oem",
@@ -51,13 +51,7 @@
     "lead_time_production_days": 10,
     "bank_info": "ICBC Shanghai | 9988776602 | ICBKCNBJ",
     "note": "Urgent OEM parts, supports AIR shipment.",
-    "is_active": true,
-    "transport_mode_ids": [
-      "tm_sea_fcl",
-      "tm_sea_lcl",
-      "tm_sea_breakbulk"
-    ],
-    "default_transport_mode_id": null
+    "is_active": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",

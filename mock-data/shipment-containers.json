@@ -117,41 +117,5 @@
     "volume_cbm": 63,
     "status": "DISCHARGED",
     "note": "Free container ready for DTO creation."
-  },
-  {
-    "create_at": "2026-06-19T09:13:57.777Z",
-    "update_at": "2026-06-19T09:14:46.517Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "cont_008",
-    "shipment_id": "shp_015",
-    "dto_id": "dto_017",
-    "container_no": "container-1234",
-    "container_type": "40HC",
-    "seal_no": "abc",
-    "tare_weight_kg": null,
-    "gross_weight_kg": 500,
-    "volume_cbm": 500,
-    "status": "PLANNED",
-    "note": null,
-    "sort_order": 1
-  },
-  {
-    "create_at": "2026-06-19T09:16:29.567Z",
-    "update_at": "2026-06-19T09:16:59.890Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "cont_009",
-    "shipment_id": "shp_015",
-    "dto_id": "dto_018",
-    "container_no": "container-4567",
-    "container_type": "45HC",
-    "seal_no": "xyz",
-    "tare_weight_kg": null,
-    "gross_weight_kg": 400,
-    "volume_cbm": 400,
-    "status": "PLANNED",
-    "note": null,
-    "sort_order": 2
   }
 ]

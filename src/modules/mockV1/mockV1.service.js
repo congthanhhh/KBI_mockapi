@@ -15,13 +15,13 @@ const collections = {
     purchaseOrderConfirmationLines: "purchase-order-confirmation-lines",
     lots: "po-lots",
     lotLines: "po-lot-lines",
-    legacySlots: "po-delivery-slots",
     items: "item-master",
     itemCustomsProfiles: "item-customs-profiles",
     suppliers: "suppliers",
     deliveryOrders: "delivery-orders",
     deliveryOrderLots: "delivery-order-lots",
     deliveryOrderLines: "delivery-order-lines",
+    deliveryOrderDocuments: "delivery-order-documents",
     quotations: "quotations",
     quotationChargeLines: "quotation-charge-lines",
     quotationEvents: "quotation-events",
@@ -30,6 +30,7 @@ const collections = {
     shipmentMilestones: "shipment-milestones",
     shipmentDocuments: "shipment-documents",
     shipmentContainers: "shipment-containers",
+    shipmentCosts: "shipment-costs",
     customsDeclarations: "customs-declarations",
     customsDeclarationLines: "customs-declaration-lines",
     carrierDeliveryOrders: "carrier-delivery-orders",
@@ -44,6 +45,7 @@ const collectionAliases = Object.freeze({
     currencies: collections.currencies,
     customs_declaration_lines: collections.customsDeclarationLines,
     customs_declarations: collections.customsDeclarations,
+    delivery_order_documents: collections.deliveryOrderDocuments,
     delivery_order_lines: collections.deliveryOrderLines,
     delivery_order_lots: collections.deliveryOrderLots,
     delivery_orders: collections.deliveryOrders,
@@ -51,7 +53,6 @@ const collectionAliases = Object.freeze({
     item_customs_profiles: collections.itemCustomsProfiles,
     item_groups: collections.itemGroups,
     item_master: collections.items,
-    po_delivery_slots: collections.legacySlots,
     po_lot_lines: collections.lotLines,
     po_lots: collections.lots,
     purchase_order_confirmation_lines: collections.purchaseOrderConfirmationLines,
@@ -63,6 +64,7 @@ const collectionAliases = Object.freeze({
     quotations: collections.quotations,
     shipment_documents: collections.shipmentDocuments,
     shipment_containers: collections.shipmentContainers,
+    shipment_costs: collections.shipmentCosts,
     shipment_lines: collections.shipmentLines,
     shipment_milestones: collections.shipmentMilestones,
     shipments: collections.shipments,
@@ -1211,6 +1213,297 @@ export async function listDeliveryOrderLines(deliveryOrderId) {
         .map((line) => enrichDeliveryOrderLine(line, context));
 }
 
+// ---------------------------------------------------------------------------
+// Delivery Order screen-DTO (backend owns the screen shape the frontend renders).
+// Ports the presentational mapping the FE used to do locally, and additionally
+// computes the previously-synthesized fields (task_summary, missing_documents,
+// warehouse actual entry) from real mock data so the DO screen tells the truth.
+// ---------------------------------------------------------------------------
+
+const DO_PORT_HINT_REGEX = /port|cang|cảng|cat\s?lai|cát\s?lái/i;
+
+function toDateOnlyValue(value) {
+    return value ? String(value).slice(0, 10) : null;
+}
+
+function toScreenNumber(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mapDeliveryOrderScreenStatus(status) {
+    return status === "SHIPPED" ? "IN_TRANSIT" : status;
+}
+
+function inferDeliveryOrderShippingMethod(deliveryOrder) {
+    const modeType = String(
+        deliveryOrder.transport_mode?.mode_type ||
+        deliveryOrder.transport_mode?.mode_code ||
+        ""
+    ).toUpperCase();
+    if (modeType === "AIR") return "AIR";
+    if (modeType === "ROAD" || modeType === "TRUCKING" || modeType.includes("TRUCK")) return "ROAD";
+    return "SEA";
+}
+
+function resolveDeliveryOrderDestinationPort(deliveryOrder, firstLot, shippingMethod) {
+    const explicitPort = firstLot?.lot?.destination_port || firstLot?.po_lot?.destination_port;
+    if (explicitPort) return explicitPort;
+    const destination = deliveryOrder.destination_address || "";
+    if (DO_PORT_HINT_REGEX.test(destination)) return destination;
+    return shippingMethod === "AIR" ? "Tan Son Nhat Airport" : "CatLai Port";
+}
+
+function buildDeliveryOrderSourceLine(deliveryOrder, line, purchaseOrder, orderNo) {
+    const purchaseOrderLine = line.purchase_order_line || null;
+    const item = line.item || purchaseOrderLine?.item || null;
+    const shipmentContainer = Array.isArray(line.shipment?.container_no)
+        ? line.shipment.container_no.filter(Boolean).join(", ")
+        : line.shipment?.container_no;
+    const lineQuantity = toScreenNumber(line.qty);
+    const orderedQuantity = toScreenNumber(purchaseOrderLine?.qty_ordered);
+    const lineGrossWeight = toScreenNumber(purchaseOrderLine?.gross_weight_kg);
+    const allocatedWeight = lineGrossWeight > 0 && orderedQuantity > 0
+        ? (lineGrossWeight * lineQuantity) / orderedQuantity
+        : (lineGrossWeight || null);
+
+    return {
+        id: line.id,
+        do_number: orderNo,
+        lot_number: line.lot_no || line.lot?.lot_no || null,
+        shipment_number: line.shipment_number || line.shipment?.shipment_no || deliveryOrder.linked_shipment_number || null,
+        item_code: item?.item_code || line.item_id,
+        item_name: item?.item_name || line.item_description || "",
+        hs_code: line.hs_code || purchaseOrderLine?.item_customs_profile?.hs_code || null,
+        po_line_id: line.purchase_order_line_id,
+        po_number: purchaseOrder?.po_no || deliveryOrder.purchase_order_id,
+        pr_line_id: "",
+        quantity: lineQuantity,
+        ordered_quantity: orderedQuantity || null,
+        request_code: purchaseOrder?.po_no || orderNo,
+        unit: line.unit,
+        weight_kg: allocatedWeight,
+        container_count: purchaseOrder?.total_containers ?? purchaseOrder?.lot_summary?.total_containers ?? null,
+        container_no: line.container_no || shipmentContainer || null,
+        route_origin: line.route_origin || line.shipment?.pol || deliveryOrder.origin_address || null,
+        route_destination: line.route_destination || line.shipment?.pod || deliveryOrder.destination_address || null,
+        etd: toDateOnlyValue(line.etd || line.shipment?.etd || deliveryOrder.planned_etd),
+        eta: toDateOnlyValue(line.eta || line.shipment?.eta || deliveryOrder.planned_eta)
+    };
+}
+
+function computeDeliveryOrderTaskSummary(orderNo, tasks) {
+    const doTasks = tasks.filter((task) => task.do_number === orderNo);
+    return {
+        total_tasks: doTasks.length,
+        completed_tasks: doTasks.filter((task) => task.status === "COMPLETED").length,
+        blocked_tasks: doTasks.filter((task) => task.status === "BLOCKED" || Boolean(task.blocked_reason)).length,
+        required_tasks_remaining: doTasks.filter((task) => task.is_required_for_do_closure && task.status !== "COMPLETED").length
+    };
+}
+
+function computeDeliveryOrderMissingDocuments(shipments, shipmentDocuments) {
+    const shipmentIds = new Set((shipments || []).map((shipment) => shipment.id));
+    const rejected = shipmentDocuments
+        .filter((doc) => shipmentIds.has(doc.shipment_id) && doc.status === "REJECTED")
+        .map((doc) => doc.document_type)
+        .filter(Boolean);
+    return [...new Set(rejected)];
+}
+
+// Required customs documents tracked by the DO documents checklist (labels kept
+// in sync with the frontend documentLabels map).
+const REQUIRED_DO_DOCUMENT_TYPES = ["Invoice", "Packing List", "B/L", "CO"];
+
+function computeDeliveryOrderDocumentsList(deliveryOrderId, deliveryOrderDocuments) {
+    const received = (deliveryOrderDocuments || [])
+        .filter((doc) => doc.delivery_order_id === deliveryOrderId && doc.status !== "REJECTED" && doc.status !== "CANCELLED")
+        .map((doc) => doc.document_type)
+        .filter(Boolean);
+    return REQUIRED_DO_DOCUMENT_TYPES.filter((type) => received.includes(type));
+}
+
+function computeDeliveryOrderActualEntry(shipments, dtos) {
+    const shipmentIds = new Set((shipments || []).map((shipment) => shipment.id));
+    const deliveredDates = dtos
+        .filter((dto) => shipmentIds.has(dto.shipment_id)
+            && (dto.status === "POD_RECEIVED" || dto.status === "CLOSED")
+            && dto.actual_delivery_at)
+        .map((dto) => dto.actual_delivery_at)
+        .sort();
+    return deliveredDates.length ? toDateOnlyValue(deliveredDates[deliveredDates.length - 1]) : null;
+}
+
+function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
+    const purchaseOrder = enrichedDeliveryOrder.purchase_order || null;
+    const supplier = purchaseOrder?.supplier || null;
+    const lines = enrichedDeliveryOrder.lines || [];
+    const firstLot = lots[0] || null;
+    const firstLotNo = firstLot?.lot_no || firstLot?.lot?.lot_no || null;
+    const orderNo = enrichedDeliveryOrder.delivery_order_no || enrichedDeliveryOrder.do_no || enrichedDeliveryOrder.id;
+    const sourceLines = lines.map((line) => buildDeliveryOrderSourceLine(enrichedDeliveryOrder, line, purchaseOrder, orderNo));
+    const firstLine = sourceLines[0] || null;
+    const totalQuantity = sourceLines.reduce((total, line) => total + (Number(line.quantity) || 0), 0);
+    const plannedEta = toDateOnlyValue(enrichedDeliveryOrder.planned_eta);
+    const plannedEtd = toDateOnlyValue(enrichedDeliveryOrder.planned_etd);
+    const plannedCargoReady = toDateOnlyValue(enrichedDeliveryOrder.planned_cargo_ready_date);
+    const warehouseDeadline = plannedEta || plannedCargoReady || plannedEtd || toDateOnlyValue(enrichedDeliveryOrder.create_at);
+    const shippingMethod = inferDeliveryOrderShippingMethod(enrichedDeliveryOrder);
+
+    return {
+        id: enrichedDeliveryOrder.id,
+        order_info: {
+            request_code: purchaseOrder?.po_no || orderNo,
+            order_number: orderNo,
+            tracking_number: null,
+            purchase_contract_number: purchaseOrder?.contract_no || "",
+            status: mapDeliveryOrderScreenStatus(enrichedDeliveryOrder.status),
+            notes: enrichedDeliveryOrder.notes || "",
+            xnk_notes: ""
+        },
+        product_details: {
+            item_name_requested: firstLine?.item_name || "",
+            unit: firstLine?.unit || "",
+            quantity: totalQuantity,
+            lot_number: firstLotNo,
+            lot_unit_quantity: firstLot ? totalQuantity : null,
+            lot_unit_type: firstLine?.unit || null,
+            packaging_type: null
+        },
+        source_lines: sourceLines,
+        sap_integration: {
+            supplier_code: supplier?.supplier_code || null,
+            supplier_name: supplier?.supplier_name || null,
+            actual_item_code: firstLine?.item_code || null,
+            raw_date: toDateOnlyValue(enrichedDeliveryOrder.create_at),
+            po_number: purchaseOrder?.po_no || null,
+            sync_status: "SYNCED"
+        },
+        source_po_number: purchaseOrder?.po_no,
+        source_lot_id: firstLot?.po_lot_id,
+        source_lot_no: firstLotNo || undefined,
+        linked_shipment_number: enrichedDeliveryOrder.linked_shipment_number || enrichedDeliveryOrder.shipments?.[0]?.shipment_no || null,
+        logistics_shipping: {
+            incoterms: purchaseOrder?.incoterm?.incoterm_code || "",
+            shipping_method: shippingMethod,
+            shipping_line: null,
+            vessel_code: null,
+            port_of_departure: enrichedDeliveryOrder.origin_address || "",
+            port_of_destination: resolveDeliveryOrderDestinationPort(enrichedDeliveryOrder, firstLot, shippingMethod),
+            documents_list: computeDeliveryOrderDocumentsList(enrichedDeliveryOrder.id, extras.deliveryOrderDocuments),
+            missing_documents: computeDeliveryOrderMissingDocuments(enrichedDeliveryOrder.shipments, extras.shipmentDocuments),
+            cut_off_date: null,
+            etd_planned: plannedEtd || null,
+            eta_planned: plannedEta || null
+        },
+        warehouse_tracking: {
+            warehouse_code: enrichedDeliveryOrder.warehouse_name || "",
+            production_ready_date: plannedCargoReady || null,
+            warehouse_deadline: warehouseDeadline,
+            planned_entry_date: plannedEta || null,
+            actual_entry_date: computeDeliveryOrderActualEntry(enrichedDeliveryOrder.shipments, extras.domesticTransportOrders),
+            delay_days: 0
+        },
+        finance_tax: {
+            import_tax_rate: null,
+            tax_amount: null,
+            currency: purchaseOrder?.currency?.currency_code || "USD",
+            tax_payment_deadline: null,
+            insurance: null
+        },
+        task_summary: computeDeliveryOrderTaskSummary(orderNo, extras.logisticsTasks),
+        flow_tags: lots.length > 1 ? ["PARTIAL_DELIVERY"] : ["LINEAR"]
+    };
+}
+
+export async function getDeliveryOrderScreen(id) {
+    const [enriched, lots, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments] = await Promise.all([
+        getDeliveryOrder(id),
+        listDeliveryOrderLots(id),
+        active(collections.logisticsTasks),
+        active(collections.shipmentDocuments),
+        active(collections.domesticTransportOrders),
+        active(collections.deliveryOrderDocuments)
+    ]);
+    return buildDeliveryOrderScreen(enriched, lots, { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments });
+}
+
+export async function listDeliveryOrderScreens() {
+    const [deliveryOrders, doLots, doLines, allLots, context, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments] = await Promise.all([
+        active(collections.deliveryOrders),
+        active(collections.deliveryOrderLots),
+        active(collections.deliveryOrderLines),
+        active(collections.lots),
+        getPurchaseOrderContext(),
+        active(collections.logisticsTasks),
+        active(collections.shipmentDocuments),
+        active(collections.domesticTransportOrders),
+        active(collections.deliveryOrderDocuments)
+    ]);
+    const extras = { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments };
+    return deliveryOrders.map((deliveryOrder) => {
+        const enriched = {
+            ...enrichDeliveryOrder(deliveryOrder, context),
+            lines: doLines
+                .filter((line) => line.delivery_order_id === deliveryOrder.id)
+                .sort(bySortOrder)
+                .map((line) => enrichDeliveryOrderLine(line, context))
+        };
+        const lots = doLots
+            .filter((row) => row.delivery_order_id === deliveryOrder.id)
+            .map((row) => ({ ...row, lot: allLots.find((lot) => lot.id === row.po_lot_id) || null }));
+        return buildDeliveryOrderScreen(enriched, lots, extras);
+    });
+}
+
+const deliveryOrderDocumentStatuses = ["DRAFT", "RECEIVED", "WAITING_REVIEW", "APPROVED", "VERIFIED", "REJECTED", "CANCELLED"];
+
+export async function listDeliveryOrderDocuments(id) {
+    await requireRecord(collections.deliveryOrders, id, "Delivery order not found");
+    return (await active(collections.deliveryOrderDocuments)).filter((doc) => doc.delivery_order_id === id);
+}
+
+export async function createDeliveryOrderDocument(id, body) {
+    await requireRecord(collections.deliveryOrders, id, "Delivery order not found");
+    if (body.status && !deliveryOrderDocumentStatuses.includes(body.status)) {
+        throw apiError("VALIDATION_ERROR", "Invalid document status", { status: body.status }, 400);
+    }
+    const documents = await active(collections.deliveryOrderDocuments);
+    const documentType = body.document_type || "OTHER";
+    return repo.insert(collections.deliveryOrderDocuments, {
+        id: nextId(documents, "do_doc"),
+        delivery_order_id: id,
+        document_type: documentType,
+        document_no: body.document_no || null,
+        file_url: body.file_url || null,
+        file_name: body.file_name || null,
+        mime_type: body.mime_type || null,
+        received_at: body.received_at || null,
+        status: body.status || "RECEIVED",
+        is_required: REQUIRED_DO_DOCUMENT_TYPES.includes(documentType),
+        notes: body.notes || null
+    });
+}
+
+export async function updateDeliveryOrderDocument(documentId, body) {
+    await requireRecord(collections.deliveryOrderDocuments, documentId, "Delivery order document not found");
+    if (body.status && !deliveryOrderDocumentStatuses.includes(body.status)) {
+        throw apiError("VALIDATION_ERROR", "Invalid document status", { status: body.status }, 400);
+    }
+    const allowedFields = ["document_type", "document_no", "file_url", "file_name", "mime_type", "received_at", "status", "notes"];
+    const patch = pick(body, allowedFields);
+    if (patch.document_type) patch.is_required = REQUIRED_DO_DOCUMENT_TYPES.includes(patch.document_type);
+    return repo.update(collections.deliveryOrderDocuments, documentId, patch);
+}
+
+export async function deleteDeliveryOrderDocument(documentId) {
+    const deleted = await repo.softDelete(collections.deliveryOrderDocuments, documentId);
+    if (!deleted) {
+        throw apiError("NOT_FOUND", "Delivery order document not found", { id: documentId }, 404);
+    }
+    return deleted;
+}
+
 export async function markDeliveryOrderReadyForQuotation(id) {
     return updateDeliveryOrderStatus(id, "READY_FOR_QUOTATION");
 }
@@ -1651,12 +1944,13 @@ export async function listShipments(query = {}) {
 
 export async function getShipment(id) {
     const shipment = await requireRecord(collections.shipments, id, "Shipment not found");
-    const [lines, milestones, documents, containers, declarations] = await Promise.all([
+    const [lines, milestones, documents, containers, declarations, costs] = await Promise.all([
         active(collections.shipmentLines),
         active(collections.shipmentMilestones),
         active(collections.shipmentDocuments),
         active(collections.shipmentContainers),
-        active(collections.customsDeclarations)
+        active(collections.customsDeclarations),
+        active(collections.shipmentCosts)
     ]);
     return {
         ...shipment,
@@ -1664,7 +1958,8 @@ export async function getShipment(id) {
         lines: lines.filter((line) => line.shipment_id === id),
         milestones: milestones.filter((milestone) => milestone.shipment_id === id).sort(bySortOrder),
         documents: documents.filter((document) => document.shipment_id === id),
-        containers: containers.filter((container) => container.shipment_id === id).sort(bySortOrder)
+        containers: containers.filter((container) => container.shipment_id === id).sort(bySortOrder),
+        costs: costs.filter((cost) => cost.shipment_id === id)
     };
 }
 
@@ -1738,6 +2033,56 @@ export async function deleteShipmentDocument(documentId) {
     const deleted = await repo.softDelete(collections.shipmentDocuments, documentId);
     if (!deleted) {
         throw apiError("NOT_FOUND", "Shipment document not found", { id: documentId }, 404);
+    }
+    return deleted;
+}
+
+const shipmentCostTypes = ["FREIGHT", "INSURANCE", "CUSTOMS_DUTY", "VAT", "LOCAL_CHARGES", "DEMURRAGE", "OTHER"];
+const shipmentCostAllocMethods = ["BY_VALUE", "BY_WEIGHT", "BY_QTY"];
+
+function assertShipmentCostBody(body) {
+    if (body.cost_type && !shipmentCostTypes.includes(body.cost_type)) {
+        throw apiError("VALIDATION_ERROR", "Invalid cost type", { cost_type: body.cost_type }, 400);
+    }
+    if (body.alloc_method && !shipmentCostAllocMethods.includes(body.alloc_method)) {
+        throw apiError("VALIDATION_ERROR", "Invalid allocation method", { alloc_method: body.alloc_method }, 400);
+    }
+}
+
+export async function listShipmentCosts(id) {
+    await requireRecord(collections.shipments, id, "Shipment not found");
+    return (await active(collections.shipmentCosts)).filter((cost) => cost.shipment_id === id);
+}
+
+export async function createShipmentCost(id, body) {
+    await requireRecord(collections.shipments, id, "Shipment not found");
+    assertShipmentCostBody(body);
+    const costs = await active(collections.shipmentCosts);
+    return repo.insert(collections.shipmentCosts, {
+        id: nextId(costs, "shp_cost"),
+        shipment_id: id,
+        cost_type: body.cost_type || "OTHER",
+        description: body.description || null,
+        amount: body.amount ?? 0,
+        currency_code: body.currency_code || "USD",
+        exchange_rate: body.exchange_rate ?? 1,
+        alloc_method: body.alloc_method || "BY_VALUE",
+        invoice_ref: body.invoice_ref || null,
+        notes: body.notes || null
+    });
+}
+
+export async function updateShipmentCost(costId, body) {
+    await requireRecord(collections.shipmentCosts, costId, "Shipment cost not found");
+    assertShipmentCostBody(body);
+    const allowedFields = ["cost_type", "description", "amount", "currency_code", "exchange_rate", "alloc_method", "invoice_ref", "notes"];
+    return repo.update(collections.shipmentCosts, costId, pick(body, allowedFields));
+}
+
+export async function deleteShipmentCost(costId) {
+    const deleted = await repo.softDelete(collections.shipmentCosts, costId);
+    if (!deleted) {
+        throw apiError("NOT_FOUND", "Shipment cost not found", { id: costId }, 404);
     }
     return deleted;
 }
@@ -2126,6 +2471,69 @@ export async function createDomesticTransportOrder(shipmentId, body) {
     return getDomesticTransportOrder(dto.id);
 }
 
+export async function consolidateDomesticTransportOrder(body) {
+    const shipmentIds = Array.isArray(body.shipment_ids) ? body.shipment_ids.filter(Boolean) : [];
+    if (shipmentIds.length < 2) {
+        throw apiError("VALIDATION_ERROR", "Consolidation requires at least two shipments", { shipment_ids: shipmentIds }, 400);
+    }
+    const primaryId = body.primary_shipment_id && shipmentIds.includes(body.primary_shipment_id)
+        ? body.primary_shipment_id
+        : shipmentIds[0];
+    const otherIds = shipmentIds.filter((id) => id !== primaryId);
+
+    // Validate every shipment: exists, customs-cleared, and shares the same discharge port (POD).
+    const shipments = [];
+    for (const id of shipmentIds) {
+        const shipment = await requireRecord(collections.shipments, id, "Shipment not found");
+        ensureShipmentCleared(shipment);
+        shipments.push(shipment);
+    }
+    const pods = new Set(shipments.map((shipment) => shipment.pod || ""));
+    if (pods.size > 1) {
+        throw apiError("BUSINESS_RULE_VIOLATION", "All shipments must share the same discharge port (POD) to consolidate into one DTO", { pods: [...pods] }, 409);
+    }
+
+    // Group requested containers by their owning shipment (must belong to a selected shipment).
+    const requestedContainerIds = Array.isArray(body.container_ids) ? body.container_ids : [];
+    const allContainers = await active(collections.shipmentContainers);
+    const containerById = new Map(allContainers.map((container) => [container.id, container]));
+    const containersByShipment = new Map(shipmentIds.map((id) => [id, []]));
+    for (const containerId of requestedContainerIds) {
+        const container = containerById.get(containerId);
+        if (!container || !containersByShipment.has(container.shipment_id)) {
+            throw apiError("VALIDATION_ERROR", "Container does not belong to any selected shipment", { container_id: containerId }, 400);
+        }
+        containersByShipment.get(container.shipment_id).push(containerId);
+    }
+
+    // Create the DTO on the primary shipment (handles primary link, DTO lines, and primary containers).
+    const dto = await createDomesticTransportOrder(primaryId, {
+        container_ids: containersByShipment.get(primaryId),
+        truck_vendor_id: body.truck_vendor_id,
+        warehouse: body.warehouse,
+        scheduled_pickup_at: body.scheduled_pickup_at,
+        note: body.note
+    });
+
+    // Link the remaining shipments to the same DTO and reassign their selected containers.
+    for (const otherId of otherIds) {
+        const links = await active(collections.shipmentDtoLinks);
+        const alreadyLinked = links.some((link) => link.shipment_id === otherId && link.dto_id === dto.id);
+        if (!alreadyLinked) {
+            await repo.insert(collections.shipmentDtoLinks, {
+                id: nextId(links, "sdl"),
+                shipment_id: otherId,
+                dto_id: dto.id
+            });
+        }
+        for (const containerId of containersByShipment.get(otherId) || []) {
+            await repo.update(collections.shipmentContainers, containerId, { dto_id: dto.id });
+        }
+    }
+
+    return getDomesticTransportOrder(dto.id);
+}
+
 export async function getDomesticTransportOrder(id) {
     const dto = await requireRecord(collections.domesticTransportOrders, id, "Domestic transport order not found");
     const context = await getDomesticTransportOrderContext();
@@ -2194,6 +2602,8 @@ export async function updateDomesticTransportOrder(id, body) {
         "scheduled_delivery_at",
         "actual_delivery_at",
         "pod_document_ref",
+        "quote_amount",
+        "quote_currency",
         "status",
         "note"
     ];
@@ -2225,6 +2635,14 @@ export async function deliverDomesticTransportOrder(id) {
     return updateDomesticTransportOrderStatus(id, "DELIVERED", {
         actual_delivery_at: new Date().toISOString()
     });
+}
+
+export async function markDomesticTransportOrderPodReceived(id) {
+    const dto = await requireRecord(collections.domesticTransportOrders, id, "Domestic transport order not found");
+    if (!["DELIVERED", "POD_RECEIVED"].includes(dto.status)) {
+        throw apiError("BUSINESS_RULE_VIOLATION", "POD can be recorded only after the DTO is DELIVERED", { status: dto.status }, 409);
+    }
+    return updateDomesticTransportOrderStatus(id, "POD_RECEIVED");
 }
 
 export async function closeDomesticTransportOrder(id) {
@@ -2946,7 +3364,6 @@ function idPrefixForCollection(collectionName) {
         purchase_order_lines: "po_line",
         purchase_order_confirmations: "poc",
         purchase_order_confirmation_lines: "pocl",
-        po_delivery_slots: "slot",
         po_lots: "lot",
         po_lot_lines: "lot_line",
         delivery_orders: "do",
@@ -2959,6 +3376,8 @@ function idPrefixForCollection(collectionName) {
         shipment_lines: "shp_line",
         shipment_milestones: "ms",
         shipment_documents: "shp_doc",
+        shipment_costs: "shp_cost",
+        delivery_order_documents: "do_doc",
         customs_declarations: "cd",
         customs_declaration_lines: "cd_line",
         carrier_delivery_orders: "cdo",

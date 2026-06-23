@@ -44,22 +44,66 @@ try {
     const deliveryOrder = await post("/delivery-orders/from-lots", {
         lot_ids: ["lot_002"]
     });
+    await post(`/delivery-orders/${deliveryOrder.id}/ready-for-quotation`, {});
     const quotation = await post(`/delivery-orders/${deliveryOrder.id}/quotations`, {
         quotation_type: "FREIGHT"
     });
     await post(`/quotations/${quotation.id}/mark-final`, {});
+
+    // DO screen-DTO is backend-owned and carries a real task summary.
+    const screenList = await get("/delivery-orders/screen");
+    assert(Array.isArray(screenList) && screenList.length > 0, "GET /delivery-orders/screen should return a non-empty array");
+    assertScreenShape(screenList[0], "screen list item");
+    const screenDetail = await get(`/delivery-orders/${deliveryOrder.id}/screen`);
+    assertScreenShape(screenDetail, "screen detail");
+    assert(
+        screenDetail.order_info.order_number === (deliveryOrder.delivery_order_no || deliveryOrder.do_no),
+        "screen detail order_number should match the created DO"
+    );
+
+    // Omit shipment_no to exercise backend auto-generation.
     const shipment = await post("/shipments/from-delivery-order", {
         delivery_order_id: deliveryOrder.id
     });
+    assert(
+        typeof shipment.shipment_no === "string" && shipment.shipment_no.length > 0,
+        "shipment_no should be auto-generated when omitted"
+    );
     await get(`/shipments/${shipment.id}/milestones`);
     await post(`/shipments/${shipment.id}/milestones/CUSTOMS_CLEARED/done`, {});
+
     const declaration = await post(`/shipments/${shipment.id}/customs-declarations`, {});
+    await post(`/customs-declarations/${declaration.id}/open-draft`, {});
+    await post(`/customs-declarations/${declaration.id}/open-official`, {});
     await post(`/customs-declarations/${declaration.id}/clear`, {});
+
     const carrierDeliveryOrder = await post(`/shipments/${shipment.id}/carrier-delivery-orders`, {});
     await get(`/shipments/${shipment.id}/carrier-delivery-orders`);
     await post(`/carrier-delivery-orders/${carrierDeliveryOrder.id}/issue`, {});
     await post(`/carrier-delivery-orders/${carrierDeliveryOrder.id}/release`, {});
-    await post(`/shipments/${shipment.id}/domestic-transport-orders`, {});
+
+    // DTO full status flow, including POD_RECEIVED -> CLOSED.
+    const dto = await post(`/shipments/${shipment.id}/domestic-transport-orders`, {});
+    await post(`/domestic-transport-orders/${dto.id}/quote-pending`, {});
+    await post(`/domestic-transport-orders/${dto.id}/confirm-quote`, {});
+    await post(`/domestic-transport-orders/${dto.id}/dispatch`, {});
+    await post(`/domestic-transport-orders/${dto.id}/start-transit`, {});
+    await post(`/domestic-transport-orders/${dto.id}/deliver`, {});
+    const podDto = await post(`/domestic-transport-orders/${dto.id}/pod-received`, {});
+    assert(podDto.status === "POD_RECEIVED", "DTO should reach POD_RECEIVED");
+    const closedDto = await post(`/domestic-transport-orders/${dto.id}/close`, {});
+    assert(closedDto.status === "CLOSED", "DTO should close");
+
+    // Atomic consolidation: one DTO serving two customs-cleared shipments at the same POD.
+    const consolidated = await post("/domestic-transport-orders/consolidate", {
+        shipment_ids: ["shp_005", "shp_010"],
+        primary_shipment_id: "shp_005"
+    });
+    assert(
+        Array.isArray(consolidated.shipments) && consolidated.shipments.length === 2,
+        "consolidated DTO should serve two shipments"
+    );
+
     console.log("Mock API smoke test passed.");
 } finally {
     await new Promise((resolve, reject) => {
@@ -110,4 +154,27 @@ async function requestRoot(path, options) {
     }
 
     return payload.data;
+}
+
+function assert(condition, message) {
+    if (!condition) {
+        throw new Error(`Assertion failed: ${message}`);
+    }
+}
+
+function assertScreenShape(screen, label) {
+    assert(screen && typeof screen === "object", `${label} should be an object`);
+    assert(typeof screen.order_info?.order_number === "string", `${label} should expose order_info.order_number`);
+    assert(typeof screen.order_info?.status === "string", `${label} should expose order_info.status`);
+    const summary = screen.task_summary;
+    assert(
+        summary
+        && typeof summary.total_tasks === "number"
+        && typeof summary.completed_tasks === "number"
+        && typeof summary.blocked_tasks === "number"
+        && typeof summary.required_tasks_remaining === "number",
+        `${label} should expose a numeric task_summary`
+    );
+    assert(Array.isArray(screen.logistics_shipping?.missing_documents), `${label} should expose logistics_shipping.missing_documents`);
+    assert("actual_entry_date" in (screen.warehouse_tracking || {}), `${label} should expose warehouse_tracking.actual_entry_date`);
 }
