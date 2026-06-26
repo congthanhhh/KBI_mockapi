@@ -117,5 +117,23 @@
     "volume_cbm": 63,
     "status": "DISCHARGED",
     "note": "Free container ready for DTO creation."
+  },
+  {
+    "create_at": "2026-06-26T04:25:38.832Z",
+    "update_at": "2026-06-26T04:35:41.152Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cont_008",
+    "shipment_id": "shp_015",
+    "dto_id": "dto_017",
+    "container_no": "con2222",
+    "container_type": "40HC",
+    "seal_no": "SL2222",
+    "tare_weight_kg": null,
+    "gross_weight_kg": 100,
+    "volume_cbm": 100,
+    "status": "PLANNED",
+    "note": null,
+    "sort_order": 1
   }
 ]

@@ -208,5 +208,35 @@
     "is_full_shipment": true,
     "allow_partial_shipment": false,
     "note": "Anti-static packing and QC photos provided."
+  },
+  {
+    "create_at": "2026-06-26T02:32:41.745Z",
+    "update_at": "2026-06-26T02:32:41.745Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "poc_015",
+    "purchase_order_id": "po_015",
+    "confirmed_by": "by222",
+    "confirmed_at": "2026-06-26T02:32:41.744Z",
+    "supplier_ref_no": "sup222",
+    "cargo_ready_date": null,
+    "is_full_shipment": true,
+    "allow_partial_shipment": false,
+    "note": null
+  },
+  {
+    "create_at": "2026-06-26T13:37:35.934Z",
+    "update_at": "2026-06-26T13:37:35.934Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "poc_016",
+    "purchase_order_id": "po_016",
+    "confirmed_by": "Mock Supplier",
+    "confirmed_at": "2026-06-26T13:37:35.934Z",
+    "supplier_ref_no": "SUP-CFM-001",
+    "cargo_ready_date": null,
+    "is_full_shipment": true,
+    "allow_partial_shipment": false,
+    "note": null
   }
 ]

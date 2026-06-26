@@ -236,5 +236,33 @@
     "qty": 240,
     "unit": "SET",
     "sort_order": 2
+  },
+  {
+    "create_at": "2026-06-26T04:35:41.154Z",
+    "update_at": "2026-06-26T04:35:41.154Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "dto_line_018",
+    "domestic_transport_order_id": "dto_017",
+    "purchase_order_line_id": "po_line_018",
+    "po_lot_id": "lot_016",
+    "item_id": "item_001",
+    "qty": 1,
+    "unit": "PCS",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-26T04:35:41.156Z",
+    "update_at": "2026-06-26T04:35:41.156Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "dto_line_019",
+    "domestic_transport_order_id": "dto_017",
+    "purchase_order_line_id": "po_line_019",
+    "po_lot_id": "lot_016",
+    "item_id": "item_002",
+    "qty": 1,
+    "unit": "PCS",
+    "sort_order": 2
   }
 ]

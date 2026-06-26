@@ -400,5 +400,35 @@
     "pod_document_ref": null,
     "status": "QUOTE_CONFIRMED",
     "note": "Consolidated LCL pickup for SHP-002 + SHP-007 (same POD VNHPH)."
+  },
+  {
+    "create_at": "2026-06-26T04:35:41.149Z",
+    "update_at": "2026-06-26T06:29:11.169Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "dto_017",
+    "dto_no": "DTO-KBI-2026-017",
+    "shipment_id": "shp_015",
+    "carrier_delivery_order_id": null,
+    "truck_vendor_id": "sup_haiphong_trucking",
+    "origin": "Hai Phong Port",
+    "destination": "Kim Binh Factory",
+    "warehouse": "ABC Warehouse",
+    "vehicle_type": "container2222",
+    "vehicle_plate": "2222abc",
+    "driver_name": "two",
+    "driver_phone": "07898797",
+    "container_no": [
+      "con2222"
+    ],
+    "scheduled_pickup_at": "2026-07-02T01:00:00.000Z",
+    "actual_pickup_at": "2026-07-02T04:37:00.000Z",
+    "scheduled_delivery_at": "2026-07-02T04:40:00.000Z",
+    "actual_delivery_at": "2026-06-26T04:38:20.946Z",
+    "pod_document_ref": "abc222",
+    "status": "CLOSED",
+    "note": null,
+    "quote_amount": 199998,
+    "quote_currency": "VND"
   }
 ]

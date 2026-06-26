@@ -103,6 +103,8 @@ Purchase Orders:
 - `supplier`, `currency`, `incoterm`, `transport_mode`
 - `total_weight_kg`, `total_containers`, `total_lots`, `lot_ids`
 - `delayed_days`
+- `lifecycle_status` — resolved laggard-shipment stage (see BE_rule §5.1); the UI's
+  source of truth for the PO stage badge
 - `lines[]` enriched with `item` and `item_customs_profile`
 - `lot_summary: { total_weight_kg, total_containers, total_lots, lot_ids }`
 - `logistics_timeline.loading_port: { etd, atd }`
@@ -274,6 +276,9 @@ Quotations:
 - `POST /api/v1/quotations/:id/confirm-by-kbi`
 - `POST /api/v1/quotations/:id/reject`
 - `POST /api/v1/quotations/:id/cancel`
+- `POST /api/v1/quotations/:id/request` — forward transition DRAFT → REQUESTED
+- `POST /api/v1/quotations/:id/receive` — forward transition DRAFT|REQUESTED → RECEIVED
+- `POST /api/v1/quotations/:id/submit-to-kbi` — forward transition RECEIVED → SUBMITTED_TO_KBI
 - `GET /api/v1/quotations/:id/charge-lines`
 - `POST /api/v1/quotations/:id/charge-lines`
 - `PATCH /api/v1/quotation-charge-lines/:lineId`

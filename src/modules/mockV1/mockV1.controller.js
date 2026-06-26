@@ -269,6 +269,18 @@ export async function cancelQuotation(req, res) {
     res.json(success(await service.cancelQuotation(req.params.id)));
 }
 
+export async function requestQuotation(req, res) {
+    res.json(success(await service.requestQuotation(req.params.id)));
+}
+
+export async function receiveQuotation(req, res) {
+    res.json(success(await service.receiveQuotation(req.params.id)));
+}
+
+export async function submitQuotationToKbi(req, res) {
+    res.json(success(await service.submitQuotationToKbi(req.params.id)));
+}
+
 export async function getQuotation(req, res) {
     res.json(success(await service.getQuotation(req.params.id)));
 }
@@ -383,7 +395,7 @@ export async function createCustomsDeclaration(req, res) {
 }
 
 export async function clearCustomsDeclaration(req, res) {
-    res.json(success(await service.clearCustomsDeclaration(req.params.id)));
+    res.json(success(await service.clearCustomsDeclaration(req.params.id, req.body)));
 }
 
 export async function getCustomsDeclaration(req, res) {
@@ -411,15 +423,15 @@ export async function deleteCustomsDeclarationLine(req, res) {
 }
 
 export async function openCustomsDraft(req, res) {
-    res.json(success(await service.openCustomsDraft(req.params.id)));
+    res.json(success(await service.openCustomsDraft(req.params.id, req.body)));
 }
 
 export async function openCustomsOfficial(req, res) {
-    res.json(success(await service.openCustomsOfficial(req.params.id)));
+    res.json(success(await service.openCustomsOfficial(req.params.id, req.body)));
 }
 
 export async function cancelCustomsDeclaration(req, res) {
-    res.json(success(await service.cancelCustomsDeclaration(req.params.id)));
+    res.json(success(await service.cancelCustomsDeclaration(req.params.id, req.body)));
 }
 
 export async function createCarrierDeliveryOrder(req, res) {

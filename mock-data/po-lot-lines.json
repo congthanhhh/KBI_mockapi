@@ -2,7 +2,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-25T02:45:25.105Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_001",
@@ -11,7 +11,7 @@
     "item_id": "item_001",
     "qty_lotted": 60,
     "unit": "PCS",
-    "sort_order": 1
+    "sort_order": 3
   },
   {
     "notes": null,
@@ -212,7 +212,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-25T02:45:25.103Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_016",
@@ -240,7 +240,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-25T02:45:25.099Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_018",
@@ -249,7 +249,7 @@
     "item_id": "item_007",
     "qty_lotted": 240,
     "unit": "SET",
-    "sort_order": 3
+    "sort_order": 1
   },
   {
     "notes": null,
@@ -264,5 +264,47 @@
     "qty_lotted": 80,
     "unit": "KIT",
     "sort_order": 3
+  },
+  {
+    "create_at": "2026-06-26T02:31:44.147Z",
+    "update_at": "2026-06-26T02:31:44.147Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_line_020",
+    "po_lot_id": "lot_016",
+    "purchase_order_line_id": "po_line_018",
+    "item_id": "item_001",
+    "qty_lotted": 1,
+    "unit": "PCS",
+    "notes": null,
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-26T02:31:44.149Z",
+    "update_at": "2026-06-26T02:31:44.149Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_line_021",
+    "po_lot_id": "lot_016",
+    "purchase_order_line_id": "po_line_019",
+    "item_id": "item_002",
+    "qty_lotted": 1,
+    "unit": "PCS",
+    "notes": null,
+    "sort_order": 2
+  },
+  {
+    "create_at": "2026-06-26T13:37:07.936Z",
+    "update_at": "2026-06-26T13:37:07.936Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "lot_line_022",
+    "po_lot_id": "lot_017",
+    "purchase_order_line_id": "po_line_020",
+    "item_id": "item_001",
+    "qty_lotted": 1,
+    "unit": "PCS",
+    "notes": null,
+    "sort_order": 1
   }
 ]

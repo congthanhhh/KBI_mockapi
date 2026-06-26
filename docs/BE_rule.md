@@ -148,6 +148,32 @@ Detailed SLA engine
 RBAC/users
 ```
 
+## 5.1 PO lifecycle_status (resolved stage)
+
+Every enriched PO carries a computed `lifecycle_status` — the **laggard
+(least-advanced) linked shipment's status**, mapped into the PO stage taxonomy.
+A PO is only as far along as its slowest shipment.
+
+```txt
+- shipment.status -> PO lifecycle code:
+    BOOKING_PENDING|BOOKING_CONFIRMED|CARGO_READY -> CARGO_READY
+    PICKED_UP|BL_ISSUED|GATE_IN_POL               -> (same code)
+    ATD|IN_TRANSIT                                -> IN_TRANSIT
+    ARRIVAL_NOTICE|ARRIVED                        -> ARRIVED
+    CUSTOMS_DRAFT|CUSTOMS_CLEARED                 -> (same code)
+    DELIVERED                                     -> DELIVERED
+- stage order: PROCUREMENT < PRODUCTION < IN_TRANSIT < CUSTOMS < DELIVERED < CANCELLED.
+- laggard = the linked shipment with the smallest stage order.
+- No active shipment yet -> lifecycle_status = the PO's own status
+  (DRAFT/SENT/CONFIRMED/IN_PRODUCTION/READY_TO_SHIP).
+- po.status === CANCELLED -> CANCELLED.
+```
+
+The frontend reads `lifecycle_status` as the single source of truth for the PO
+stage badge (`resolvePoStage`); it only falls back to a client-side timeline
+derivation when the field is absent. Keep the mapping in sync with the frontend
+`poStageConfig` taxonomy.
+
 ---
 
 # 6. LOT Planning Business Rules
@@ -507,7 +533,33 @@ The frontend no longer synthesizes screen fields; the backend computes the real 
                        (total / completed / blocked / required_tasks_remaining).
 - missing_documents  : REJECTED shipment documents of the DO's linked shipment(s).
 - actual_entry_date  : from a linked DTO that reached POD_RECEIVED / CLOSED.
+- order_info.status  : derived (see below) — NOT the raw delivery_order.status.
 ```
+
+### DO screen status is derived from the linked shipment
+
+The runtime flow only advances the DO record up to `ASSIGNED_TO_SHIPMENT` (set when
+a shipment is created from the DO). The transit/customs/delivered journey lives on
+the **shipment**, not the DO, so the screen-DTO `order_info.status` is derived — the
+DO status is not stored twice:
+
+```txt
+- DO own status CANCELLED or CLOSED -> keep it (terminal).
+- No active linked shipment -> the DO's own status
+  (DRAFT / READY_FOR_QUOTATION / QUOTATION_CONFIRMED).
+- Otherwise -> the LAGGARD (least-advanced) linked shipment's status, mapped to the
+  DO taxonomy:
+    BOOKING_*/CARGO_READY              -> ASSIGNED_TO_SHIPMENT
+    PICKED_UP/BL_ISSUED/GATE_IN_POL/ATD/IN_TRANSIT -> IN_TRANSIT
+    ARRIVAL_NOTICE/ARRIVED             -> ARRIVED_PORT
+    CUSTOMS_DRAFT                      -> CUSTOMS_PROCESSING
+    CUSTOMS_CLEARED                    -> CUSTOMS_CLEARED
+    DELIVERED                          -> DELIVERED
+```
+
+A DO is only as far along as its slowest shipment. This mirrors the PO
+`lifecycle_status` rule (§5.1); keep the mapping in sync with the frontend
+`deliveryOrderStatusTabs` taxonomy.
 
 ---
 
@@ -521,6 +573,9 @@ Endpoints:
 POST /api/v1/delivery-orders/:id/quotations
 POST /api/v1/quotations/:id/create-version
 POST /api/v1/quotations/:id/mark-final
+POST /api/v1/quotations/:id/request          # DRAFT -> REQUESTED
+POST /api/v1/quotations/:id/receive          # DRAFT|REQUESTED -> RECEIVED
+POST /api/v1/quotations/:id/submit-to-kbi    # RECEIVED -> SUBMITTED_TO_KBI
 ```
 
 Rules:
@@ -530,6 +585,21 @@ Rules:
 - Create a new quotation version.
 - Versions share quotation_group_id.
 - Only one quotation in a group can be final.
+```
+
+Forward status flow (bidding):
+
+```txt
+DRAFT -> REQUESTED -> RECEIVED -> SUBMITTED_TO_KBI -> CONFIRMED_BY_KBI
+```
+
+```txt
+- request / receive / submit-to-kbi each enforce a legal from-state and reject an
+  illegal transition with STATE_CONFLICT (409).
+- Each transition appends a quotation_events row (event_code REQUEST / RECEIVE /
+  SUBMIT_TO_KBI), mirroring mark-final.
+- These replace the former generic /v1/mock/quotations/:id status patches; the
+  frontend no longer issues /v1/mock calls.
 ```
 
 When marking final:
@@ -705,10 +775,20 @@ Customs statuses:
 DRAFT
 DRAFT_OPENED
 OFFICIAL_OPENED
-SUBMITTED
-INSPECTION
+SUBMITTED      (reserved — not produced by the mock yet)
+INSPECTION     (reserved — not produced by the mock yet)
 CLEARED
 CANCELLED
+```
+
+Transitions (each persists its action payload — do not drop the body):
+
+```txt
+POST /customs-declarations/:id/open-draft     DRAFT       -> DRAFT_OPENED      (draft_opened_at)
+POST /customs-declarations/:id/open-official   DRAFT|DRAFT_OPENED -> OFFICIAL_OPENED
+                                               (official_opened_at, + customs_channel, declaration_no if sent)
+POST /customs-declarations/:id/clear           OFFICIAL_OPENED -> CLEARED       (cleared_at, + note)
+POST /customs-declarations/:id/cancel          (any non-terminal) -> CANCELLED  (cancel_reason, note)
 ```
 
 ---

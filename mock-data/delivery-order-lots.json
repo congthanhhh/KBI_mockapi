@@ -138,5 +138,25 @@
     "delivery_order_id": "do_014",
     "po_lot_id": "lot_015",
     "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-26T02:33:27.948Z",
+    "update_at": "2026-06-26T02:33:27.948Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_015",
+    "delivery_order_id": "do_015",
+    "po_lot_id": "lot_016",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-26T13:37:52.372Z",
+    "update_at": "2026-06-26T13:37:52.372Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_016",
+    "delivery_order_id": "do_016",
+    "po_lot_id": "lot_017",
+    "sort_order": 1
   }
 ]

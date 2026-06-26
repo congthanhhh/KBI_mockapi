@@ -254,5 +254,21 @@
     "alloc_method": "BY_VALUE",
     "invoice_ref": "ex1234",
     "notes": null
+  },
+  {
+    "create_at": "2026-06-26T06:52:39.451Z",
+    "update_at": "2026-06-26T06:52:39.451Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "shp_cost_017",
+    "shipment_id": "shp_015",
+    "cost_type": "FREIGHT",
+    "description": "phí vận chuyển",
+    "amount": 200,
+    "currency_code": "USD",
+    "exchange_rate": 25000,
+    "alloc_method": "BY_VALUE",
+    "invoice_ref": "LC2222",
+    "notes": null
   }
 ]

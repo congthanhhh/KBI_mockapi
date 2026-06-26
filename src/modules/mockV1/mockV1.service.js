@@ -363,6 +363,44 @@ function deliveryOrderMatchesSearch(deliveryOrder, search) {
     ].some((value) => String(value || "").toLowerCase().includes(search));
 }
 
+// PO lifecycle stage taxonomy — mirrors the frontend poStageConfig so the
+// backend-computed lifecycle_status maps to the same stage badge the UI shows.
+const PO_LIFECYCLE_STAGE_ORDER = ["PROCUREMENT", "PRODUCTION", "IN_TRANSIT", "CUSTOMS", "DELIVERED", "CANCELLED"];
+const PO_LIFECYCLE_STATUS_TO_STAGE = {
+    DRAFT: "PROCUREMENT", SENT: "PROCUREMENT", CONFIRMED: "PROCUREMENT",
+    IN_PRODUCTION: "PRODUCTION", READY_TO_SHIP: "PRODUCTION", CARGO_READY: "PRODUCTION",
+    PICKED_UP: "IN_TRANSIT", BL_ISSUED: "IN_TRANSIT", GATE_IN_POL: "IN_TRANSIT", IN_TRANSIT: "IN_TRANSIT", ARRIVED: "IN_TRANSIT",
+    CUSTOMS_DRAFT: "CUSTOMS", CUSTOMS_CLEARED: "CUSTOMS",
+    DELIVERED: "DELIVERED",
+    CANCELLED: "CANCELLED"
+};
+// Maps a shipment.status to the PO lifecycle status code it implies.
+const SHIPMENT_STATUS_TO_PO_LIFECYCLE = {
+    BOOKING_PENDING: "CARGO_READY", BOOKING_CONFIRMED: "CARGO_READY", CARGO_READY: "CARGO_READY",
+    PICKED_UP: "PICKED_UP", BL_ISSUED: "BL_ISSUED", GATE_IN_POL: "GATE_IN_POL",
+    ATD: "IN_TRANSIT", IN_TRANSIT: "IN_TRANSIT",
+    ARRIVAL_NOTICE: "ARRIVED", ARRIVED: "ARRIVED",
+    CUSTOMS_DRAFT: "CUSTOMS_DRAFT", CUSTOMS_CLEARED: "CUSTOMS_CLEARED",
+    DELIVERED: "DELIVERED"
+};
+
+function poLifecycleStageIndex(statusCode) {
+    const stage = PO_LIFECYCLE_STATUS_TO_STAGE[statusCode];
+    const index = PO_LIFECYCLE_STAGE_ORDER.indexOf(stage);
+    return index >= 0 ? index : PO_LIFECYCLE_STAGE_ORDER.length;
+}
+
+// Resolved PO lifecycle status = the LAGGARD (least-advanced) linked shipment's
+// mapped status. A PO is only as far along as its slowest shipment. Before any
+// shipment exists the PO still sits in its own procurement/production status.
+function computePurchaseOrderLifecycleStatus(purchaseOrder, shipments) {
+    if (purchaseOrder.status === "CANCELLED") return "CANCELLED";
+    const activeShipments = shipments.filter((shipment) => shipment.status && shipment.status !== "CANCELLED");
+    if (activeShipments.length === 0) return purchaseOrder.status;
+    const codes = activeShipments.map((shipment) => SHIPMENT_STATUS_TO_PO_LIFECYCLE[shipment.status] || "IN_TRANSIT");
+    return codes.reduce((laggard, code) => (poLifecycleStageIndex(code) < poLifecycleStageIndex(laggard) ? code : laggard));
+}
+
 function enrichPurchaseOrder(purchaseOrder, context) {
     const poLines = context.lines.filter((line) => line.purchase_order_id === purchaseOrder.id);
     const poLots = context.lots.filter((lot) => lot.purchase_order_id === purchaseOrder.id).sort(bySortOrder);
@@ -393,6 +431,9 @@ function enrichPurchaseOrder(purchaseOrder, context) {
         total_lots: poLots.length,
         lot_ids: lotIds,
         delayed_days: delayedDays,
+        // Resolved laggard-shipment lifecycle status; the UI reads this as the
+        // single source of truth for the PO stage badge (resolvePoStage).
+        lifecycle_status: computePurchaseOrderLifecycleStatus(purchaseOrder, shipments),
         lot_summary: {
             total_weight_kg: totalWeightKg || null,
             total_containers: totalContainers,
@@ -528,7 +569,7 @@ export async function createPurchaseOrderConfirmation(purchaseOrderId, body) {
         purchase_order_id: purchaseOrderId,
         confirmed_by: body.confirmed_by || "Mock Supplier",
         confirmed_at: body.confirmed_at || new Date().toISOString(),
-        supplier_ref_no: body.supplier_ref_no || nextDocumentNo("SUP-CFM", confirmations.length + 1),
+        supplier_ref_no: body.supplier_ref_no || nextDocumentNo("SUP-CFM", confirmations, "supplier_ref_no"),
         cargo_ready_date: body.cargo_ready_date || null,
         is_full_shipment: body.is_full_shipment ?? true,
         allow_partial_shipment: body.allow_partial_shipment ?? true,
@@ -607,7 +648,7 @@ export async function createPurchaseOrder(body) {
     const purchaseOrder = await repo.insert(collections.purchaseOrders, {
         id: nextId(purchaseOrders, "po"),
         po_no: body.po_no,
-        contract_no: body.contract_no || nextDocumentNo("KBI-CN", purchaseOrders.length + 1),
+        contract_no: body.contract_no || nextDocumentNo("KBI-CN", purchaseOrders, "contract_no"),
         supplier_id: body.supplier_id,
         po_type: body.po_type || "IMPORT",
         incoterm_id: body.incoterm_id || "inc_fob",
@@ -924,7 +965,7 @@ export async function createDeliveryOrderFromLots(body) {
     const primaryLot = selectedLots[0];
     const deliveryOrder = await repo.insert(collections.deliveryOrders, {
         id: nextId(deliveryOrders, "do"),
-        delivery_order_no: body.delivery_order_no || nextDocumentNo("DO-KBI-2026", deliveryOrders.length + 1),
+        delivery_order_no: body.delivery_order_no || nextDocumentNo("DO-KBI-2026", deliveryOrders, "delivery_order_no"),
         purchase_order_id: selectedLots[0].purchase_order_id,
         transport_mode_id: body.transport_mode_id || purchaseOrder.transport_mode_id || null,
         status: "DRAFT",
@@ -1235,6 +1276,40 @@ function mapDeliveryOrderScreenStatus(status) {
     return status === "SHIPPED" ? "IN_TRANSIT" : status;
 }
 
+// Maps a linked shipment.status to the Internal-DO status it implies, so the DO
+// screen reflects the shipment journey once the DO has been handed off. Mirrors
+// the frontend DO status taxonomy (deliveryOrderStatusTabs).
+const SHIPMENT_STATUS_TO_DO_STATUS = {
+    BOOKING_PENDING: "ASSIGNED_TO_SHIPMENT", BOOKING_CONFIRMED: "ASSIGNED_TO_SHIPMENT", CARGO_READY: "ASSIGNED_TO_SHIPMENT",
+    PICKED_UP: "IN_TRANSIT", BL_ISSUED: "IN_TRANSIT", GATE_IN_POL: "IN_TRANSIT", ATD: "IN_TRANSIT", IN_TRANSIT: "IN_TRANSIT",
+    ARRIVAL_NOTICE: "ARRIVED_PORT", ARRIVED: "ARRIVED_PORT",
+    CUSTOMS_DRAFT: "CUSTOMS_PROCESSING", CUSTOMS_CLEARED: "CUSTOMS_CLEARED",
+    DELIVERED: "DELIVERED"
+};
+const DO_STATUS_PROGRESS_ORDER = [
+    "DRAFT", "CREATED", "READY_FOR_QUOTATION", "QUOTATION_CONFIRMED", "ASSIGNED_TO_SHIPMENT",
+    "IN_TRANSIT", "ARRIVED_PORT", "CUSTOMS_PROCESSING", "CUSTOMS_CLEARED", "WAREHOUSE_PENDING", "DELIVERED", "CLOSED"
+];
+function doStatusOrderIndex(status) {
+    const index = DO_STATUS_PROGRESS_ORDER.indexOf(status);
+    return index >= 0 ? index : DO_STATUS_PROGRESS_ORDER.length;
+}
+
+// Internal DO display status: its own status until it is handed to a shipment,
+// then the LAGGARD (least-advanced) linked shipment's status mapped to the DO
+// taxonomy. The runtime flow only advances the DO record up to
+// ASSIGNED_TO_SHIPMENT; the transit/customs/delivered journey lives on the
+// shipment, so the screen derives those stages instead of storing them twice.
+// CANCELLED / CLOSED are terminal DO states and keep the DO's own status.
+function resolveDeliveryOrderScreenStatus(enrichedDeliveryOrder) {
+    const ownStatus = mapDeliveryOrderScreenStatus(enrichedDeliveryOrder.status);
+    if (ownStatus === "CANCELLED" || ownStatus === "CLOSED") return ownStatus;
+    const activeShipments = (enrichedDeliveryOrder.shipments || []).filter((shipment) => shipment.status && shipment.status !== "CANCELLED");
+    if (activeShipments.length === 0) return ownStatus;
+    const codes = activeShipments.map((shipment) => SHIPMENT_STATUS_TO_DO_STATUS[shipment.status] || "IN_TRANSIT");
+    return codes.reduce((laggard, code) => (doStatusOrderIndex(code) < doStatusOrderIndex(laggard) ? code : laggard));
+}
+
 function inferDeliveryOrderShippingMethod(deliveryOrder) {
     const modeType = String(
         deliveryOrder.transport_mode?.mode_type ||
@@ -1357,7 +1432,7 @@ function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
             order_number: orderNo,
             tracking_number: null,
             purchase_contract_number: purchaseOrder?.contract_no || "",
-            status: mapDeliveryOrderScreenStatus(enrichedDeliveryOrder.status),
+            status: resolveDeliveryOrderScreenStatus(enrichedDeliveryOrder),
             notes: enrichedDeliveryOrder.notes || "",
             xnk_notes: ""
         },
@@ -1549,7 +1624,7 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
     const quotation = await repo.insert(collections.quotations, {
         id: nextId(quotations, "qt"),
         quotation_group_id: groupId,
-        quotation_no: body.quotation_no || nextDocumentNo("QT-KBI-2026", quotations.length + 1),
+        quotation_no: body.quotation_no || nextDocumentNo("QT-KBI-2026", quotations, "quotation_no"),
         version: quotations.filter((quotation) => quotation.quotation_group_id === groupId).length + 1,
         ref_type: "DELIVERY_ORDER",
         ref_id: deliveryOrder.id,
@@ -1729,6 +1804,50 @@ export async function cancelQuotation(id) {
     return updateQuotationStatus(id, "CANCELLED");
 }
 
+// Forward quotation status transitions used by the bidding flow
+// (DRAFT -> REQUESTED -> RECEIVED -> SUBMITTED_TO_KBI). Each enforces a legal
+// from-state and records a quotation event, mirroring markQuotationFinal.
+const quotationForwardTransitions = {
+    REQUESTED: { from: ["DRAFT"], event: "REQUEST" },
+    RECEIVED: { from: ["DRAFT", "REQUESTED"], event: "RECEIVE" },
+    SUBMITTED_TO_KBI: { from: ["RECEIVED"], event: "SUBMIT_TO_KBI" }
+};
+
+async function advanceQuotationStatus(id, targetStatus) {
+    const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
+    const guard = quotationForwardTransitions[targetStatus];
+    if (guard && !guard.from.includes(quotation.status)) {
+        throw apiError(
+            "STATE_CONFLICT",
+            `Quotation must be ${guard.from.join(" or ")} to move to ${targetStatus}`,
+            { id, status: quotation.status },
+            409
+        );
+    }
+    await repo.update(collections.quotations, id, { status: targetStatus });
+    const events = await active(collections.quotationEvents);
+    await repo.insert(collections.quotationEvents, {
+        id: nextId(events, "qt_event"),
+        quotation_id: id,
+        event_code: guard ? guard.event : targetStatus,
+        event_at: new Date().toISOString(),
+        note: `Quotation moved to ${targetStatus} in mock flow.`
+    });
+    return getQuotation(id);
+}
+
+export async function requestQuotation(id) {
+    return advanceQuotationStatus(id, "REQUESTED");
+}
+
+export async function receiveQuotation(id) {
+    return advanceQuotationStatus(id, "RECEIVED");
+}
+
+export async function submitQuotationToKbi(id) {
+    return advanceQuotationStatus(id, "SUBMITTED_TO_KBI");
+}
+
 export async function listQuotationChargeLines(id) {
     await requireRecord(collections.quotations, id, "Quotation not found");
     return (await active(collections.quotationChargeLines)).filter((line) => line.quotation_id === id);
@@ -1836,7 +1955,7 @@ export async function createShipmentFromDeliveryOrder(body) {
     const shipments = await active(collections.shipments);
     const shipment = await repo.insert(collections.shipments, {
         id: nextId(shipments, "shp"),
-        shipment_no: body.shipment_no || nextDocumentNo("SHP-KBI-2026", shipments.length + 1),
+        shipment_no: body.shipment_no || nextDocumentNo("SHP-KBI-2026", shipments, "shipment_no"),
         delivery_order_id: deliveryOrder.id,
         mode: body.mode || "SEA_FCL",
         forwarder_id: body.forwarder_id || "sup_fds_forwarder",
@@ -2202,7 +2321,7 @@ export async function createCustomsDeclaration(shipmentId, body) {
     const declaration = await repo.insert(collections.customsDeclarations, {
         id: nextId(declarations, "cd"),
         shipment_id: shipment.id,
-        declaration_no: body.declaration_no || nextDocumentNo("CD-KBI-2026", declarations.length + 1),
+        declaration_no: body.declaration_no || nextDocumentNo("CD-KBI-2026", declarations, "declaration_no"),
         customs_type: body.customs_type || "IMPORT",
         customs_channel: body.customs_channel || "GREEN",
         draft_opened_at: new Date().toISOString(),
@@ -2236,11 +2355,12 @@ export async function createCustomsDeclaration(shipmentId, body) {
     return getCustomsDeclaration(declaration.id);
 }
 
-export async function clearCustomsDeclaration(id) {
+export async function clearCustomsDeclaration(id, body = {}) {
     const declaration = await requireRecord(collections.customsDeclarations, id, "Customs declaration not found");
     await repo.update(collections.customsDeclarations, id, {
         status: "CLEARED",
-        cleared_at: new Date().toISOString()
+        cleared_at: body.cleared_at || new Date().toISOString(),
+        ...(body.note ? { note: body.note } : {})
     });
     await repo.update(collections.shipments, declaration.shipment_id, {
         status: "CUSTOMS_CLEARED"
@@ -2327,25 +2447,32 @@ export async function deleteCustomsDeclarationLine(lineId) {
     return deleted;
 }
 
-export async function openCustomsDraft(id) {
+export async function openCustomsDraft(id, body = {}) {
+    await requireRecord(collections.customsDeclarations, id, "Customs declaration not found");
     await repo.update(collections.customsDeclarations, id, {
-        status: "DRAFT",
-        draft_opened_at: new Date().toISOString()
+        status: "DRAFT_OPENED",
+        draft_opened_at: body.opened_at || new Date().toISOString()
     });
     return getCustomsDeclaration(id);
 }
 
-export async function openCustomsOfficial(id) {
+export async function openCustomsOfficial(id, body = {}) {
+    await requireRecord(collections.customsDeclarations, id, "Customs declaration not found");
     await repo.update(collections.customsDeclarations, id, {
         status: "OFFICIAL_OPENED",
-        official_opened_at: new Date().toISOString()
+        official_opened_at: body.opened_at || new Date().toISOString(),
+        ...(body.customs_channel ? { customs_channel: body.customs_channel } : {}),
+        ...(body.declaration_no ? { declaration_no: body.declaration_no } : {})
     });
     return getCustomsDeclaration(id);
 }
 
-export async function cancelCustomsDeclaration(id) {
+export async function cancelCustomsDeclaration(id, body = {}) {
+    await requireRecord(collections.customsDeclarations, id, "Customs declaration not found");
     await repo.update(collections.customsDeclarations, id, {
-        status: "CANCELLED"
+        status: "CANCELLED",
+        cancel_reason: body.cancel_reason ?? body.note ?? null,
+        ...(body.note ? { note: body.note } : {})
     });
     return getCustomsDeclaration(id);
 }
@@ -2358,7 +2485,7 @@ export async function createCarrierDeliveryOrder(shipmentId, body) {
     return repo.insert(collections.carrierDeliveryOrders, {
         id: nextId(deliveryOrders, "cdo"),
         shipment_id: shipment.id,
-        carrier_do_no: body.carrier_do_no || nextDocumentNo("CDO-KBI-2026", deliveryOrders.length + 1),
+        carrier_do_no: body.carrier_do_no || nextDocumentNo("CDO-KBI-2026", deliveryOrders, "carrier_do_no"),
         forwarder_id: body.forwarder_id || "sup_fds_forwarder",
         issued_date: body.issued_date || new Date().toISOString().slice(0, 10),
         expired_date: body.expired_date || null,
@@ -2420,7 +2547,7 @@ export async function createDomesticTransportOrder(shipmentId, body) {
     const dtos = await active(collections.domesticTransportOrders);
     const dto = await repo.insert(collections.domesticTransportOrders, {
         id: nextId(dtos, "dto"),
-        dto_no: body.dto_no || nextDocumentNo("DTO-KBI-2026", dtos.length + 1),
+        dto_no: body.dto_no || nextDocumentNo("DTO-KBI-2026", dtos, "dto_no"),
         shipment_id: shipment.id,
         carrier_delivery_order_id: body.carrier_delivery_order_id || null,
         truck_vendor_id: body.truck_vendor_id || "sup_vn_trucking",
@@ -3330,8 +3457,18 @@ function formatId(prefix, sequence) {
     return `${prefix}_${String(sequence).padStart(3, "0")}`;
 }
 
-function nextDocumentNo(prefix, sequence) {
-    return `${prefix}-${String(sequence).padStart(3, "0")}`;
+// Collision-free business document number generator. Derives the next sequence
+// from the highest number already used in `rows[field]` (e.g. "DO-KBI-2026-014"),
+// NOT from `rows.length` — a length-based counter re-issues an existing number
+// whenever a soft-deleted/cancelled row makes the active count fall below the max
+// number already assigned, producing duplicate DO/PO/quotation numbers.
+function nextDocumentNo(prefix, rows, field) {
+    const pattern = new RegExp(`^${prefix}-(\\d+)$`);
+    const max = rows.reduce((highest, row) => {
+        const match = String(row?.[field] ?? "").match(pattern);
+        return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    return `${prefix}-${String(max + 1).padStart(3, "0")}`;
 }
 
 function normalizeCollectionName(collection) {

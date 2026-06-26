@@ -77,6 +77,9 @@ router.post("/quotations/:id/mark-final", asyncHandler(controller.markQuotationF
 router.post("/quotations/:id/confirm-by-kbi", asyncHandler(controller.confirmQuotationByKbi));
 router.post("/quotations/:id/reject", asyncHandler(controller.rejectQuotation));
 router.post("/quotations/:id/cancel", asyncHandler(controller.cancelQuotation));
+router.post("/quotations/:id/request", asyncHandler(controller.requestQuotation));
+router.post("/quotations/:id/receive", asyncHandler(controller.receiveQuotation));
+router.post("/quotations/:id/submit-to-kbi", asyncHandler(controller.submitQuotationToKbi));
 router.get("/quotations/:id/charge-lines", asyncHandler(controller.listQuotationChargeLines));
 router.post("/quotations/:id/charge-lines", asyncHandler(controller.createQuotationChargeLine));
 router.get("/quotations/:id/events", asyncHandler(controller.listQuotationEvents));
