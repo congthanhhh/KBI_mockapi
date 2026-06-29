@@ -151,14 +151,5 @@
     "id": "sdl_017",
     "shipment_id": "shp_007",
     "dto_id": "dto_016"
-  },
-  {
-    "create_at": "2026-06-26T04:35:41.159Z",
-    "update_at": "2026-06-26T04:35:41.159Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "sdl_018",
-    "shipment_id": "shp_015",
-    "dto_id": "dto_017"
   }
 ]

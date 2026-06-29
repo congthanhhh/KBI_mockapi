@@ -645,9 +645,23 @@ export async function createPurchaseOrder(body) {
         throw apiError("STATE_CONFLICT", "po_no already exists", { po_no: body.po_no }, 409);
     }
 
+    // Reversed flow: a PO can only be created from a CONFIRMED quotation. Mirrors
+    // the shipment-from-DO guard. quotation_id is persisted for traceability.
+    requireField(body, "quotation_id");
+    const quotation = await requireRecord(collections.quotations, body.quotation_id, "Quotation not found");
+    if (quotation.status !== "CONFIRMED") {
+        throw apiError(
+            "BUSINESS_RULE_VIOLATION",
+            "PO can be created only from a CONFIRMED quotation",
+            { quotation_id: body.quotation_id, status: quotation.status },
+            409
+        );
+    }
+
     const purchaseOrder = await repo.insert(collections.purchaseOrders, {
         id: nextId(purchaseOrders, "po"),
         po_no: body.po_no,
+        quotation_id: body.quotation_id,
         contract_no: body.contract_no || nextDocumentNo("KBI-CN", purchaseOrders, "contract_no"),
         supplier_id: body.supplier_id,
         po_type: body.po_type || "IMPORT",
@@ -1613,6 +1627,70 @@ export async function updateDeliveryOrder(id, body) {
     return getDeliveryOrder(id);
 }
 
+// Standalone (pre-PO) freight quotation. In the reversed flow a quotation is the
+// entry point: FDS quotes a customer's shipment BEFORE any PO/DO exists, so it
+// carries its own customer_ref + incoterm_code + mode + charge lines and is not
+// bound to a DO (ref_type/ref_id stay null until later). Confirming it opens the
+// gate to create a PO (see createPurchaseOrder).
+export async function createQuotation(body = {}) {
+    const [quotations, chargeLines] = await Promise.all([
+        active(collections.quotations),
+        active(collections.quotationChargeLines)
+    ]);
+    const newId = nextId(quotations, "qt");
+    const groupId = body.quotation_group_id || `qg_${newId}`;
+
+    const quotation = await repo.insert(collections.quotations, {
+        id: newId,
+        quotation_group_id: groupId,
+        quotation_no: body.quotation_no || nextDocumentNo("QT-KBI-2026", quotations, "quotation_no"),
+        version: 1,
+        ref_type: body.ref_type || null,
+        ref_id: body.ref_id || null,
+        customer_ref: body.customer_ref || null,
+        supplier_id: body.supplier_id || "sup_fds_forwarder",
+        quotation_type: body.quotation_type || "FREIGHT",
+        incoterm_code: body.incoterm_code || null,
+        mode: body.mode || null,
+        currency_code: body.currency_code || "USD",
+        currency_id: body.currency_id || null,
+        exchange_rate: body.exchange_rate || 25000,
+        status: body.status || "DRAFT",
+        is_final: false,
+        quoted_at: body.quoted_at || new Date().toISOString(),
+        valid_until: body.valid_until || null,
+        note: body.note || null
+    });
+
+    const sourceChargeLines = Array.isArray(body.charge_lines) ? body.charge_lines : [];
+    const start = nextNumber(chargeLines, "qt_line");
+    for (const [index, line] of sourceChargeLines.entries()) {
+        const quantity = Number(line.quantity ?? 1);
+        const unitPrice = Number(line.unit_price ?? line.amount ?? 0);
+        const amount = Number(line.amount ?? quantity * unitPrice);
+        const taxRate = Number(line.tax_rate || 0);
+        const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
+        await repo.insert(collections.quotationChargeLines, {
+            id: formatId("qt_line", start + index),
+            quotation_id: quotation.id,
+            line_no: line.line_no ?? index + 1,
+            charge_type: line.charge_type || "OTHER",
+            description: line.description || null,
+            quantity,
+            unit: line.unit || "SET",
+            unit_price: unitPrice,
+            amount,
+            currency_code: line.currency_code || quotation.currency_code,
+            tax_rate: taxRate,
+            tax_amount: taxAmount,
+            total_amount: Number(line.total_amount ?? amount + taxAmount),
+            note: line.note || null
+        });
+    }
+
+    return getQuotation(quotation.id);
+}
+
 export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
     const deliveryOrder = await requireRecord(collections.deliveryOrders, deliveryOrderId, "Delivery order not found");
     const [quotations, chargeLines] = await Promise.all([
@@ -1632,7 +1710,7 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
         quotation_type: body.quotation_type || "FREIGHT",
         currency_code: body.currency_code || "USD",
         exchange_rate: body.exchange_rate || 25000,
-        status: "RECEIVED",
+        status: "DRAFT",
         is_final: false,
         quoted_at: body.quoted_at || new Date().toISOString(),
         valid_until: body.valid_until || null,
@@ -1688,17 +1766,12 @@ export async function markQuotationFinal(id) {
         const isSelected = row.id === id;
         await repo.update(collections.quotations, row.id, {
             is_final: isSelected,
+            confirmed_at: isSelected ? new Date().toISOString() : row.confirmed_at || null,
             status: isSelected
-                ? "CONFIRMED_BY_KBI"
-                : row.status === "CONFIRMED_BY_KBI"
-                    ? "RECEIVED"
+                ? "CONFIRMED"
+                : row.status === "CONFIRMED"
+                    ? "DRAFT"
                     : row.status
-        });
-    }
-
-    if (quotation.ref_type === "DELIVERY_ORDER") {
-        await repo.update(collections.deliveryOrders, quotation.ref_id, {
-            status: "QUOTATION_CONFIRMED"
         });
     }
 
@@ -1772,7 +1845,7 @@ export async function createQuotationVersion(id, body = {}) {
         id: nextId(quotations, "qt"),
         quotation_no: body.quotation_no || `${source.quotation_no}-V${nextVersion}`,
         version: nextVersion,
-        status: body.status || "RECEIVED",
+        status: body.status || "DRAFT",
         is_final: false,
         quoted_at: body.quoted_at || new Date().toISOString(),
         valid_until: body.valid_until ?? source.valid_until,
@@ -1796,21 +1869,22 @@ export async function confirmQuotationByKbi(id) {
     return markQuotationFinal(id);
 }
 
-export async function rejectQuotation(id) {
-    return updateQuotationStatus(id, "REJECTED");
+export async function rejectQuotation(id, body = {}) {
+    return updateQuotationStatus(id, "REJECTED", { reject_reason: body.reason || body.reject_reason || null });
 }
 
-export async function cancelQuotation(id) {
-    return updateQuotationStatus(id, "CANCELLED");
+export async function cancelQuotation(id, body = {}) {
+    return updateQuotationStatus(id, "REJECTED", { reject_reason: body.reason || body.reject_reason || "Cancelled" });
 }
 
-// Forward quotation status transitions used by the bidding flow
-// (DRAFT -> REQUESTED -> RECEIVED -> SUBMITTED_TO_KBI). Each enforces a legal
-// from-state and records a quotation event, mirroring markQuotationFinal.
+// Forward quotation status transitions for the 5-state flow
+// (REQUEST_FOR_QUOTATION -> DRAFT -> PENDING_APPROVAL -> CONFIRMED, with REJECTED).
+// KBI raises the RFQ; FDS drafts (receive) then submits (submit-to-kbi); KBI
+// confirms (mark-final) or rejects. Each enforces a legal from-state + event.
 const quotationForwardTransitions = {
-    REQUESTED: { from: ["DRAFT"], event: "REQUEST" },
-    RECEIVED: { from: ["DRAFT", "REQUESTED"], event: "RECEIVE" },
-    SUBMITTED_TO_KBI: { from: ["RECEIVED"], event: "SUBMIT_TO_KBI" }
+    REQUEST_FOR_QUOTATION: { from: ["DRAFT"], event: "REQUEST" },
+    DRAFT: { from: ["REQUEST_FOR_QUOTATION"], event: "RECEIVE" },
+    PENDING_APPROVAL: { from: ["DRAFT", "REQUEST_FOR_QUOTATION"], event: "SUBMIT_TO_KBI" }
 };
 
 async function advanceQuotationStatus(id, targetStatus) {
@@ -1837,15 +1911,15 @@ async function advanceQuotationStatus(id, targetStatus) {
 }
 
 export async function requestQuotation(id) {
-    return advanceQuotationStatus(id, "REQUESTED");
+    return advanceQuotationStatus(id, "REQUEST_FOR_QUOTATION");
 }
 
 export async function receiveQuotation(id) {
-    return advanceQuotationStatus(id, "RECEIVED");
+    return advanceQuotationStatus(id, "DRAFT");
 }
 
 export async function submitQuotationToKbi(id) {
-    return advanceQuotationStatus(id, "SUBMITTED_TO_KBI");
+    return advanceQuotationStatus(id, "PENDING_APPROVAL");
 }
 
 export async function listQuotationChargeLines(id) {
@@ -1948,8 +2022,12 @@ export async function createShipmentFromDeliveryOrder(body) {
     requireField(body, "delivery_order_id");
     const deliveryOrder = await requireRecord(collections.deliveryOrders, body.delivery_order_id, "Delivery order not found");
 
-    if (deliveryOrder.status !== "QUOTATION_CONFIRMED") {
-        throw apiError("BUSINESS_RULE_VIOLATION", "Shipment can be created only from QUOTATION_CONFIRMED delivery order", {}, 409);
+    // Quotation no longer lives on the DO (reversed flow), so the old
+    // QUOTATION_CONFIRMED gate is dropped. A shipment can be created from any DO
+    // that is not terminal and not already assigned to a shipment.
+    const shipmentBlockedDoStatuses = ["CANCELLED", "CLOSED", "ASSIGNED_TO_SHIPMENT"];
+    if (shipmentBlockedDoStatuses.includes(deliveryOrder.status)) {
+        throw apiError("BUSINESS_RULE_VIOLATION", `Shipment cannot be created from a delivery order in status ${deliveryOrder.status}`, { status: deliveryOrder.status }, 409);
     }
 
     const shipments = await active(collections.shipments);
@@ -2846,20 +2924,15 @@ async function updateDeliveryOrderStatus(id, status) {
     return getDeliveryOrder(id);
 }
 
-async function updateQuotationStatus(id, status) {
+async function updateQuotationStatus(id, status, extraPatch = {}) {
     const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
     const now = new Date().toISOString();
     await repo.update(collections.quotations, id, {
         status,
-        confirmed_at: status === "CONFIRMED_BY_KBI" ? now : quotation.confirmed_at || null,
+        confirmed_at: status === "CONFIRMED" ? now : quotation.confirmed_at || null,
         rejected_at: status === "REJECTED" ? now : quotation.rejected_at || null,
-        cancelled_at: status === "CANCELLED" ? now : quotation.cancelled_at || null
+        ...extraPatch
     });
-    if (status === "CONFIRMED_BY_KBI" && quotation.ref_type === "DELIVERY_ORDER") {
-        await repo.update(collections.deliveryOrders, quotation.ref_id, {
-            status: "QUOTATION_CONFIRMED"
-        });
-    }
     return getQuotation(id);
 }
 

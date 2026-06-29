@@ -8,7 +8,7 @@
     "delivery_order_no": "DO-KBI-2026-001",
     "purchase_order_id": "po_002",
     "transport_mode_id": "tm_sea_fcl",
-    "status": "QUOTATION_CONFIRMED",
+    "status": "ASSIGNED_TO_SHIPMENT",
     "requested_pickup_date": "2026-07-06",
     "planned_cargo_ready_date": "2026-07-06",
     "planned_etd": "2026-07-08",
@@ -16,7 +16,7 @@
     "origin_address": "Shanghai Port",
     "destination_address": "CatLai Port",
     "warehouse_name": "Kim Binh Main Warehouse",
-    "notes": "Ready for shipment creation."
+    "notes": "Booked with forwarder (shipment shp_001)."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -264,43 +264,5 @@
     "destination_address": "Tan Son Nhat Airport",
     "warehouse_name": "Kim Binh Main Warehouse",
     "notes": "ECU modules delivered by air with anti-static packaging."
-  },
-  {
-    "create_at": "2026-06-26T02:33:27.945Z",
-    "update_at": "2026-06-26T04:22:29.728Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "do_015",
-    "delivery_order_no": "DO-KBI-2026-015",
-    "purchase_order_id": "po_015",
-    "transport_mode_id": "tm_sea_fcl",
-    "status": "ASSIGNED_TO_SHIPMENT",
-    "requested_pickup_date": "2026-06-30",
-    "planned_cargo_ready_date": "2026-06-30",
-    "planned_etd": "2026-06-26",
-    "planned_eta": "2026-07-04",
-    "origin_address": "Shanghai Port",
-    "destination_address": "CatLai Port",
-    "warehouse_name": "Kim Binh Main Warehouse",
-    "notes": "Created from PO PO-2026-2222 LOT Planning"
-  },
-  {
-    "create_at": "2026-06-26T13:37:52.369Z",
-    "update_at": "2026-06-26T13:39:07.810Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "do_016",
-    "delivery_order_no": "DO-KBI-2026-016",
-    "purchase_order_id": "po_016",
-    "transport_mode_id": "tm_sea_fcl",
-    "status": "ASSIGNED_TO_SHIPMENT",
-    "requested_pickup_date": "2026-06-29",
-    "planned_cargo_ready_date": "2026-06-29",
-    "planned_etd": "2026-06-27",
-    "planned_eta": "2026-07-04",
-    "origin_address": "Shanghai Port",
-    "destination_address": "CatLai Port",
-    "warehouse_name": "Kim Binh Main Warehouse",
-    "notes": "Created from PO PO-2026-0022 LOT Planning"
   }
 ]

@@ -240,6 +240,10 @@ export async function createQuotationForDeliveryOrder(req, res) {
     res.status(201).json(success(await service.createQuotationForDeliveryOrder(req.params.id, req.body)));
 }
 
+export async function createQuotation(req, res) {
+    res.status(201).json(success(await service.createQuotation(req.body)));
+}
+
 export async function listQuotations(req, res) {
     const result = await service.listQuotations(req.query);
     res.json(success(result.data, result.meta));
@@ -262,11 +266,11 @@ export async function confirmQuotationByKbi(req, res) {
 }
 
 export async function rejectQuotation(req, res) {
-    res.json(success(await service.rejectQuotation(req.params.id)));
+    res.json(success(await service.rejectQuotation(req.params.id, req.body)));
 }
 
 export async function cancelQuotation(req, res) {
-    res.json(success(await service.cancelQuotation(req.params.id)));
+    res.json(success(await service.cancelQuotation(req.params.id, req.body)));
 }
 
 export async function requestQuotation(req, res) {

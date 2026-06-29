@@ -20,9 +20,28 @@ try {
     await get("/purchase-orders");
     await get("/purchase-orders/po_001/lines");
     await get("/purchase-orders/po_001/confirmations");
+    // Reversed flow: a PO can only be created from a CONFIRMED quotation.
+    const poQuotation = await post("/quotations", {
+        customer_ref: "KBI",
+        quotation_type: "FREIGHT",
+        incoterm_code: "FOB",
+        mode: "SEA_FCL",
+        currency_code: "USD"
+    });
+    await post(`/quotations/${poQuotation.id}/mark-final`, {});
+
+    // Gate proof: creating a PO without a CONFIRMED quotation must be rejected.
+    const blockedPo = await fetch(`${baseUrl}/purchase-orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ po_no: "PO-KBI-2026-998", supplier_id: "sup_sdec", lines: [{ item_id: "item_002", qty_ordered: 1 }] })
+    });
+    assert(blockedPo.status === 400 || blockedPo.status === 409, "PO create without a CONFIRMED quotation must be rejected");
+
     await post("/purchase-orders", {
         po_no: "PO-KBI-2026-999",
         supplier_id: "sup_sdec",
+        quotation_id: poQuotation.id,
         lines: [
             {
                 item_id: "item_002",

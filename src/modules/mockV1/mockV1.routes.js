@@ -72,6 +72,7 @@ router.patch("/delivery-order-documents/:documentId", asyncHandler(controller.up
 router.delete("/delivery-order-documents/:documentId", asyncHandler(controller.deleteDeliveryOrderDocument));
 
 router.get("/quotations", asyncHandler(controller.listQuotations));
+router.post("/quotations", asyncHandler(controller.createQuotation));
 router.post("/quotations/:id/create-version", asyncHandler(controller.createQuotationVersion));
 router.post("/quotations/:id/mark-final", asyncHandler(controller.markQuotationFinal));
 router.post("/quotations/:id/confirm-by-kbi", asyncHandler(controller.confirmQuotationByKbi));
