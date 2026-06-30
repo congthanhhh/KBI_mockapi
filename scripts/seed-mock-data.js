@@ -31,14 +31,10 @@ const files = {
         base({ id: "inc_cfr", incoterm_code: "CFR", incoterm_name: "Cost and Freight", description: "Supplier pays freight to the destination port; buyer pays destination charges.", is_active: true })
     ],
     "transport-modes": [
-        base({ id: "tm_sea_fcl", mode_code: "SEA_FCL", mode_name: "Sea FCL", mode_type: "SEA", description: "Full container load ocean freight.", is_international: true, is_active: true }),
-        base({ id: "tm_sea_lcl", mode_code: "SEA_LCL", mode_name: "Sea LCL", mode_type: "SEA", description: "Less-than-container-load ocean freight.", is_international: true, is_active: true }),
-        base({ id: "tm_air", mode_code: "AIR", mode_name: "Air Freight", mode_type: "AIR", description: "International air cargo.", is_international: true, is_active: true }),
-        base({ id: "tm_sea_breakbulk", mode_code: "SEA_BREAKBULK", mode_name: "Sea Breakbulk", mode_type: "SEA", description: "Breakbulk / oversized ocean cargo.", is_international: true, is_active: true }),
-        base({ id: "tm_trucking", mode_code: "TRUCKING", mode_name: "Domestic Trucking", mode_type: "ROAD", description: "General inland trucking.", is_international: false, is_active: true }),
-        base({ id: "tm_road_container", mode_code: "ROAD_CONTAINER", mode_name: "Container Truck", mode_type: "ROAD", description: "Inland container haulage from port/CFS to warehouse.", is_international: false, is_active: true }),
-        base({ id: "tm_road_box", mode_code: "ROAD_BOX", mode_name: "Box Truck", mode_type: "ROAD", description: "Enclosed box truck for domestic LCL and parcel cargo.", is_international: false, is_active: true }),
-        base({ id: "tm_road_van", mode_code: "ROAD_VAN", mode_name: "Van", mode_type: "ROAD", description: "Light van for small last-mile domestic deliveries.", is_international: false, is_active: true })
+        base({ id: "tm_sea", mode_code: "SEA", mode_name: "Sea Freight", mode_type: "SEA", description: "Ocean freight mode; FCL/LCL is carried by charge-code applicability.", is_active: true }),
+        base({ id: "tm_air", mode_code: "AIR", mode_name: "Air Freight", mode_type: "AIR", description: "Air cargo mode.", is_active: true }),
+        base({ id: "tm_road", mode_code: "ROAD", mode_name: "Road Freight", mode_type: "ROAD", description: "Road and trucking mode.", is_active: true }),
+        base({ id: "tm_rail", mode_code: "RAIL", mode_name: "Rail Freight", mode_type: "RAIL", description: "Rail freight mode.", is_active: true })
     ],
     "suppliers": [
         base({ id: "sup_sdec", supplier_code: "SDEC", supplier_name: "SDEC Supplier", supplier_name_en: "SDEC Supplier", supplier_type: "OVERSEAS_SEA", supplier_roles: ["SUPPLIER"], country: "CN", city: "Shanghai", address: "Shanghai supplier warehouse", contact_person: "Li Wei", contact_email: "sales@sdec.example", contact_phone: "+86-21-1000-0001", payment_term: "TT_ADVANCE", default_currency_id: "cur_usd", default_incoterm_id: "inc_fob", lead_time_production_days: 25, bank_info: "Bank of China | 9988776601 | BKCHCNBJ", note: "Main SDEC spare parts supplier.", is_active: true }),
@@ -58,11 +54,10 @@ const files = {
         base({ id: "carr_003", carrier_code: "VN", carrier_name: "Vietnam Airlines Cargo", carrier_type: "AIRLINE", scac_iata_code: "VN", service_route_note: "CN->SGN / KR->SGN AIR", contact_booking: "(FDS dat cho)", contact_email: null, note: "Uu tien khi hang gap" })
     ],
     "supplier-transport-modes": [
-        base({ id: "stm_001", supplier_id: "sup_fds_forwarder", transport_mode_id: "tm_sea_fcl", service_level: "STANDARD", is_active: true }),
-        base({ id: "stm_002", supplier_id: "sup_fds_forwarder", transport_mode_id: "tm_sea_lcl", service_level: "STANDARD", is_active: true }),
+        base({ id: "stm_001", supplier_id: "sup_fds_forwarder", transport_mode_id: "tm_sea", service_level: "STANDARD", is_active: true }),
+        base({ id: "stm_002", supplier_id: "sup_fds_forwarder", transport_mode_id: "tm_rail", service_level: "STANDARD", is_active: true }),
         base({ id: "stm_003", supplier_id: "sup_fds_forwarder", transport_mode_id: "tm_air", service_level: "EXPRESS", is_active: true }),
-        base({ id: "stm_004", supplier_id: "sup_vn_trucking", transport_mode_id: "tm_trucking", service_level: "LOCAL", is_active: true }),
-        base({ id: "stm_005", supplier_id: "sup_fds_forwarder", transport_mode_id: "tm_sea_breakbulk", service_level: "OVERSIZED", is_active: true })
+        base({ id: "stm_004", supplier_id: "sup_vn_trucking", transport_mode_id: "tm_road", service_level: "LOCAL", is_active: true })
     ],
     "item-groups": [
         base({ id: "grp_engine", group_code: "ENGINE", group_name: "Engine Parts", is_active: true }),
@@ -581,6 +576,7 @@ files["domestic-transport-orders"] = enrichDomesticTransportTimeline(files);
 files["purchase-orders"] = enrichPurchaseOrders(files);
 files["po-lot-lines"] = enrichPoLotLines(files);
 files["purchase-order-lines"] = enrichPurchaseOrderLines(files);
+normalizeTransportModeReferences(files);
 
 const screenFiles = buildScreenFiles(files);
 
@@ -949,13 +945,60 @@ function enrichPurchaseOrders(seedFiles) {
         return {
             ...purchaseOrder,
             contract_no: purchaseOrder.contract_no || `KBI-CN-2026-${String(index + 1).padStart(3, "0")}`,
-            transport_mode_id: purchaseOrder.transport_mode_id || transportModeIdByCode[firstShipment?.mode] || "tm_sea_fcl",
+            transport_mode_id: normalizeTransportModeId(
+                purchaseOrder.transport_mode_id || transportModeIdByCode[normalizeShipmentMode(firstShipment?.mode)] || "tm_sea"
+            ),
             actual_etd: purchaseOrder.actual_etd || firstShipment?.atd || purchaseOrder.expected_etd || null,
             actual_eta: purchaseOrder.actual_eta || firstShipment?.ata || purchaseOrder.expected_eta || null,
             expected_warehouse_eta: purchaseOrder.expected_warehouse_eta || expectedWarehouseEta,
             actual_warehouse_ata: purchaseOrder.actual_warehouse_ata || firstTransportOrder?.actual_delivery_at || expectedWarehouseEta
         };
     });
+}
+
+function normalizeTransportModeReferences(seedFiles) {
+    for (const rows of Object.values(seedFiles)) {
+        if (!Array.isArray(rows)) {
+            continue;
+        }
+
+        for (const row of rows) {
+            if (row.transport_mode_id) {
+                row.transport_mode_id = normalizeTransportModeId(row.transport_mode_id);
+            }
+
+            if (Array.isArray(row.transport_mode_ids)) {
+                row.transport_mode_ids = Array.from(new Set(row.transport_mode_ids.map(normalizeTransportModeId)));
+            }
+
+            if (row.default_transport_mode_id) {
+                row.default_transport_mode_id = normalizeTransportModeId(row.default_transport_mode_id);
+            }
+        }
+    }
+}
+
+function normalizeTransportModeId(value) {
+    const map = {
+        tm_sea_fcl: "tm_sea",
+        tm_sea_lcl: "tm_sea",
+        tm_sea_breakbulk: "tm_sea",
+        tm_trucking: "tm_road",
+        tm_road_container: "tm_road",
+        tm_road_box: "tm_road",
+        tm_road_van: "tm_road"
+    };
+    return map[value] || value;
+}
+
+function normalizeShipmentMode(value) {
+    const normalized = String(value || "").toUpperCase();
+
+    if (normalized.includes("AIR")) return "AIR";
+    if (normalized.includes("ROAD") || normalized.includes("TRUCK")) return "ROAD";
+    if (normalized.includes("RAIL")) return "RAIL";
+    if (normalized.includes("SEA")) return "SEA";
+    return normalized;
 }
 
 function groupBy(rows, field) {

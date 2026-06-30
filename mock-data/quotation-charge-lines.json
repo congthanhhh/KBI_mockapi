@@ -352,7 +352,7 @@
     "tax_rate": 0,
     "note": null,
     "line_no": 17,
-    "charge_code": "HDL",
+    "charge_code": "DTH",
     "tax_amount": 0,
     "total_amount": 130
   },
@@ -583,7 +583,7 @@
     "tax_rate": 0,
     "note": null,
     "line_no": 28,
-    "charge_code": "HDL",
+    "charge_code": "DTH",
     "tax_amount": 0,
     "total_amount": 130
   },

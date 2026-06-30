@@ -79,11 +79,15 @@ Compatibility CRUD routes:
 - `/api/item-groups`
 - `/api/items`
 - `/api/items/:id/tax-profile`
+- `/api/charge-codes`
+- `/api/uoms`
 - `/api/forwarders`
 - `/api/carriers`
 - `/api/task-templates`
 
 Each collection route supports `GET /`, `POST /`, `GET /:id`, `PATCH /:id`, and `DELETE /:id` unless noted by the current route file. Item groups and items keep their existing `PUT /:id` update compatibility route. Supplier rows use the documented Phase-1 schema (`supplier_name_en`, `supplier_type`, `city`, `contact_person`, `lead_time_production_days`, `bank_info`, `note`) while normalizing legacy `contact_name`, `email`, `phone`, and `lead_time_days`. Supplier logistics roles remain independent in `supplier_roles[]` and are not derived from the documented supplier type. Item rows use the documented Phase-1 schema (`item_name_en`, `item_category`, `base_uom`, `purchase_uom`, `uom_conversion`, `hs_code`, `country_of_origin`, `unit_price_usd`, `barcode`, `note`) while normalizing legacy `unit`, `origin_country`, and `item_description`. Item rows are enriched with `item_group` and `customs_profiles`; tax profiles normalize legacy `preferential_tax_rate` into `preferential_import_duty_rate`.
+
+Charge code rows include both independent taxonomy fields: `group` is one of the seven macro doc sections (`ORIGIN_EXPORT`, `MAIN_FREIGHT`, `FREIGHT_SURCHARGE`, `DOCUMENTATION_FILING`, `DESTINATION_IMPORT`, `ANCILLARY_ACCESSORIAL`, `SERVICE_OTHER`), while `category` is one of the nine row categories (`ORIGIN`, `CUSTOMS`, `DOCUMENTATION`, `FREIGHT`, `SURCHARGE`, `DESTINATION`, `DISBURSEMENT`, `ANCILLARY`, `SERVICE`). UOM rows are seeded from the 26 codes currently present in `06_UOM.html` and do not expose a `category` field. Incoterms are seeded from the supplier doc references (`EXW`, `FOB`, `CIF`, `DDP`) while retaining quotation-required `FCA` and `CFR`. Transport modes are the referenced modes `SEA`, `AIR`, `ROAD`, and `RAIL`; FCL/LCL remains charge-code applicability rather than a transport-mode row, and `is_international` is not part of the transport-mode DTO.
 
 Forwarder rows include `forwarder_code`, `forwarder_name`, `forwarder_type` (`SEA`, `AIR`, `TRUCKING`, `MULTI`), `country`, `contact_person`, `contact_email`, `contact_phone`, `is_primary`, and `note`. Carrier rows include `carrier_code`, `carrier_name`, `carrier_type` (`SHIPPING_LINE`, `AIRLINE`), `scac_iata_code`, `service_route_note`, `contact_booking`, `contact_email`, and `note`. Task template rows include `group_code`, `group_name`, `task_name`, `task_description`, `milestone_code`, `sla_hours`, `sla_text`, `department`, `assignee_code`, `related_documents`, `note`, and `sort_order`; the seed contains the 20 Phase-1 SOP tasks.
 

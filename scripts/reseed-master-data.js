@@ -263,11 +263,11 @@ function buildSupplierTransportModes(suppliers) {
         const modeIds = supplier.supplier_type === "OVERSEAS_AIR"
             ? ["tm_air"]
             : supplier.supplier_type === "DOMESTIC"
-                ? ["tm_trucking", "tm_road_container", "tm_road_box"]
-                : ["tm_sea_fcl", "tm_sea_lcl"];
+                ? ["tm_road"]
+                : ["tm_sea"];
 
         if (supplier.supplier_roles.includes("FORWARDER")) {
-            modeIds.push("tm_air", "tm_trucking");
+            modeIds.push("tm_air", "tm_road");
         }
 
         for (const transportModeId of Array.from(new Set(modeIds))) {
@@ -344,21 +344,33 @@ function buildTaskTemplates(rows) {
     }));
 }
 
-// Maps doc section headers to canonical category enum values.
+// Maps doc section headers to canonical macro group enum values.
 const CHARGE_GROUP_TO_ENUM = {
     "ORIGIN / EXPORT": "ORIGIN_EXPORT",
     "MAIN FREIGHT (CARRIAGE)": "MAIN_FREIGHT",
     "FREIGHT SURCHARGES": "FREIGHT_SURCHARGE",
-    "DOCUMENTATION & FILING": "DOCUMENTATION",
+    "DOCUMENTATION & FILING": "DOCUMENTATION_FILING",
     "DESTINATION / IMPORT": "DESTINATION_IMPORT",
-    "ANCILLARY / ACCESSORIAL": "ANCILLARY",
+    "ANCILLARY / ACCESSORIAL": "ANCILLARY_ACCESSORIAL",
     "SERVICE / OTHER": "SERVICE_OTHER",
+};
+
+const CHARGE_CATEGORY_TO_ENUM = {
+    Origin: "ORIGIN",
+    Customs: "CUSTOMS",
+    Documentation: "DOCUMENTATION",
+    Freight: "FREIGHT",
+    Surcharge: "SURCHARGE",
+    Destination: "DESTINATION",
+    Disbursement: "DISBURSEMENT",
+    Ancillary: "ANCILLARY",
+    Service: "SERVICE",
 };
 
 function buildChargeCodes(rows) {
     const counters = new Map();
     const result = [];
-    let currentCategory = "MAIN_FREIGHT";
+    let currentGroup = "MAIN_FREIGHT";
 
     for (const rawRow of rows) {
         // Strip leading row-number cell if present
@@ -368,7 +380,7 @@ function buildChargeCodes(rows) {
         if (row.filter(Boolean).length === 1) {
             const header = (row.find(Boolean) || "").replace(/&amp;/g, "&").trim();
             if (CHARGE_GROUP_TO_ENUM[header]) {
-                currentCategory = CHARGE_GROUP_TO_ENUM[header];
+                currentGroup = CHARGE_GROUP_TO_ENUM[header];
                 continue;
             }
         }
@@ -389,7 +401,8 @@ function buildChargeCodes(rows) {
             charge_code: uniqueChargeCode,
             charge_name_en: row[1].trim(),
             charge_name_vn: row[2].trim(),
-            category: currentCategory,
+            group: currentGroup,
+            category: normalizeChargeCategory(row[3]),
             default_uom: upper(row[4]) || "SHPT",
             sea_fcl: yes(row[5]),
             sea_lcl: yes(row[6]),
@@ -400,35 +413,6 @@ function buildChargeCodes(rows) {
             taxable: yes(row[11]),
             description: optionalString(row[12]),
             is_active: true
-        }));
-    }
-
-    // Arising charges not in the HTML source doc — appended deterministically here.
-    const CONTINGENCY_CHARGES = [
-        { code: "EDOE", nameEn: "EDO Extension", nameVn: "Gia hạn lệnh giao hàng điện tử (EDO)", uom: "DAY", fcl: true, lcl: true, air: true, road: true },
-        { code: "GEN",  nameEn: "Reefer Genset / Power", nameVn: "Phí cắm điện container lạnh", uom: "DAY", fcl: true, lcl: false, air: false, road: true },
-        { code: "REW",  nameEn: "Re-weighing / Re-measurement", nameVn: "Phí cân/đo lại", uom: "SHPT", fcl: true, lcl: true, air: true, road: true },
-    ];
-    for (const c of CONTINGENCY_CHARGES) {
-        const seen = counters.get(c.code) || 0;
-        counters.set(c.code, seen + 1);
-        const uniqueCode = seen ? `${c.code}-${seen + 1}` : c.code;
-        result.push(audit({
-            id: `chg_${slug(c.code)}${seen ? `_${seen + 1}` : ""}`,
-            charge_code: uniqueCode,
-            charge_name_en: c.nameEn,
-            charge_name_vn: c.nameVn,
-            category: "ANCILLARY",
-            default_uom: c.uom,
-            sea_fcl: c.fcl,
-            sea_lcl: c.lcl,
-            air: c.air,
-            road: c.road,
-            rail: false,
-            rev_cost: "BOTH",
-            taxable: true,
-            description: null,
-            is_active: true,
         }));
     }
 
@@ -445,40 +429,9 @@ function buildUoms(rows) {
         uom_code: upper(row[0]),
         uom_name_en: row[1].trim(),
         uom_name_vn: row[2].trim(),
-        category: inferUomCategory(row[0]),
         description: optionalString(row[3]),
         is_active: true
     }));
-
-    // Commercial / physical units used by Item Master (doc 01) that are absent from the
-    // freight billing UOM sheet (doc 06). Union them in so item base_uom/purchase_uom
-    // selects are backed by the master rather than free text.
-    const COMMERCIAL_UOMS = [
-        ["PCS", "Piece", "Cái / Chiếc", "PACKAGE"],
-        ["CTN", "Carton", "Thùng carton", "PACKAGE"],
-        ["THUNG", "Carton (box)", "Thùng", "PACKAGE"],
-        ["BAG", "Bag", "Bao / Túi", "PACKAGE"],
-        ["CASE", "Case", "Kiện / Hộp", "PACKAGE"],
-        ["ROLL", "Roll", "Cuộn", "PACKAGE"],
-        ["CUON", "Roll", "Cuộn", "PACKAGE"],
-        ["REEL", "Reel", "Cuộn (ru-lô)", "PACKAGE"],
-        ["PALLET", "Pallet", "Pa-lét", "PACKAGE"],
-        ["M", "Meter", "Mét", "MEASURE"]
-    ];
-    const seenCodes = new Set(uoms.map((uom) => uom.uom_code));
-    for (const [code, nameEn, nameVn, category] of COMMERCIAL_UOMS) {
-        if (seenCodes.has(code)) continue;
-        seenCodes.add(code);
-        uoms.push(audit({
-            id: `uom_${slug(code)}`,
-            uom_code: code,
-            uom_name_en: nameEn,
-            uom_name_vn: nameVn,
-            category,
-            description: null,
-            is_active: true
-        }));
-    }
 
     return uoms;
 }
@@ -669,17 +622,17 @@ function chargeCodeForType(chargeType, line, chargeCodeByCode) {
         TRUCKING: "LMD",
         DO_FEE: "DOF",
         HANDLING: "HDL",
-        THC: "THC",
+        THC: "DTH",
         CIC: "CIC",
         EMC_EMF: "BAF",
         CLEANING: "CLN",
-        CFS: "CFS",
+        CFS: "DTL",
         LOWERING_FEE: "LOL",
         LOADING_FEE: "HDL",
         DEMURRAGE: "DEM",
         DETENTION: "DET",
-        WAREHOUSE: "WHS",
-        DOCUMENT_FEE: "DOC",
+        WAREHOUSE: "STO",
+        DOCUMENT_FEE: "BLF",
         OTHER: "HDL"
     };
 
@@ -689,6 +642,11 @@ function chargeCodeForType(chargeType, line, chargeCodeByCode) {
 
     const mapped = map[chargeType] || "HDL";
     return chargeCodeByCode.has(mapped) ? mapped : "HDL";
+}
+
+function normalizeChargeCategory(value) {
+    const label = String(value || "").trim();
+    return CHARGE_CATEGORY_TO_ENUM[label] || upper(label);
 }
 
 function resolveItemId(currentId, row, itemById) {
@@ -895,28 +853,6 @@ function normalizeRevCost(value) {
     if (normalized.includes("BOTH")) return "BOTH";
     if (normalized.includes("COST")) return "COST";
     return "REVENUE";
-}
-
-function inferUomCategory(code) {
-    const normalized = upper(code);
-
-    if (["KG", "TON", "CBM", "RT", "WM"].includes(normalized)) {
-        return "MEASURE";
-    }
-
-    if (["CNTR", "TEU", "FEU"].includes(normalized)) {
-        return "CONTAINER";
-    }
-
-    if (["DAY", "HOUR", "HR"].includes(normalized)) {
-        return "TIME";
-    }
-
-    if (["PCT"].includes(normalized)) {
-        return "PERCENT";
-    }
-
-    return "DOCUMENT";
 }
 
 function normalizeHsCode(value) {

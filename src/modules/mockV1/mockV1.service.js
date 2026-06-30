@@ -1851,17 +1851,51 @@ export async function createQuotationVersion(id, body = {}) {
         is_final: false,
         quoted_at: body.quoted_at || new Date().toISOString(),
         valid_until: body.valid_until ?? source.valid_until,
-        note: body.note ?? source.note
+        note: body.note ?? source.note,
+        // Header overrides — when the caller supplies edited values, prefer them over the source clone
+        customer_ref: body.customer_ref !== undefined ? body.customer_ref : source.customer_ref,
+        incoterm_code: body.incoterm_code !== undefined ? body.incoterm_code : source.incoterm_code,
+        mode: body.mode !== undefined ? body.mode : source.mode,
+        currency_code: body.currency_code !== undefined ? body.currency_code : source.currency_code
     });
-    const copiedChargeLines = chargeLines.filter((line) => line.quotation_id === source.id);
     const start = nextNumber(chargeLines, "qt_line");
 
-    for (const [index, line] of copiedChargeLines.entries()) {
-        await repo.insert(collections.quotationChargeLines, {
-            ...line,
-            id: formatId("qt_line", start + index),
-            quotation_id: quotation.id
-        });
+    if (Array.isArray(body.charge_lines)) {
+        // Caller supplied edited lines — compute amounts exactly like createQuotation
+        for (const [index, line] of body.charge_lines.entries()) {
+            const quantity = Number(line.quantity ?? 1);
+            const unitPrice = Number(line.unit_price ?? line.amount ?? 0);
+            const amount = Number(line.amount ?? quantity * unitPrice);
+            const taxRate = Number(line.tax_rate || 0);
+            const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
+            await repo.insert(collections.quotationChargeLines, {
+                id: formatId("qt_line", start + index),
+                quotation_id: quotation.id,
+                line_no: line.line_no ?? index + 1,
+                charge_type: line.charge_type || "OTHER",
+                charge_code: line.charge_code || null,
+                description: line.description || null,
+                quantity,
+                unit: line.unit || "SET",
+                unit_price: unitPrice,
+                amount,
+                currency_code: line.currency_code || quotation.currency_code,
+                tax_rate: taxRate,
+                tax_amount: taxAmount,
+                total_amount: Number(line.total_amount ?? amount + taxAmount),
+                note: line.note || null
+            });
+        }
+    } else {
+        // No lines supplied — copy from the source quotation (plain "duplicate" behaviour)
+        const copiedChargeLines = chargeLines.filter((line) => line.quotation_id === source.id);
+        for (const [index, line] of copiedChargeLines.entries()) {
+            await repo.insert(collections.quotationChargeLines, {
+                ...line,
+                id: formatId("qt_line", start + index),
+                quotation_id: quotation.id
+            });
+        }
     }
 
     return getQuotation(quotation.id);

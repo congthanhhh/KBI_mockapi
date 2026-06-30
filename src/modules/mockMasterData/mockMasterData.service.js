@@ -558,7 +558,6 @@ function normalizeTransportMode(mode) {
         ...mode,
         mode_type: modeType,
         description: mode.description ?? null,
-        is_international: mode.is_international ?? modeType !== "ROAD",
         is_active: mode.is_active !== false
     };
 }
