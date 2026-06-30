@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { reseedMasterData } from "./reseed-master-data.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = fileURLToPath(import.meta.url);
@@ -595,9 +596,12 @@ export async function seedMockData() {
         await fs.writeFile(path.join(screensDir, `${name}.json`), `${JSON.stringify(screen, null, 2)}\n`, "utf8");
     }
 
+    const reseedSummary = await reseedMasterData();
+
     return [
         ...Object.keys(files),
-        ...Object.keys(screenFiles).map((name) => `screens/${name}`)
+        ...Object.keys(screenFiles).map((name) => `screens/${name}`),
+        ...Object.keys(reseedSummary.collections).map((name) => `reseed/${name}`)
     ];
 }
 

@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "mock:seed": "node scripts/seed-mock-data.js",
+    "mock:reseed-master": "node scripts/reseed-master-data.js",
     "mock:smoke": "node scripts/smoke-mock-api.js"
   },
   "keywords": [],

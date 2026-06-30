@@ -1,19 +1,20 @@
 [
   {
-    "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "create_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-30T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cur_vnd",
     "currency_code": "VND",
     "currency_name": "Vietnam Dong",
-    "symbol": "d",
+    "symbol": "VND",
     "exchange_rate_to_vnd": 1,
+    "decimal_places": 0,
     "is_active": true
   },
   {
-    "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "create_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-30T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cur_usd",
@@ -21,11 +22,12 @@
     "currency_name": "US Dollar",
     "symbol": "$",
     "exchange_rate_to_vnd": 25000,
+    "decimal_places": 2,
     "is_active": true
   },
   {
-    "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "create_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-30T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cur_cny",
@@ -33,11 +35,12 @@
     "currency_name": "Chinese Yuan",
     "symbol": "CNY",
     "exchange_rate_to_vnd": 3500,
+    "decimal_places": 2,
     "is_active": true
   },
   {
-    "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "create_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-30T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cur_eur",
@@ -45,6 +48,20 @@
     "currency_name": "Euro",
     "symbol": "EUR",
     "exchange_rate_to_vnd": 27000,
+    "decimal_places": 2,
+    "is_active": true
+  },
+  {
+    "create_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-30T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "cur_krw",
+    "currency_code": "KRW",
+    "currency_name": "South Korean Won",
+    "symbol": "KRW",
+    "exchange_rate_to_vnd": 19,
+    "decimal_places": 0,
     "is_active": true
   }
 ]

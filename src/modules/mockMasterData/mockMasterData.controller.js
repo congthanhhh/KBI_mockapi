@@ -22,6 +22,18 @@ export const createTransportMode = create("transport-modes", "tm");
 export const updateTransportMode = update("transport-modes");
 export const deleteTransportMode = remove("transport-modes");
 
+export const listChargeCodes = list("charge-codes");
+export const getChargeCode = detail("charge-codes");
+export const createChargeCode = create("charge-codes", "chg");
+export const updateChargeCode = update("charge-codes");
+export const deleteChargeCode = remove("charge-codes");
+
+export const listUoms = list("uoms");
+export const getUom = detail("uoms");
+export const createUom = create("uoms", "uom");
+export const updateUom = update("uoms");
+export const deleteUom = remove("uoms");
+
 export const listForwarders = list("forwarders");
 export const getForwarder = detail("forwarders");
 export const createForwarder = create("forwarders", "fwd");

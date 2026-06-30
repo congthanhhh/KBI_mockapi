@@ -8,6 +8,13 @@ const searchableFields = [
     "incoterm_name",
     "mode_code",
     "mode_name",
+    "charge_code",
+    "charge_name_en",
+    "charge_name_vn",
+    "uom_code",
+    "uom_name_en",
+    "uom_name_vn",
+    "category",
     "supplier_code",
     "supplier_name",
     "supplier_type",
@@ -165,15 +172,17 @@ export async function createItemTaxProfile(itemId, body) {
 }
 
 export async function getOptions(query = {}) {
-    const requestedTypes = String(query.types || "currencies,incoterms,transport_modes,suppliers")
+    const requestedTypes = String(query.types || "currencies,incoterms,transport_modes,suppliers,charge_codes,uoms")
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean);
-    const [currencies, incoterms, transportModes, suppliers] = await Promise.all([
+    const [currencies, incoterms, transportModes, suppliers, chargeCodes, uoms] = await Promise.all([
         active("currencies"),
         active("incoterms"),
         active("transport-modes"),
-        active("suppliers")
+        active("suppliers"),
+        active("charge-codes"),
+        active("uoms")
     ]);
     const data = {};
 
@@ -196,6 +205,14 @@ export async function getOptions(query = {}) {
         data.suppliers = normalizedSuppliers
             .filter((row) => !role || row.supplier_roles.includes(role))
             .map((row) => option(row.id, row.supplier_code, row.supplier_name));
+    }
+
+    if (requestedTypes.includes("charge_codes")) {
+        data.charge_codes = chargeCodes.map((row) => option(row.id, row.charge_code, row.charge_name_en || row.charge_name_vn));
+    }
+
+    if (requestedTypes.includes("uoms")) {
+        data.uoms = uoms.map((row) => option(row.uom_code, row.uom_code, row.uom_name_en || row.uom_name_vn));
     }
 
     return data;

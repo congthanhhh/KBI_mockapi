@@ -1648,7 +1648,7 @@ export async function createQuotation(body = {}) {
         ref_type: body.ref_type || null,
         ref_id: body.ref_id || null,
         customer_ref: body.customer_ref || null,
-        supplier_id: body.supplier_id || "sup_fds_forwarder",
+        supplier_id: body.supplier_id || "sup_001",
         quotation_type: body.quotation_type || "FREIGHT",
         incoterm_code: body.incoterm_code || null,
         mode: body.mode || null,
@@ -1675,6 +1675,7 @@ export async function createQuotation(body = {}) {
             quotation_id: quotation.id,
             line_no: line.line_no ?? index + 1,
             charge_type: line.charge_type || "OTHER",
+            charge_code: line.charge_code || null,
             description: line.description || null,
             quantity,
             unit: line.unit || "SET",
@@ -1706,7 +1707,7 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
         version: quotations.filter((quotation) => quotation.quotation_group_id === groupId).length + 1,
         ref_type: "DELIVERY_ORDER",
         ref_id: deliveryOrder.id,
-        supplier_id: body.supplier_id || "sup_fds_forwarder",
+        supplier_id: body.supplier_id || "sup_001",
         quotation_type: body.quotation_type || "FREIGHT",
         currency_code: body.currency_code || "USD",
         exchange_rate: body.exchange_rate || 25000,
@@ -1743,6 +1744,7 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
             quotation_id: quotation.id,
             line_no: line.line_no ?? index + 1,
             charge_type: line.charge_type || "OTHER",
+            charge_code: line.charge_code || null,
             description: line.description || null,
             quantity,
             unit: line.unit || "SET",
@@ -1940,6 +1942,7 @@ export async function createQuotationChargeLine(id, body) {
         quotation_id: id,
         line_no: body.line_no ?? chargeLines.filter((line) => line.quotation_id === id).length + 1,
         charge_type: body.charge_type || "OTHER",
+        charge_code: body.charge_code || null,
         description: body.description || null,
         quantity,
         unit: body.unit || "SET",
@@ -1955,7 +1958,7 @@ export async function createQuotationChargeLine(id, body) {
 
 export async function updateQuotationChargeLine(lineId, body) {
     await requireRecord(collections.quotationChargeLines, lineId, "Quotation charge line not found");
-    const allowedFields = ["line_no", "charge_type", "description", "quantity", "unit", "unit_price", "amount", "currency_code", "tax_rate", "tax_amount", "total_amount", "note"];
+    const allowedFields = ["line_no", "charge_type", "charge_code", "description", "quantity", "unit", "unit_price", "amount", "currency_code", "tax_rate", "tax_amount", "total_amount", "note"];
     return repo.update(collections.quotationChargeLines, lineId, pick(body, allowedFields));
 }
 
@@ -2036,7 +2039,7 @@ export async function createShipmentFromDeliveryOrder(body) {
         shipment_no: body.shipment_no || nextDocumentNo("SHP-KBI-2026", shipments, "shipment_no"),
         delivery_order_id: deliveryOrder.id,
         mode: body.mode || "SEA_FCL",
-        forwarder_id: body.forwarder_id || "sup_fds_forwarder",
+        forwarder_id: body.forwarder_id || "sup_001",
         carrier: body.carrier || "Mock Carrier",
         vessel_flight: body.vessel_flight || null,
         bl_awb_no: body.bl_awb_no || null,
@@ -2564,7 +2567,7 @@ export async function createCarrierDeliveryOrder(shipmentId, body) {
         id: nextId(deliveryOrders, "cdo"),
         shipment_id: shipment.id,
         carrier_do_no: body.carrier_do_no || nextDocumentNo("CDO-KBI-2026", deliveryOrders, "carrier_do_no"),
-        forwarder_id: body.forwarder_id || "sup_fds_forwarder",
+        forwarder_id: body.forwarder_id || "sup_001",
         issued_date: body.issued_date || new Date().toISOString().slice(0, 10),
         expired_date: body.expired_date || null,
         release_location: body.release_location || "Hai Phong Port",
@@ -2628,7 +2631,7 @@ export async function createDomesticTransportOrder(shipmentId, body) {
         dto_no: body.dto_no || nextDocumentNo("DTO-KBI-2026", dtos, "dto_no"),
         shipment_id: shipment.id,
         carrier_delivery_order_id: body.carrier_delivery_order_id || null,
-        truck_vendor_id: body.truck_vendor_id || "sup_vn_trucking",
+        truck_vendor_id: body.truck_vendor_id || "sup_002",
         origin: body.origin || "Hai Phong Port",
         destination: body.destination || "Kim Binh Factory",
         warehouse: body.warehouse || "KBI Main Warehouse",

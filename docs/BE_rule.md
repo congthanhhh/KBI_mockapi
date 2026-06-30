@@ -545,8 +545,9 @@ DO status is not stored twice:
 
 ```txt
 - DO own status CANCELLED or CLOSED -> keep it (terminal).
-- No active linked shipment -> the DO's own status
-  (DRAFT / READY_FOR_QUOTATION / QUOTATION_CONFIRMED).
+- No active linked shipment -> the DO's own status (e.g. DRAFT / WAREHOUSE_PENDING).
+  (READY_FOR_QUOTATION / QUOTATION_CONFIRMED are legacy — quotation is decoupled from
+  the DO in the reversed flow.)
 - Otherwise -> the LAGGARD (least-advanced) linked shipment's status, mapped to the
   DO taxonomy:
     BOOKING_*/CARGO_READY              -> ASSIGNED_TO_SHIPMENT
@@ -563,51 +564,57 @@ A DO is only as far along as its slowest shipment. This mirrors the PO
 
 ---
 
-# 8. Quotation Rules
+# 8. Quotation Rules (reversed flow)
 
-Quotation is attached to Internal DO.
+Quotation is a **standalone pre-PO freight quotation** (FDS → customer). It is created
+independently of any DO/PO, carrying its own `customer_ref` + `incoterm_code` + `mode` +
+freight `charge_lines`; `ref_type`/`ref_id` are nullable. Confirming a quotation unlocks
+PO creation (see §6 Purchase Orders).
 
 Endpoints:
 
 ```txt
-POST /api/v1/delivery-orders/:id/quotations
+POST /api/v1/quotations                       # standalone create (initial DRAFT)
+POST /api/v1/delivery-orders/:id/quotations   # legacy DO-scoped create (back-compat)
 POST /api/v1/quotations/:id/create-version
-POST /api/v1/quotations/:id/mark-final
-POST /api/v1/quotations/:id/request          # DRAFT -> REQUESTED
-POST /api/v1/quotations/:id/receive          # DRAFT|REQUESTED -> RECEIVED
-POST /api/v1/quotations/:id/submit-to-kbi    # RECEIVED -> SUBMITTED_TO_KBI
+POST /api/v1/quotations/:id/request           # -> REQUEST_FOR_QUOTATION
+POST /api/v1/quotations/:id/receive           # REQUEST_FOR_QUOTATION -> DRAFT
+POST /api/v1/quotations/:id/submit-to-kbi     # DRAFT -> PENDING_APPROVAL
+POST /api/v1/quotations/:id/mark-final        # -> CONFIRMED
+POST /api/v1/quotations/:id/confirm-by-kbi    # -> CONFIRMED
+POST /api/v1/quotations/:id/reject            # -> REJECTED, body { reason }
+POST /api/v1/quotations/:id/cancel            # -> REJECTED (reason "Cancelled")
 ```
 
 Rules:
 
 ```txt
-- Do not mutate old price directly when price changes.
-- Create a new quotation version.
-- Versions share quotation_group_id.
-- Only one quotation in a group can be final.
+- Do not mutate old price directly when price changes; create a new version.
+- Versions share quotation_group_id; only one quotation in a group can be CONFIRMED.
+- reject stores body.reason as reject_reason.
 ```
 
-Forward status flow (bidding):
+5-state forward flow (who acts):
 
 ```txt
-DRAFT -> REQUESTED -> RECEIVED -> SUBMITTED_TO_KBI -> CONFIRMED_BY_KBI
+REQUEST_FOR_QUOTATION (KBI RFQ) -> DRAFT (FDS) -> PENDING_APPROVAL (FDS submits)
+  -> CONFIRMED (KBI)        ; any non-terminal -> REJECTED (KBI)
 ```
 
 ```txt
 - request / receive / submit-to-kbi each enforce a legal from-state and reject an
   illegal transition with STATE_CONFLICT (409).
-- Each transition appends a quotation_events row (event_code REQUEST / RECEIVE /
-  SUBMIT_TO_KBI), mirroring mark-final.
-- These replace the former generic /v1/mock/quotations/:id status patches; the
-  frontend no longer issues /v1/mock calls.
+- Each transition appends a quotation_events row, mirroring mark-final.
+- mark-final/confirm-by-kbi no longer touch any delivery_order status (quotation is
+  decoupled from the DO).
 ```
 
 When marking final:
 
 ```txt
-quotation.status = CONFIRMED_BY_KBI
+quotation.status = CONFIRMED
 quotation.is_final = true
-delivery_order.status = QUOTATION_CONFIRMED
+(no delivery_order side-effect)
 ```
 
 Return quotation detail DTO.
@@ -616,7 +623,7 @@ Return quotation detail DTO.
 
 # 9. Shipment Rules
 
-Shipment is created from Internal DO after quotation final.
+Shipment is created from an Internal DO (quotation no longer gates the DO).
 
 Endpoint:
 
@@ -628,9 +635,11 @@ Rules:
 
 ```txt
 - delivery_order must exist.
-- delivery_order.status must be QUOTATION_CONFIRMED.
+- delivery_order.status must NOT be CANCELLED / CLOSED / ASSIGNED_TO_SHIPMENT
+  (the old QUOTATION_CONFIRMED gate is removed).
 - copy delivery_order_lines into shipment_lines.
 - create 10 default milestones.
+- booking info (carrier / bl_awb_no / vessel_flight) is captured on the shipment here.
 - update delivery_order.status = ASSIGNED_TO_SHIPMENT.
 ```
 
@@ -1123,7 +1132,8 @@ Backend implementation is correct when:
 - Move LOT item works.
 - Split LOT item works.
 - Create Internal DO from LOTs works.
-- Quotation mark final updates DO status.
+- Quotation create is standalone (no DO); mark-final sets CONFIRMED without any DO side-effect.
+- PO create is rejected unless quotation_id references a CONFIRMED quotation.
 - Shipment creation creates 10 milestones.
 - Customs clear updates Shipment to CUSTOMS_CLEARED.
 - Carrier DO creation is allowed only after CUSTOMS_CLEARED.

@@ -72,13 +72,17 @@ IDs follow `<prefix>_<zero-padded-number>` (e.g. `po_001`, `lot_line_019`). New 
 
 ## Business Flow
 
-Domain models follow this lifecycle:
+Domain models follow this lifecycle (reversed flow — quotation gates the PO):
 
-1. **Purchase Order** (`DRAFT → SENT → CONFIRMED → READY_TO_SHIP → SHIPPED`).
-2. **PO Lots** — group PO lines for shipping; can be split/moved/reordered.
-3. **Delivery Order** — created from lots; tracks freight from origin to warehouse.
-4. **Quotation** — freight quote linked to a DO or Shipment; versioned via `quotation_group_id`.
-5. **Shipment** — created from a `QUOTATION_CONFIRMED` DO; progresses through milestones.
+1. **Quotation** — standalone pre-PO freight quote (FDS → customer); 5-state
+   `REQUEST_FOR_QUOTATION → DRAFT → PENDING_APPROVAL → CONFIRMED` (+ `REJECTED`);
+   versioned via `quotation_group_id`. Confirming it unlocks PO creation. See BE_rule §8.
+2. **Purchase Order** — created only from a `CONFIRMED` quotation (`quotation_id` required);
+   then `DRAFT → SENT → CONFIRMED → READY_TO_SHIP → SHIPPED`.
+3. **PO Lots** — group PO lines for shipping; can be split/moved/reordered.
+4. **Delivery Order** — created from lots; tracks freight from origin to warehouse.
+5. **Shipment** — created from a non-terminal DO (the old `QUOTATION_CONFIRMED` gate is
+   removed); progresses through milestones.
 6. **Customs Declaration** — linked to a shipment.
 7. **Carrier DO** — issued after customs is cleared.
 8. **Domestic Transport Order (DTO)** — last-mile delivery to warehouse.

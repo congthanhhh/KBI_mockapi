@@ -24,6 +24,18 @@ router.post("/transport-modes", asyncHandler(controller.createTransportMode));
 router.patch("/transport-modes/:id", asyncHandler(controller.updateTransportMode));
 router.delete("/transport-modes/:id", asyncHandler(controller.deleteTransportMode));
 
+router.get("/charge-codes", asyncHandler(controller.listChargeCodes));
+router.get("/charge-codes/:id", asyncHandler(controller.getChargeCode));
+router.post("/charge-codes", asyncHandler(controller.createChargeCode));
+router.patch("/charge-codes/:id", asyncHandler(controller.updateChargeCode));
+router.delete("/charge-codes/:id", asyncHandler(controller.deleteChargeCode));
+
+router.get("/uoms", asyncHandler(controller.listUoms));
+router.get("/uoms/:id", asyncHandler(controller.getUom));
+router.post("/uoms", asyncHandler(controller.createUom));
+router.patch("/uoms/:id", asyncHandler(controller.updateUom));
+router.delete("/uoms/:id", asyncHandler(controller.deleteUom));
+
 router.get("/forwarders", asyncHandler(controller.listForwarders));
 router.get("/forwarders/:id", asyncHandler(controller.getForwarder));
 router.post("/forwarders", asyncHandler(controller.createForwarder));
