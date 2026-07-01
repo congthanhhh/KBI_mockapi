@@ -1164,6 +1164,8 @@ forwarders         fwd_*      (forwarder_type SEA|AIR|TRUCKING|MULTI, is_primary
 carriers           carr_*     (carrier_type SHIPPING_LINE|AIRLINE, scac_iata_code)
 task-templates     tt_001..tt_020
 currencies / incoterms / transport-modes   (reference data)
+
+Currency master data stores identity/display only (`currency_code`, `currency_name`, optional `symbol`, `decimal_places`, `is_active`). Exchange rates are transactional and must remain on cost/quote lines. Incoterm master data is minimal and doc-derived: `incoterm_code`, `incoterm_name`, `incoterm_name_vn`, `description`, `is_active`; no ISO group/mode/insurance fields are part of the mock contract. Shipment `mode` is the transport mode, while nullable `load_type` carries FCL/LCL for sea and FTL/LTL for road/trucking.
 ```
 
 Rules:

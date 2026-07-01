@@ -8,7 +8,6 @@
     "currency_code": "VND",
     "currency_name": "Vietnam Dong",
     "symbol": "VND",
-    "exchange_rate_to_vnd": 1,
     "decimal_places": 0,
     "is_active": true
   },
@@ -21,7 +20,6 @@
     "currency_code": "USD",
     "currency_name": "US Dollar",
     "symbol": "$",
-    "exchange_rate_to_vnd": 25000,
     "decimal_places": 2,
     "is_active": true
   },
@@ -34,7 +32,6 @@
     "currency_code": "CNY",
     "currency_name": "Chinese Yuan",
     "symbol": "CNY",
-    "exchange_rate_to_vnd": 3500,
     "decimal_places": 2,
     "is_active": true
   },
@@ -47,7 +44,6 @@
     "currency_code": "EUR",
     "currency_name": "Euro",
     "symbol": "EUR",
-    "exchange_rate_to_vnd": 27000,
     "decimal_places": 2,
     "is_active": true
   },
@@ -60,7 +56,6 @@
     "currency_code": "KRW",
     "currency_name": "South Korean Won",
     "symbol": "KRW",
-    "exchange_rate_to_vnd": 19,
     "decimal_places": 0,
     "is_active": true
   }

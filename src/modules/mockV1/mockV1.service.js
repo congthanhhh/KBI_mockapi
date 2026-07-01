@@ -2068,11 +2068,13 @@ export async function createShipmentFromDeliveryOrder(body) {
     }
 
     const shipments = await active(collections.shipments);
+    const requestedMode = normalizeShipmentModeForStorage(body.mode);
     const shipment = await repo.insert(collections.shipments, {
         id: nextId(shipments, "shp"),
         shipment_no: body.shipment_no || nextDocumentNo("SHP-KBI-2026", shipments, "shipment_no"),
         delivery_order_id: deliveryOrder.id,
-        mode: body.mode || "SEA_FCL",
+        mode: requestedMode,
+        load_type: body.load_type ?? inferShipmentLoadType(body.mode),
         forwarder_id: body.forwarder_id || "sup_001",
         carrier: body.carrier || "Mock Carrier",
         vessel_flight: body.vessel_flight || null,
@@ -2127,6 +2129,23 @@ export async function createShipmentFromDeliveryOrder(body) {
     });
 
     return getShipment(shipment.id);
+}
+
+function normalizeShipmentModeForStorage(mode) {
+    const normalized = String(mode || "SEA").toUpperCase();
+    if (normalized.startsWith("SEA")) {
+        return "SEA";
+    }
+    return normalized;
+}
+
+function inferShipmentLoadType(mode) {
+    const normalized = String(mode || "").toUpperCase();
+    if (normalized.includes("FCL")) return "FCL";
+    if (normalized.includes("LCL")) return "LCL";
+    if (normalized.includes("FTL")) return "FTL";
+    if (normalized.includes("LTL")) return "LTL";
+    return null;
 }
 
 export async function listShipments(query = {}) {
@@ -2186,9 +2205,12 @@ export async function getShipment(id) {
         active(collections.customsDeclarations),
         active(collections.shipmentCosts)
     ]);
+    const finalQuotation = shipment.final_quotation_id ? await getQuotation(shipment.final_quotation_id) : null;
+
     return {
         ...shipment,
         customs_channel: pickShipmentCustomsChannel(declarations, id),
+        final_quotation: finalQuotation,
         lines: lines.filter((line) => line.shipment_id === id),
         milestones: milestones.filter((milestone) => milestone.shipment_id === id).sort(bySortOrder),
         documents: documents.filter((document) => document.shipment_id === id),

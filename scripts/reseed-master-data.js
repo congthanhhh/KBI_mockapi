@@ -438,22 +438,22 @@ function buildUoms(rows) {
 
 function buildCurrencies() {
     return [
-        audit({ id: "cur_vnd", currency_code: "VND", currency_name: "Vietnam Dong", symbol: "VND", exchange_rate_to_vnd: 1, decimal_places: 0, is_active: true }),
-        audit({ id: "cur_usd", currency_code: "USD", currency_name: "US Dollar", symbol: "$", exchange_rate_to_vnd: 25000, decimal_places: 2, is_active: true }),
-        audit({ id: "cur_cny", currency_code: "CNY", currency_name: "Chinese Yuan", symbol: "CNY", exchange_rate_to_vnd: 3500, decimal_places: 2, is_active: true }),
-        audit({ id: "cur_eur", currency_code: "EUR", currency_name: "Euro", symbol: "EUR", exchange_rate_to_vnd: 27000, decimal_places: 2, is_active: true }),
-        audit({ id: "cur_krw", currency_code: "KRW", currency_name: "South Korean Won", symbol: "KRW", exchange_rate_to_vnd: 19, decimal_places: 0, is_active: true })
+        audit({ id: "cur_vnd", currency_code: "VND", currency_name: "Vietnam Dong", symbol: "VND", decimal_places: 0, is_active: true }),
+        audit({ id: "cur_usd", currency_code: "USD", currency_name: "US Dollar", symbol: "$", decimal_places: 2, is_active: true }),
+        audit({ id: "cur_cny", currency_code: "CNY", currency_name: "Chinese Yuan", symbol: "CNY", decimal_places: 2, is_active: true }),
+        audit({ id: "cur_eur", currency_code: "EUR", currency_name: "Euro", symbol: "EUR", decimal_places: 2, is_active: true }),
+        audit({ id: "cur_krw", currency_code: "KRW", currency_name: "South Korean Won", symbol: "KRW", decimal_places: 0, is_active: true })
     ];
 }
 
 function buildIncoterms() {
     return [
-        audit({ id: "inc_exw", incoterm_code: "EXW", incoterm_name: "Ex Works", description: "Supplier makes goods available at origin.", is_active: true }),
-        audit({ id: "inc_fca", incoterm_code: "FCA", incoterm_name: "Free Carrier", description: "Supplier delivers goods to the carrier at a named place.", is_active: true }),
-        audit({ id: "inc_fob", incoterm_code: "FOB", incoterm_name: "Free On Board", description: "Supplier loads goods at port of loading.", is_active: true }),
-        audit({ id: "inc_cfr", incoterm_code: "CFR", incoterm_name: "Cost and Freight", description: "Supplier pays freight to destination port; buyer pays destination charges.", is_active: true }),
-        audit({ id: "inc_cif", incoterm_code: "CIF", incoterm_name: "Cost, Insurance and Freight", description: "Supplier pays freight and insurance to destination port.", is_active: true }),
-        audit({ id: "inc_ddp", incoterm_code: "DDP", incoterm_name: "Delivered Duty Paid", description: "Seller delivers cleared goods to destination.", is_active: true })
+        audit({ id: "inc_exw", incoterm_code: "EXW", incoterm_name: "Ex Works", incoterm_name_vn: "Giao tại xưởng", description: "Supplier makes goods available at origin.", is_active: true }),
+        audit({ id: "inc_fca", incoterm_code: "FCA", incoterm_name: "Free Carrier", incoterm_name_vn: "Giao cho người chuyên chở", description: "Supplier delivers goods to the carrier at a named place.", is_active: true }),
+        audit({ id: "inc_fob", incoterm_code: "FOB", incoterm_name: "Free On Board", incoterm_name_vn: "Giao lên tàu", description: "Supplier loads goods at port of loading.", is_active: true }),
+        audit({ id: "inc_cfr", incoterm_code: "CFR", incoterm_name: "Cost and Freight", incoterm_name_vn: "Tiền hàng và cước phí", description: "Supplier pays freight to destination port; buyer pays destination charges.", is_active: true }),
+        audit({ id: "inc_cif", incoterm_code: "CIF", incoterm_name: "Cost, Insurance and Freight", incoterm_name_vn: "Tiền hàng, bảo hiểm và cước phí", description: "Supplier pays freight and insurance to destination port.", is_active: true }),
+        audit({ id: "inc_ddp", incoterm_code: "DDP", incoterm_name: "Delivered Duty Paid", incoterm_name_vn: "Giao đã nộp thuế", description: "Seller delivers cleared goods to destination.", is_active: true })
     ];
 }
 

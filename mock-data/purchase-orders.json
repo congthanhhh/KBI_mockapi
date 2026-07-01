@@ -334,5 +334,27 @@
     "actual_eta": "2026-08-29",
     "expected_warehouse_eta": "2026-08-29T13:00:00.000Z",
     "actual_warehouse_ata": "2026-08-29T12:45:00.000Z"
+  },
+  {
+    "create_at": "2026-07-01T08:28:20.093Z",
+    "update_at": "2026-07-01T08:29:35.665Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "po_015",
+    "po_no": "PO-2026-190742",
+    "quotation_id": "qt_026",
+    "contract_no": "CT-2026-190742",
+    "supplier_id": "sup_011",
+    "po_type": "SEA",
+    "incoterm_id": "inc_fob",
+    "payment_term": "TT_ADVANCE",
+    "currency_code": "USD",
+    "currency_id": "cur_usd",
+    "exchange_rate": 25000,
+    "status": "CONFIRMED",
+    "expected_etd": "2026-07-03",
+    "expected_eta": "2026-07-10",
+    "transport_mode_id": "tm_sea",
+    "notes": null
   }
 ]

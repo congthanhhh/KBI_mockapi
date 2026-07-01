@@ -7,6 +7,7 @@
     "id": "inc_exw",
     "incoterm_code": "EXW",
     "incoterm_name": "Ex Works",
+    "incoterm_name_vn": "Giao tại xưởng",
     "description": "Supplier makes goods available at origin.",
     "is_active": true
   },
@@ -18,6 +19,7 @@
     "id": "inc_fca",
     "incoterm_code": "FCA",
     "incoterm_name": "Free Carrier",
+    "incoterm_name_vn": "Giao cho người chuyên chở",
     "description": "Supplier delivers goods to the carrier at a named place.",
     "is_active": true
   },
@@ -29,6 +31,7 @@
     "id": "inc_fob",
     "incoterm_code": "FOB",
     "incoterm_name": "Free On Board",
+    "incoterm_name_vn": "Giao lên tàu",
     "description": "Supplier loads goods at port of loading.",
     "is_active": true
   },
@@ -40,6 +43,7 @@
     "id": "inc_cfr",
     "incoterm_code": "CFR",
     "incoterm_name": "Cost and Freight",
+    "incoterm_name_vn": "Tiền hàng và cước phí",
     "description": "Supplier pays freight to destination port; buyer pays destination charges.",
     "is_active": true
   },
@@ -51,6 +55,7 @@
     "id": "inc_cif",
     "incoterm_code": "CIF",
     "incoterm_name": "Cost, Insurance and Freight",
+    "incoterm_name_vn": "Tiền hàng, bảo hiểm và cước phí",
     "description": "Supplier pays freight and insurance to destination port.",
     "is_active": true
   },
@@ -62,6 +67,7 @@
     "id": "inc_ddp",
     "incoterm_code": "DDP",
     "incoterm_name": "Delivered Duty Paid",
+    "incoterm_name_vn": "Giao đã nộp thuế",
     "description": "Seller delivers cleared goods to destination.",
     "is_active": true
   }
