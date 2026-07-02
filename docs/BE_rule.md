@@ -491,22 +491,36 @@ Request:
 
 ```json
 {
-  "purchase_order_id": "po_001",
   "lot_ids": ["lot_001", "lot_002"],
-  "do_no": "DO-KBI-2026-001"
+  "delivery_order_no": "DO-KBI-2026-001",
+  "requested_pickup_date": "2026-07-01",
+  "planned_etd": "2026-07-03",
+  "planned_eta": "2026-07-10",
+  "origin_address": "Shanghai Port",
+  "destination_address": "Cat Lai Port",
+  "notes": "Created from PO LOT Planning"
 }
 ```
 
 Rules:
 
 ```txt
-- purchase_order_id must exist.
 - lot_ids must not be empty.
 - all LOTs must belong to the same PO.
 - selected LOTs must not be locked.
 - one active LOT should not belong to more than one active DO.
+- route resolution for DO origin/destination is request body first, then primary LOT origin_port/destination_port, then PO header origin_port/destination_port, then mock defaults.
 - copy LOT item lines into delivery_order_lines.
 - create delivery_order_lots snapshots.
+```
+
+PO / LOT route fields:
+
+```txt
+- purchase_orders accept free-text `origin_port` and `destination_port`.
+- PO create copies those fields into the default LOT.
+- po_lots accept per-LOT `origin_port` and `destination_port` overrides.
+- Country is not stored here; frontend derives origin country from supplier.country and displays destination country as VN.
 ```
 
 After creating DO:

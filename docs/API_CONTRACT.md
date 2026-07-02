@@ -105,6 +105,7 @@ Purchase Orders:
 `GET /api/v1/purchase-orders` and `GET /api/v1/purchase-orders/:id` enrich each purchase order with:
 
 - `supplier`, `currency`, `incoterm`, `transport_mode`
+- `origin_port`, `destination_port` free-text PO header route defaults
 - `total_weight_kg`, `total_containers`, `total_lots`, `lot_ids`
 - `delayed_days`
 - `lifecycle_status` — resolved laggard-shipment stage (see BE_rule §5.1); the UI's
@@ -123,6 +124,8 @@ The mock seed keeps PO timeline fields populated for UI testing:
 - `transport_mode_id`
 - `actual_etd`
 - `actual_eta`
+- `origin_port`
+- `destination_port`
 - `expected_warehouse_eta`
 - `actual_warehouse_ata`
 
@@ -138,7 +141,7 @@ Purchase order lines include frontend-ready logistics quantities:
 - `expected_eta_line`
 - `notes`
 
-`POST /api/v1/purchase-orders` creates a new PO in `DRAFT` status, creates default `LOT-001`, and assigns the initial PO lines to that LOT. The user flow should then move through `Send PO` and Supplier Confirmation instead of skipping directly to `CONFIRMED`.
+`POST /api/v1/purchase-orders` creates a new PO in `DRAFT` status, accepts header `origin_port` / `destination_port`, creates default `LOT-001`, copies those route fields to that LOT, and assigns the initial PO lines to that LOT. The user flow should then move through `Send PO` and Supplier Confirmation instead of skipping directly to `CONFIRMED`.
 
 Supplier Confirmation:
 
@@ -161,6 +164,7 @@ LOT Planning:
 
 - `purchase_order`
 - `po_lines` enriched like purchase order line responses
+- `lots[]` with per-LOT `origin_port` / `destination_port` route overrides
 - `lots[].items[]` enriched with:
   - `item`
   - `item_code`
@@ -188,6 +192,8 @@ Delivery Orders:
 - `PATCH /api/v1/delivery-orders/:id`
 
 `GET /api/v1/delivery-orders` supports `page`, `limit`, `search`/`q`, `status`, `purchase_order_id`, and `transport_mode_id`. The response meta includes `total` and `pagination`.
+
+`POST /api/v1/delivery-orders/from-lots` accepts `lot_ids`, optional `delivery_order_no`, `requested_pickup_date`, `planned_etd`, `planned_eta`, `origin_address`, `destination_address`, and `notes`. Route resolution is request body first, then primary LOT route fields, then PO header route fields, then mock defaults.
 
 Delivery order rows include frontend-ready logistics fields for the DO board:
 

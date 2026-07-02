@@ -483,6 +483,8 @@ function purchaseOrderMatchesSearch(purchaseOrder, context, search) {
         purchaseOrder.status,
         purchaseOrder.expected_etd,
         purchaseOrder.expected_eta,
+        purchaseOrder.origin_port,
+        purchaseOrder.destination_port,
         purchaseOrder.actual_etd,
         purchaseOrder.actual_eta,
         purchaseOrder.expected_warehouse_eta,
@@ -523,6 +525,8 @@ export async function updatePurchaseOrder(id, body) {
         "status",
         "expected_etd",
         "expected_eta",
+        "origin_port",
+        "destination_port",
         "transport_mode_id",
         "notes"
     ];
@@ -673,6 +677,8 @@ export async function createPurchaseOrder(body) {
         status: body.status || "DRAFT",
         expected_etd: body.expected_etd || null,
         expected_eta: body.expected_eta || null,
+        origin_port: body.origin_port || null,
+        destination_port: body.destination_port || null,
         transport_mode_id: body.transport_mode_id || null,
         notes: body.notes || null
     });
@@ -685,6 +691,8 @@ export async function createPurchaseOrder(body) {
         planned_cargo_ready_date: body.planned_cargo_ready_date || null,
         planned_etd: body.expected_etd || null,
         planned_eta: body.expected_eta || null,
+        origin_port: body.origin_port || null,
+        destination_port: body.destination_port || null,
         sort_order: 1,
         notes: "Default LOT created with PO."
     });
@@ -756,7 +764,7 @@ export async function getLotPlanning(id) {
 }
 
 export async function createLot(purchaseOrderId, body) {
-    await requireRecord(collections.purchaseOrders, purchaseOrderId, "Purchase order not found");
+    const purchaseOrder = await requireRecord(collections.purchaseOrders, purchaseOrderId, "Purchase order not found");
     requireField(body, "lot_no");
     const lots = await active(collections.lots);
     const duplicate = lots.find((lot) => lot.purchase_order_id === purchaseOrderId && lot.lot_no === body.lot_no);
@@ -775,6 +783,8 @@ export async function createLot(purchaseOrderId, body) {
         planned_cargo_ready_date: body.planned_cargo_ready_date || null,
         planned_etd: body.planned_etd || null,
         planned_eta: body.planned_eta || null,
+        origin_port: body.origin_port || purchaseOrder.origin_port || null,
+        destination_port: body.destination_port || purchaseOrder.destination_port || null,
         sort_order: body.sort_order || sortOrder,
         notes: body.notes || null
     });
@@ -789,6 +799,8 @@ export async function updateLot(lotId, body) {
         "planned_cargo_ready_date",
         "planned_etd",
         "planned_eta",
+        "origin_port",
+        "destination_port",
         "sort_order",
         "notes"
     ];
@@ -987,8 +999,8 @@ export async function createDeliveryOrderFromLots(body) {
         planned_cargo_ready_date: body.planned_cargo_ready_date || primaryLot.planned_cargo_ready_date || null,
         planned_etd: body.planned_etd || primaryLot.planned_etd || purchaseOrder.expected_etd || null,
         planned_eta: body.planned_eta || primaryLot.planned_eta || purchaseOrder.expected_eta || null,
-        origin_address: body.origin_address || primaryLot.origin_port || "Shanghai Port",
-        destination_address: body.destination_address || primaryLot.destination_port || "CatLai Port",
+        origin_address: body.origin_address || primaryLot.origin_port || purchaseOrder.origin_port || "Shanghai Port",
+        destination_address: body.destination_address || primaryLot.destination_port || purchaseOrder.destination_port || "CatLai Port",
         warehouse_name: body.warehouse_name || "Kim Binh Main Warehouse",
         notes: body.notes || null
     });

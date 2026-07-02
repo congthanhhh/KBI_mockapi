@@ -21,7 +21,9 @@
     "actual_etd": "2026-07-03",
     "actual_eta": "2026-07-10",
     "expected_warehouse_eta": "2026-07-10T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-10T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-10T09:00:00.000Z",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -45,7 +47,9 @@
     "actual_etd": "2026-07-08",
     "actual_eta": "2026-07-16",
     "expected_warehouse_eta": "2026-07-17T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-17T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-17T09:00:00.000Z",
+    "origin_port": "Shanghai Port",
+    "destination_port": "Cat Lai Port"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -69,7 +73,9 @@
     "actual_etd": "2026-06-24",
     "actual_eta": "2026-07-02",
     "expected_warehouse_eta": "2026-06-27T14:00:00.000Z",
-    "actual_warehouse_ata": "2026-06-27T13:40:00.000Z"
+    "actual_warehouse_ata": "2026-06-27T13:40:00.000Z",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -93,7 +99,9 @@
     "actual_etd": "2026-07-20",
     "actual_eta": "2026-07-21",
     "expected_warehouse_eta": "2026-07-22T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-22T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-22T09:00:00.000Z",
+    "origin_port": "Pingxiang Border Gate",
+    "destination_port": "Huu Nghi Border Gate"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -117,7 +125,9 @@
     "actual_etd": "2026-07-22",
     "actual_eta": "2026-07-30",
     "expected_warehouse_eta": "2026-07-31T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-31T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-31T09:00:00.000Z",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -141,7 +151,9 @@
     "actual_etd": "2026-08-04",
     "actual_eta": "2026-08-05",
     "expected_warehouse_eta": "2026-08-05T10:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-05T10:00:00.000Z"
+    "actual_warehouse_ata": "2026-08-05T10:00:00.000Z",
+    "origin_port": "Shanghai Pudong Airport",
+    "destination_port": "Tan Son Nhat Airport"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -165,7 +177,9 @@
     "actual_etd": "2026-06-30",
     "actual_eta": "2026-07-08",
     "expected_warehouse_eta": "2026-07-09T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-09T08:50:00.000Z"
+    "actual_warehouse_ata": "2026-07-09T08:50:00.000Z",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -189,7 +203,9 @@
     "actual_etd": "2026-07-14",
     "actual_eta": "2026-07-22",
     "expected_warehouse_eta": "2026-07-23T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-23T09:00:00.000Z"
+    "actual_warehouse_ata": "2026-07-23T09:00:00.000Z",
+    "origin_port": "Shanghai Port",
+    "destination_port": "Hai Phong Port"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -213,7 +229,9 @@
     "actual_etd": "2026-08-12",
     "actual_eta": "2026-08-14",
     "expected_warehouse_eta": "2026-08-14T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-14T08:30:00.000Z"
+    "actual_warehouse_ata": "2026-08-14T08:30:00.000Z",
+    "origin_port": "Pingxiang Border Gate",
+    "destination_port": "Huu Nghi Border Gate"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
