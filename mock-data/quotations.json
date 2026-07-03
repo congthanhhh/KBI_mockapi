@@ -86,13 +86,13 @@
     "supplier_id": "sup_002",
     "quotation_type": "TRUCKING",
     "incoterm_code": "EXW",
-    "mode": "ROAD",
+    "mode": null,
     "currency_code": "VND",
     "exchange_rate": 1,
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-21T02:00:00.000Z",
-    "valid_until": "2026-06-29",
+    "valid_until": "2026-07-28",
     "note": "Trucking quote."
   },
   {
@@ -116,7 +116,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-22T02:00:00.000Z",
-    "valid_until": "2026-07-28",
+    "valid_until": "2026-06-29",
     "note": "FCL Shanghai to Hai Phong, all-in ocean charge."
   },
   {
@@ -206,7 +206,7 @@
     "supplier_id": "sup_002",
     "quotation_type": "TRUCKING",
     "incoterm_code": "EXW",
-    "mode": "ROAD",
+    "mode": null,
     "currency_code": "VND",
     "exchange_rate": 1,
     "status": "CONFIRMED",
@@ -228,7 +228,7 @@
     "ref_id": "do_010",
     "customer_ref": "KBI",
     "supplier_id": "sup_001",
-    "quotation_type": "CUSTOMS",
+    "quotation_type": "FREIGHT",
     "incoterm_code": "CIF",
     "mode": "SEA_LCL",
     "currency_code": "USD",
@@ -237,7 +237,7 @@
     "is_final": true,
     "quoted_at": "2026-07-18T02:00:00.000Z",
     "valid_until": "2026-08-12",
-    "note": "Customs clearance service quote."
+    "note": "LCL freight including origin CFS handling."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -276,7 +276,7 @@
     "ref_id": "do_012",
     "customer_ref": "KBI",
     "supplier_id": "sup_001",
-    "quotation_type": "MIXED",
+    "quotation_type": "FREIGHT",
     "incoterm_code": "FOB",
     "mode": "SEA_FCL",
     "currency_code": "USD",
@@ -285,7 +285,7 @@
     "is_final": true,
     "quoted_at": "2026-07-25T02:00:00.000Z",
     "valid_until": "2026-07-23",
-    "note": "Combined freight + local + customs package."
+    "note": "Breakbulk freight for non-containerized hose bundles."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
