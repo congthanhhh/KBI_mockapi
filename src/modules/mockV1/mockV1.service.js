@@ -18,6 +18,8 @@ const collections = {
     items: "item-master",
     itemCustomsProfiles: "item-customs-profiles",
     suppliers: "suppliers",
+    forwarders: "forwarders",
+    carriers: "carriers",
     deliveryOrders: "delivery-orders",
     deliveryOrderLots: "delivery-order-lots",
     deliveryOrderLines: "delivery-order-lines",
@@ -2087,8 +2089,9 @@ export async function createShipmentFromDeliveryOrder(body) {
         delivery_order_id: deliveryOrder.id,
         mode: requestedMode,
         load_type: body.load_type ?? inferShipmentLoadType(body.mode),
-        forwarder_id: body.forwarder_id || "sup_001",
-        carrier: body.carrier || "Mock Carrier",
+        forwarder_id: body.forwarder_id || null,
+        carrier_id: body.carrier_id || null,
+        carrier: body.carrier || null,
         vessel_flight: body.vessel_flight || null,
         bl_awb_no: body.bl_awb_no || null,
         container_no: body.container_no || null,
@@ -2430,6 +2433,7 @@ export async function updateShipment(id, body) {
         "mode",
         "forwarder_id",
         "carrier",
+        "carrier_id",
         "vessel_flight",
         "voyage_no",
         "bl_awb_no",
@@ -2653,10 +2657,17 @@ export async function listCarrierDeliveryOrders() {
 
 export async function listCarrierDeliveryOrdersByShipment(shipmentId) {
     await requireRecord(collections.shipments, shipmentId, "Shipment not found");
-    const deliveryOrders = await active(collections.carrierDeliveryOrders);
+    const [deliveryOrders, forwarders] = await Promise.all([
+        active(collections.carrierDeliveryOrders),
+        active(collections.forwarders)
+    ]);
     return deliveryOrders
         .filter((order) => order.shipment_id === shipmentId)
-        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")))
+        .map((order) => ({
+            ...order,
+            forwarder: forwarders.find((row) => row.id === order.forwarder_id) || null
+        }));
 }
 
 export async function getCarrierDeliveryOrder(id) {
@@ -2699,7 +2710,7 @@ export async function createDomesticTransportOrder(shipmentId, body) {
         dto_no: body.dto_no || nextDocumentNo("DTO-KBI-2026", dtos, "dto_no"),
         shipment_id: shipment.id,
         carrier_delivery_order_id: body.carrier_delivery_order_id || null,
-        truck_vendor_id: body.truck_vendor_id || "sup_002",
+        truck_vendor_id: body.truck_vendor_id || null,
         origin: body.origin || "Hai Phong Port",
         destination: body.destination || "Kim Binh Factory",
         warehouse: body.warehouse || "KBI Main Warehouse",
@@ -2833,7 +2844,7 @@ export async function listDomesticTransportOrders(query = {}) {
             if (!search) return true;
 
             const shipment = context.shipments.find((row) => row.id === order.shipment_id) || {};
-            const vendor = context.suppliers.find((row) => row.id === order.truck_vendor_id) || {};
+            const vendor = context.forwarders.find((row) => row.id === order.truck_vendor_id) || {};
             return [
                 order.dto_no,
                 order.origin,
@@ -2842,8 +2853,8 @@ export async function listDomesticTransportOrders(query = {}) {
                 order.vehicle_plate,
                 order.driver_name,
                 shipment.shipment_no,
-                vendor.supplier_name,
-                vendor.supplier_code
+                vendor.forwarder_name,
+                vendor.forwarder_code
             ].some((value) => String(value || "").toLowerCase().includes(search));
         })
         .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")))
@@ -3391,6 +3402,7 @@ async function getDomesticTransportOrderContext() {
         shipmentLines,
         carrierDeliveryOrders,
         suppliers,
+        forwarders,
         purchaseOrderLines,
         lots,
         items,
@@ -3403,6 +3415,7 @@ async function getDomesticTransportOrderContext() {
         active(collections.shipmentLines),
         active(collections.carrierDeliveryOrders),
         active(collections.suppliers),
+        active(collections.forwarders),
         active(collections.purchaseOrderLines),
         active(collections.lots),
         active(collections.items),
@@ -3417,6 +3430,7 @@ async function getDomesticTransportOrderContext() {
         shipmentLines,
         carrierDeliveryOrders,
         suppliers,
+        forwarders,
         purchaseOrderLines,
         lots,
         items,
@@ -3428,7 +3442,7 @@ async function getDomesticTransportOrderContext() {
 function enrichDomesticTransportOrder(order, context) {
     const shipment = context.shipments.find((row) => row.id === order.shipment_id) || null;
     const carrierDeliveryOrder = context.carrierDeliveryOrders.find((row) => row.id === order.carrier_delivery_order_id) || null;
-    const truckVendor = context.suppliers.find((row) => row.id === order.truck_vendor_id) || null;
+    const truckVendor = context.forwarders.find((row) => row.id === order.truck_vendor_id) || null;
     const lines = context.domesticTransportOrderLines
         .filter((line) => line.domestic_transport_order_id === order.id)
         .sort(bySortOrder)
