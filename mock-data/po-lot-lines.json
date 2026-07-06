@@ -264,19 +264,5 @@
     "qty_lotted": 80,
     "unit": "PCS",
     "sort_order": 3
-  },
-  {
-    "create_at": "2026-07-01T08:28:20.099Z",
-    "update_at": "2026-07-01T08:28:20.099Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "lot_line_020",
-    "po_lot_id": "lot_016",
-    "purchase_order_line_id": "po_line_018",
-    "item_id": "item_001",
-    "qty_lotted": 1,
-    "unit": "M",
-    "notes": null,
-    "sort_order": 1
   }
 ]

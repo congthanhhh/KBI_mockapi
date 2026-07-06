@@ -37,6 +37,11 @@ export async function listCurrencies(req, res) {
     res.json(success(await service.listCurrencies()));
 }
 
+export async function listCurrencyRates(req, res) {
+    const data = await service.listCurrencyRates();
+    res.json(success(data, { total: data.length }));
+}
+
 export async function listIncoterms(req, res) {
     res.json(success(await service.listIncoterms()));
 }
@@ -253,6 +258,31 @@ export async function listQuotationsByDeliveryOrder(req, res) {
     res.json(success(await service.listQuotationsByDeliveryOrder(req.params.id)));
 }
 
+export async function listQuotationRequests(req, res) {
+    const result = await service.listQuotationRequests(req.query);
+    res.json(success(result.data, result.meta));
+}
+
+export async function getQuotationRequest(req, res) {
+    res.json(success(await service.getQuotationRequest(req.params.id)));
+}
+
+export async function createQuotationRequest(req, res) {
+    res.status(201).json(success(await service.createQuotationRequest(req.body)));
+}
+
+export async function receiveQuotationRequest(req, res) {
+    res.json(success(await service.receiveQuotationRequest(req.params.id)));
+}
+
+export async function cancelQuotationRequest(req, res) {
+    res.json(success(await service.cancelQuotationRequest(req.params.id)));
+}
+
+export async function createQuotationFromRequest(req, res) {
+    res.status(201).json(success(await service.createQuotationFromRequest(req.params.id, req.body)));
+}
+
 export async function createQuotationVersion(req, res) {
     res.status(201).json(success(await service.createQuotationVersion(req.params.id, req.body)));
 }
@@ -287,6 +317,27 @@ export async function submitQuotationToKbi(req, res) {
 
 export async function getQuotation(req, res) {
     res.json(success(await service.getQuotation(req.params.id)));
+}
+
+export async function listQuotationOptions(req, res) {
+    const data = await service.listQuotationOptions(req.params.id);
+    res.json(success(data, { total: data.length }));
+}
+
+export async function createQuotationOption(req, res) {
+    res.status(201).json(success(await service.createQuotationOption(req.params.id, req.body)));
+}
+
+export async function updateQuotationOption(req, res) {
+    res.json(success(await service.updateQuotationOption(req.params.optionId, req.body)));
+}
+
+export async function deleteQuotationOption(req, res) {
+    res.json(success(await service.deleteQuotationOption(req.params.optionId)));
+}
+
+export async function selectQuotationOption(req, res) {
+    res.json(success(await service.selectQuotationOption(req.params.id, req.body)));
 }
 
 export async function listQuotationChargeLines(req, res) {

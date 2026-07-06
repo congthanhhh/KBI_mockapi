@@ -457,30 +457,5 @@
     "sort_order": 4,
     "item_code": "BTP-010",
     "hs_code": "00000000"
-  },
-  {
-    "create_at": "2026-07-01T08:28:20.097Z",
-    "update_at": "2026-07-01T08:29:35.668Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "po_line_018",
-    "purchase_order_id": "po_015",
-    "item_id": "item_001",
-    "item_customs_profile_id": "icp_001",
-    "line_no": 1,
-    "item_description": "Vải cotton 60/40 khổ 1.5m",
-    "qty_ordered": 1,
-    "unit": "M",
-    "unit_price": 1,
-    "tax_rate": 8,
-    "discount_pct": 7,
-    "gross_weight_kg": 1,
-    "qty_confirmed": 1,
-    "qty_lotted": 1,
-    "qty_shipped": 0,
-    "qty_received": 0,
-    "expected_eta_line": "2026-07-05",
-    "notes": null,
-    "sort_order": 1
   }
 ]

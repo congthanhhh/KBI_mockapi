@@ -31,6 +31,13 @@ const files = {
         base({ id: "cur_eur", currency_code: "EUR", currency_name: "Euro", symbol: "EUR", decimal_places: 2, is_active: true }),
         base({ id: "cur_krw", currency_code: "KRW", currency_name: "South Korean Won", symbol: "KRW", decimal_places: 0, is_active: true })
     ],
+    "currency-rates": [
+        base({ id: "cr_usd", code: "USD", vnd_rate: 26301 }),
+        base({ id: "cr_cny", code: "CNY", vnd_rate: 3620 }),
+        base({ id: "cr_eur", code: "EUR", vnd_rate: 28450 }),
+        base({ id: "cr_jpy", code: "JPY", vnd_rate: 172 }),
+        base({ id: "cr_vnd", code: "VND", vnd_rate: 1 })
+    ],
     "incoterms": [
         base({ id: "inc_exw", incoterm_code: "EXW", incoterm_name: "Ex Works", incoterm_name_vn: "Giao tại xưởng", description: "Supplier makes goods available at origin.", is_active: true }),
         base({ id: "inc_fca", incoterm_code: "FCA", incoterm_name: "Free Carrier", incoterm_name_vn: "Giao cho người chuyên chở", description: "Supplier delivers goods to the carrier at a named place.", is_active: true }),
@@ -296,6 +303,76 @@ const files = {
         base({ id: "do_line_013", delivery_order_id: "do_013", po_lot_id: "lot_014", purchase_order_line_id: "po_line_013", item_id: "item_013", qty: 600, unit: "PCS", sort_order: 1 }),
         base({ id: "do_line_014", delivery_order_id: "do_014", po_lot_id: "lot_015", purchase_order_line_id: "po_line_014", item_id: "item_014", qty: 20, unit: "PCS", sort_order: 1 })
     ],
+    "quotation-requests": [
+        base({
+            id: "qr-0001",
+            rfq_no: "RFQ-2026-0001",
+            status: "SUBMITTED",
+            customer_ref: "KBI",
+            customer_po_ref: "KBI-SAP-PO-4500012345",
+            supplier_id: "sup_001",
+            incoterm_code: "FOB",
+            mode: "SEA_FCL",
+            currency_code: "USD",
+            origin_port: "Shanghai (CNSHA)",
+            destination_port: "Hai Phong (VNHPH)",
+            desired_cargo_ready_date: "2026-07-20",
+            gross_weight_kg: 5400,
+            volume_cbm: 58,
+            container_type: "1x40HC",
+            note: null,
+            create_at: "2026-07-06T08:00:00+07:00",
+            update_at: "2026-07-06T08:00:00+07:00"
+        }),
+        base({
+            id: "qr-0002",
+            rfq_no: "RFQ-2026-0002",
+            status: "RECEIVED",
+            customer_ref: "KBI",
+            customer_po_ref: "KBI-SAP-PO-4500012388",
+            supplier_id: "sup_002",
+            incoterm_code: "FOB",
+            mode: "SEA_LCL",
+            currency_code: "USD",
+            origin_port: "Ningbo (CNNGB)",
+            destination_port: "Cat Lai (VNCLI)",
+            desired_cargo_ready_date: "2026-07-18",
+            gross_weight_kg: 980,
+            volume_cbm: 9.2,
+            container_type: "LCL",
+            note: "Need origin pickup cost separated from freight.",
+            create_at: "2026-07-06T08:20:00+07:00",
+            update_at: "2026-07-06T08:30:00+07:00"
+        }),
+        base({
+            id: "qr-0003",
+            rfq_no: "RFQ-2026-0003",
+            status: "QUOTED",
+            customer_ref: "KBI",
+            customer_po_ref: "KBI-SAP-PO-4500012416",
+            supplier_id: "sup_004",
+            incoterm_code: "FOB",
+            mode: "SEA_LCL",
+            currency_code: "USD",
+            origin_port: "Ningbo (CNNGB)",
+            destination_port: "Cat Lai (VNCLI)",
+            desired_cargo_ready_date: "2026-07-24",
+            gross_weight_kg: 1440,
+            volume_cbm: 9.5,
+            container_type: "LCL",
+            note: "Need at least two ETD options.",
+            create_at: "2026-07-06T08:45:00+07:00",
+            update_at: "2026-07-06T09:00:00+07:00"
+        })
+    ],
+    "quotation-request-lines": [
+        base({ id: "qrl-0001", quotation_request_id: "qr-0001", line_no: 1, item_id: "item_004", item_description: "KBI7921C-CAN Controller", qty: 500, unit: "PCS", unit_price: 82.5, gross_weight_kg: 3600, note: null, create_at: "2026-07-06T08:00:00+07:00", update_at: "2026-07-06T08:00:00+07:00" }),
+        base({ id: "qrl-0002", quotation_request_id: "qr-0001", line_no: 2, item_id: "item_005", item_description: "LBC1206B Battery Charger", qty: 300, unit: "PCS", unit_price: 20.4, gross_weight_kg: 1800, note: null, create_at: "2026-07-06T08:00:00+07:00", update_at: "2026-07-06T08:00:00+07:00" }),
+        base({ id: "qrl-0003", quotation_request_id: "qr-0002", line_no: 1, item_id: "item_029", item_description: "JMT01524,MGS-870,Mechanical level gague", qty: 240, unit: "PCS", unit_price: 12.5, gross_weight_kg: 420, note: null, create_at: "2026-07-06T08:20:00+07:00", update_at: "2026-07-06T08:20:00+07:00" }),
+        base({ id: "qrl-0004", quotation_request_id: "qr-0002", line_no: 2, item_id: "item_030", item_description: "JKS02973,CLS2-790 CAPACITANCE SENSOR", qty: 180, unit: "PCS", unit_price: 32.06, gross_weight_kg: 560, note: null, create_at: "2026-07-06T08:20:00+07:00", update_at: "2026-07-06T08:20:00+07:00" }),
+        base({ id: "qrl-0005", quotation_request_id: "qr-0003", line_no: 1, item_id: "item_024", item_description: "Kripal Socket Outlet 63A - 230Vac - 2P+E - 6H - IP44 (UKS-B3341-6)", qty: 120, unit: "PCS", unit_price: 6.63, gross_weight_kg: 640, note: null, create_at: "2026-07-06T08:45:00+07:00", update_at: "2026-07-06T08:45:00+07:00" }),
+        base({ id: "qrl-0006", quotation_request_id: "qr-0003", line_no: 2, item_id: "item_025", item_description: "Kripal Plug 63A - 230Vac - 2P+E - 6H - IP44 (UKS-A334-6)", qty: 150, unit: "PCS", unit_price: 5.31, gross_weight_kg: 800, note: null, create_at: "2026-07-06T08:45:00+07:00", update_at: "2026-07-06T08:45:00+07:00" })
+    ],
     "quotations": [
         base({ id: "qt_001", quotation_group_id: "qg_do_001", quotation_no: "QT-KBI-2026-001", version: 1, ref_type: "DELIVERY_ORDER", ref_id: "do_001", customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_FCL", currency_code: "USD", exchange_rate: 25000, status: "CONFIRMED", is_final: true, quoted_at: "2026-06-10T02:00:00.000Z", valid_until: dayFromToday(30), note: "Final freight quote." }),
         base({ id: "qt_002", quotation_group_id: "qg_do_002", quotation_no: "QT-KBI-2026-002", version: 1, ref_type: "DELIVERY_ORDER", ref_id: "do_002", customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_LCL", currency_code: "USD", exchange_rate: 25000, status: "CONFIRMED", is_final: true, quoted_at: "2026-06-18T02:00:00.000Z", valid_until: dayFromToday(3), note: "Shipped DO quote." }),
@@ -315,10 +392,48 @@ const files = {
         // carry their own customer_ref + incoterm_code + mode. One per status so the
         // 5-state tabs all have data; qt_023 (CONFIRMED) seeds the create-PO demo.
         base({ id: "qt_020", quotation_group_id: "qg_qt_020", quotation_no: "QT-KBI-2026-020", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_FCL", currency_code: "USD", exchange_rate: 25000, status: "REQUEST_FOR_QUOTATION", is_final: false, quoted_at: "2026-06-26T02:00:00.000Z", valid_until: "2026-07-26", note: "RFQ from KBI — awaiting FDS draft." }),
-        base({ id: "qt_021", quotation_group_id: "qg_qt_021", quotation_no: "QT-KBI-2026-021", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "EXW", mode: "AIR", currency_code: "USD", exchange_rate: 25000, status: "DRAFT", is_final: false, quoted_at: "2026-06-27T02:00:00.000Z", valid_until: "2026-07-27", note: "FDS drafting air freight options." }),
+        base({ id: "qt_021", quotation_group_id: "qg_qt_021", quotation_no: "QT-KBI-2026-021", version: 1, ref_type: null, ref_id: null, rfq_id: "qr-0003", customer_ref: "KBI", supplier_id: "sup_004", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_LCL", origin_port: "Ningbo (CNNGB)", destination_port: "Cat Lai (VNCLI)", selected_option_id: null, currency_code: "USD", exchange_rate: 25000, status: "DRAFT", is_final: false, quoted_at: "2026-06-27T02:00:00.000Z", valid_until: "2026-07-27", note: "FDS drafting LCL freight options from RFQ RFQ-2026-0003." }),
         base({ id: "qt_022", quotation_group_id: "qg_qt_022", quotation_no: "QT-KBI-2026-022", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_LCL", currency_code: "USD", exchange_rate: 25000, status: "PENDING_APPROVAL", is_final: false, quoted_at: "2026-06-28T02:00:00.000Z", valid_until: "2026-07-28", note: "Sent to KBI for confirmation." }),
         base({ id: "qt_023", quotation_group_id: "qg_qt_023", quotation_no: "QT-KBI-2026-023", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_FCL", currency_code: "USD", exchange_rate: 25000, status: "CONFIRMED", is_final: true, confirmed_at: "2026-06-29T02:00:00.000Z", quoted_at: "2026-06-29T01:00:00.000Z", valid_until: "2026-07-29", note: "Confirmed by KBI — ready to create PO." }),
         base({ id: "qt_024", quotation_group_id: "qg_qt_024", quotation_no: "QT-KBI-2026-024", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "CFR", mode: "SEA_FCL", currency_code: "USD", exchange_rate: 25000, status: "REJECTED", is_final: false, rejected_at: "2026-06-28T06:00:00.000Z", reject_reason: "Giá cao hơn ngân sách KBI.", quoted_at: "2026-06-27T02:00:00.000Z", valid_until: "2026-07-27", note: "Rejected by KBI." })
+    ],
+    "quotation-options": [
+        base({
+            id: "qo-0001",
+            quotation_id: "qt_021",
+            option_no: 1,
+            carrier_code: "MSC",
+            carrier_name: "Mediterranean Shipping Company",
+            vessel_or_flight: "MSC ANNA",
+            voyage_flight_no: "FE512A",
+            etd: "2026-07-25",
+            eta: "2026-08-21",
+            transit_time_days: 27,
+            risk_warning: "Roll risk in peak season",
+            headline_amount: 21500000,
+            is_recommended: true,
+            is_selected: false,
+            create_at: "2026-07-06T09:00:00+07:00",
+            update_at: "2026-07-06T09:00:00+07:00"
+        }),
+        base({
+            id: "qo-0002",
+            quotation_id: "qt_021",
+            option_no: 2,
+            carrier_code: "COSCO",
+            carrier_name: "COSCO Shipping Lines",
+            vessel_or_flight: "COSCO SHIPPING PEONY",
+            voyage_flight_no: "CS728S",
+            etd: "2026-07-28",
+            eta: "2026-08-18",
+            transit_time_days: 21,
+            risk_warning: "Limited free-time at destination",
+            headline_amount: 22800000,
+            is_recommended: false,
+            is_selected: false,
+            create_at: "2026-07-06T09:05:00+07:00",
+            update_at: "2026-07-06T09:05:00+07:00"
+        })
     ],
     "quotation-charge-lines": [
         base({ id: "qt_line_001", quotation_id: "qt_001", charge_type: "OCEAN_FREIGHT", description: "Shanghai to Hai Phong FCL", quantity: 1, unit_price: 1200, amount: 1200, currency_code: "USD", tax_rate: 0, note: null }),

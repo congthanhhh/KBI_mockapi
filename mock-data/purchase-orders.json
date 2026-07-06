@@ -15,15 +15,15 @@
     "status": "CONFIRMED",
     "expected_etd": "2026-07-03",
     "expected_eta": "2026-07-10",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port",
     "notes": "Multi-item split LOT demo PO for drag/drop testing.",
     "contract_no": "KBI-CN-2026-001",
     "transport_mode_id": "tm_sea",
     "actual_etd": "2026-07-03",
     "actual_eta": "2026-07-10",
     "expected_warehouse_eta": "2026-07-10T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-10T09:00:00.000Z",
-    "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "actual_warehouse_ata": "2026-07-10T09:00:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -41,15 +41,15 @@
     "status": "READY_TO_SHIP",
     "expected_etd": "2026-07-08",
     "expected_eta": "2026-07-16",
+    "origin_port": "Shanghai Port",
+    "destination_port": "Cat Lai Port",
     "notes": "Ready cargo from Shanghai OEM.",
     "contract_no": "KBI-CN-2026-002",
     "transport_mode_id": "tm_sea",
     "actual_etd": "2026-07-08",
     "actual_eta": "2026-07-16",
     "expected_warehouse_eta": "2026-07-17T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-17T09:00:00.000Z",
-    "origin_port": "Shanghai Port",
-    "destination_port": "Cat Lai Port"
+    "actual_warehouse_ata": "2026-07-17T09:00:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -67,15 +67,15 @@
     "status": "SHIPPED",
     "expected_etd": "2026-06-24",
     "expected_eta": "2026-07-02",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port",
     "notes": "Already shipped demo.",
     "contract_no": "KBI-CN-2026-003",
     "transport_mode_id": "tm_sea",
     "actual_etd": "2026-06-24",
     "actual_eta": "2026-07-02",
     "expected_warehouse_eta": "2026-06-27T14:00:00.000Z",
-    "actual_warehouse_ata": "2026-06-27T13:40:00.000Z",
-    "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "actual_warehouse_ata": "2026-06-27T13:40:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -93,15 +93,15 @@
     "status": "CONFIRMED",
     "expected_etd": "2026-07-18",
     "expected_eta": "2026-07-26",
+    "origin_port": "Pingxiang Border Gate",
+    "destination_port": "Huu Nghi Border Gate",
     "notes": "Confirmed, pending LOT planning.",
     "contract_no": "KBI-CN-2026-004",
     "transport_mode_id": "tm_road",
     "actual_etd": "2026-07-20",
     "actual_eta": "2026-07-21",
     "expected_warehouse_eta": "2026-07-22T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-22T09:00:00.000Z",
-    "origin_port": "Pingxiang Border Gate",
-    "destination_port": "Huu Nghi Border Gate"
+    "actual_warehouse_ata": "2026-07-22T09:00:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -119,15 +119,15 @@
     "status": "READY_TO_SHIP",
     "expected_etd": "2026-07-22",
     "expected_eta": "2026-07-30",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port",
     "notes": "Urgent turbocharger replenishment for service stock.",
     "contract_no": "KBI-CN-2026-005",
     "transport_mode_id": "tm_sea",
     "actual_etd": "2026-07-22",
     "actual_eta": "2026-07-30",
     "expected_warehouse_eta": "2026-07-31T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-31T09:00:00.000Z",
-    "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "actual_warehouse_ata": "2026-07-31T09:00:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -145,15 +145,15 @@
     "status": "CONFIRMED",
     "expected_etd": "2026-08-04",
     "expected_eta": "2026-08-05",
+    "origin_port": "Shanghai Pudong Airport",
+    "destination_port": "Tan Son Nhat Airport",
     "notes": "Air freight for alternator shortage.",
     "contract_no": "KBI-CN-2026-006",
     "transport_mode_id": "tm_air",
     "actual_etd": "2026-08-04",
     "actual_eta": "2026-08-05",
     "expected_warehouse_eta": "2026-08-05T10:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-05T10:00:00.000Z",
-    "origin_port": "Shanghai Pudong Airport",
-    "destination_port": "Tan Son Nhat Airport"
+    "actual_warehouse_ata": "2026-08-05T10:00:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -171,15 +171,15 @@
     "status": "SHIPPED",
     "expected_etd": "2026-06-30",
     "expected_eta": "2026-07-08",
+    "origin_port": "Fuzhou Port",
+    "destination_port": "Cat Lai Port",
     "notes": "Fuel injector shipment already on water.",
     "contract_no": "KBI-CN-2026-007",
     "transport_mode_id": "tm_sea",
     "actual_etd": "2026-06-30",
     "actual_eta": "2026-07-08",
     "expected_warehouse_eta": "2026-07-09T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-09T08:50:00.000Z",
-    "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "actual_warehouse_ata": "2026-07-09T08:50:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -197,15 +197,15 @@
     "status": "READY_TO_SHIP",
     "expected_etd": "2026-07-14",
     "expected_eta": "2026-07-22",
+    "origin_port": "Shanghai Port",
+    "destination_port": "Hai Phong Port",
     "notes": "Hydraulic seal kits for monthly maintenance demand.",
     "contract_no": "KBI-CN-2026-008",
     "transport_mode_id": "tm_sea",
     "actual_etd": "2026-07-14",
     "actual_eta": "2026-07-22",
     "expected_warehouse_eta": "2026-07-23T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-07-23T09:00:00.000Z",
-    "origin_port": "Shanghai Port",
-    "destination_port": "Hai Phong Port"
+    "actual_warehouse_ata": "2026-07-23T09:00:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -223,15 +223,15 @@
     "status": "CONFIRMED",
     "expected_etd": "2026-08-12",
     "expected_eta": "2026-08-14",
+    "origin_port": "Pingxiang Border Gate",
+    "destination_port": "Huu Nghi Border Gate",
     "notes": "Cross-border trucking option for radiator assemblies.",
     "contract_no": "KBI-CN-2026-009",
     "transport_mode_id": "tm_road",
     "actual_etd": "2026-08-12",
     "actual_eta": "2026-08-14",
     "expected_warehouse_eta": "2026-08-14T09:00:00.000Z",
-    "actual_warehouse_ata": "2026-08-14T08:30:00.000Z",
-    "origin_port": "Pingxiang Border Gate",
-    "destination_port": "Huu Nghi Border Gate"
+    "actual_warehouse_ata": "2026-08-14T08:30:00.000Z"
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -352,27 +352,5 @@
     "actual_eta": "2026-08-29",
     "expected_warehouse_eta": "2026-08-29T13:00:00.000Z",
     "actual_warehouse_ata": "2026-08-29T12:45:00.000Z"
-  },
-  {
-    "create_at": "2026-07-01T08:28:20.093Z",
-    "update_at": "2026-07-01T08:29:35.665Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "po_015",
-    "po_no": "PO-2026-190742",
-    "quotation_id": "qt_026",
-    "contract_no": "CT-2026-190742",
-    "supplier_id": "sup_011",
-    "po_type": "SEA",
-    "incoterm_id": "inc_fob",
-    "payment_term": "TT_ADVANCE",
-    "currency_code": "USD",
-    "currency_id": "cur_usd",
-    "exchange_rate": 25000,
-    "status": "CONFIRMED",
-    "expected_etd": "2026-07-03",
-    "expected_eta": "2026-07-10",
-    "transport_mode_id": "tm_sea",
-    "notes": null
   }
 ]

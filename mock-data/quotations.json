@@ -20,7 +20,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-10T02:00:00.000Z",
-    "valid_until": "2026-08-02",
+    "valid_until": "2026-08-05",
     "note": "Final freight quote."
   },
   {
@@ -44,7 +44,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-18T02:00:00.000Z",
-    "valid_until": "2026-07-06",
+    "valid_until": "2026-07-09",
     "note": "Shipped DO quote."
   },
   {
@@ -68,7 +68,7 @@
     "status": "DRAFT",
     "is_final": false,
     "quoted_at": "2026-06-20T02:00:00.000Z",
-    "valid_until": "2026-07-03",
+    "valid_until": "2026-07-06",
     "note": "Local charge draft."
   },
   {
@@ -92,7 +92,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-21T02:00:00.000Z",
-    "valid_until": "2026-07-28",
+    "valid_until": "2026-07-31",
     "note": "Trucking quote."
   },
   {
@@ -116,7 +116,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-22T02:00:00.000Z",
-    "valid_until": "2026-06-29",
+    "valid_until": "2026-07-02",
     "note": "FCL Shanghai to Hai Phong, all-in ocean charge."
   },
   {
@@ -140,7 +140,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-23T02:00:00.000Z",
-    "valid_until": "2026-07-31",
+    "valid_until": "2026-08-03",
     "note": "Air freight based on 210 kg chargeable weight."
   },
   {
@@ -164,7 +164,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-19T02:00:00.000Z",
-    "valid_until": "2026-07-25",
+    "valid_until": "2026-07-28",
     "note": "LCL charge including CFS origin handling."
   },
   {
@@ -212,7 +212,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-06-25T02:00:00.000Z",
-    "valid_until": "2026-08-07",
+    "valid_until": "2026-08-10",
     "note": "Cross-border trucking from Pingxiang to Kim Binh."
   },
   {
@@ -236,7 +236,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-07-18T02:00:00.000Z",
-    "valid_until": "2026-08-12",
+    "valid_until": "2026-08-15",
     "note": "LCL freight including origin CFS handling."
   },
   {
@@ -260,7 +260,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-07-21T02:00:00.000Z",
-    "valid_until": "2026-08-05",
+    "valid_until": "2026-08-08",
     "note": "Direct PVG-HAN air freight for electrical parts."
   },
   {
@@ -284,7 +284,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-07-25T02:00:00.000Z",
-    "valid_until": "2026-07-23",
+    "valid_until": "2026-07-26",
     "note": "Breakbulk freight for non-containerized hose bundles."
   },
   {
@@ -308,7 +308,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-07-12T02:00:00.000Z",
-    "valid_until": "2026-07-30",
+    "valid_until": "2026-08-02",
     "note": "Supplier CIF shipment, local tracking quote retained for demo."
   },
   {
@@ -332,7 +332,7 @@
     "status": "CONFIRMED",
     "is_final": true,
     "quoted_at": "2026-07-26T02:00:00.000Z",
-    "valid_until": "2026-08-03",
+    "valid_until": "2026-08-06",
     "note": "Air freight for high-value ECU modules."
   },
   {
@@ -361,7 +361,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "qt_021",
@@ -370,18 +370,22 @@
     "version": 1,
     "ref_type": null,
     "ref_id": null,
+    "rfq_id": "qr-0003",
     "customer_ref": "KBI",
-    "supplier_id": "sup_001",
+    "supplier_id": "sup_004",
     "quotation_type": "FREIGHT",
-    "incoterm_code": "EXW",
-    "mode": "AIR",
+    "incoterm_code": "FOB",
+    "mode": "SEA_LCL",
+    "origin_port": "Ningbo (CNNGB)",
+    "destination_port": "Cat Lai (VNCLI)",
+    "selected_option_id": null,
     "currency_code": "USD",
     "exchange_rate": 25000,
     "status": "DRAFT",
     "is_final": false,
     "quoted_at": "2026-06-27T02:00:00.000Z",
     "valid_until": "2026-07-27",
-    "note": "FDS drafting air freight options."
+    "note": "FDS drafting LCL freight options from RFQ RFQ-2026-0003."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",

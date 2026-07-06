@@ -12,10 +12,10 @@
     "planned_cargo_ready_date": "2026-07-01",
     "planned_etd": "2026-07-03",
     "planned_eta": "2026-07-10",
-    "sort_order": 1,
-    "notes": "Mixed urgent service parts for drag/drop demo.",
     "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "destination_port": "Cat Lai Port",
+    "sort_order": 1,
+    "notes": "Mixed urgent service parts for drag/drop demo."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -30,10 +30,10 @@
     "planned_cargo_ready_date": "2026-07-02",
     "planned_etd": "2026-07-05",
     "planned_eta": "2026-07-12",
-    "sort_order": 2,
-    "notes": "Balance stock and later-ready kits for split demo.",
     "origin_port": "Fuzhou Port",
-    "destination_port": "Hai Phong Port"
+    "destination_port": "Hai Phong Port",
+    "sort_order": 2,
+    "notes": "Balance stock and later-ready kits for split demo."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -48,10 +48,10 @@
     "planned_cargo_ready_date": "2026-07-06",
     "planned_etd": "2026-07-08",
     "planned_eta": "2026-07-16",
-    "sort_order": 1,
-    "notes": null,
     "origin_port": "Shanghai Port",
-    "destination_port": "Cat Lai Port"
+    "destination_port": "Cat Lai Port",
+    "sort_order": 1,
+    "notes": null
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -66,10 +66,10 @@
     "planned_cargo_ready_date": "2026-06-20",
     "planned_etd": "2026-06-24",
     "planned_eta": "2026-07-02",
-    "sort_order": 1,
-    "notes": null,
     "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "destination_port": "Cat Lai Port",
+    "sort_order": 1,
+    "notes": null
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -84,10 +84,10 @@
     "planned_cargo_ready_date": "2026-07-15",
     "planned_etd": "2026-07-20",
     "planned_eta": "2026-07-21",
-    "sort_order": 1,
-    "notes": "Partial release for urgent maintenance stock.",
     "origin_port": "Pingxiang Border Gate",
-    "destination_port": "Huu Nghi Border Gate"
+    "destination_port": "Huu Nghi Border Gate",
+    "sort_order": 1,
+    "notes": "Partial release for urgent maintenance stock."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -102,10 +102,10 @@
     "planned_cargo_ready_date": "2026-07-20",
     "planned_etd": "2026-07-22",
     "planned_eta": "2026-07-30",
-    "sort_order": 1,
-    "notes": "Two crates, keep dry.",
     "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "destination_port": "Cat Lai Port",
+    "sort_order": 1,
+    "notes": "Two crates, keep dry."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -120,10 +120,10 @@
     "planned_cargo_ready_date": "2026-08-02",
     "planned_etd": "2026-08-04",
     "planned_eta": "2026-08-05",
-    "sort_order": 1,
-    "notes": "Air freight due to low inventory.",
     "origin_port": "Shanghai Pudong Airport",
-    "destination_port": "Tan Son Nhat Airport"
+    "destination_port": "Tan Son Nhat Airport",
+    "sort_order": 1,
+    "notes": "Air freight due to low inventory."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -138,10 +138,10 @@
     "planned_cargo_ready_date": "2026-06-28",
     "planned_etd": "2026-06-30",
     "planned_eta": "2026-07-08",
-    "sort_order": 1,
-    "notes": "Consolidated LCL cargo.",
     "origin_port": "Fuzhou Port",
-    "destination_port": "Cat Lai Port"
+    "destination_port": "Cat Lai Port",
+    "sort_order": 1,
+    "notes": "Consolidated LCL cargo."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -156,10 +156,10 @@
     "planned_cargo_ready_date": "2026-07-12",
     "planned_etd": "2026-07-14",
     "planned_eta": "2026-07-22",
-    "sort_order": 1,
-    "notes": "Palletized cartons.",
     "origin_port": "Shanghai Port",
-    "destination_port": "Hai Phong Port"
+    "destination_port": "Hai Phong Port",
+    "sort_order": 1,
+    "notes": "Palletized cartons."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -174,10 +174,10 @@
     "planned_cargo_ready_date": "2026-08-10",
     "planned_etd": "2026-08-12",
     "planned_eta": "2026-08-14",
-    "sort_order": 1,
-    "notes": "Road transport through border gate.",
     "origin_port": "Pingxiang Border Gate",
-    "destination_port": "Huu Nghi Border Gate"
+    "destination_port": "Huu Nghi Border Gate",
+    "sort_order": 1,
+    "notes": "Road transport through border gate."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -258,21 +258,5 @@
     "planned_eta": "2026-08-29",
     "sort_order": 1,
     "notes": "High-value electronics lot."
-  },
-  {
-    "create_at": "2026-07-01T08:28:20.095Z",
-    "update_at": "2026-07-01T08:30:30.217Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "lot_016",
-    "purchase_order_id": "po_015",
-    "lot_no": "LOT-001",
-    "lot_name": "Default Lot",
-    "status": "ASSIGNED_TO_SHIPMENT",
-    "planned_cargo_ready_date": "2026-07-05",
-    "planned_etd": "2026-07-03",
-    "planned_eta": "2026-07-10",
-    "sort_order": 1,
-    "notes": "Default LOT created with PO."
   }
 ]

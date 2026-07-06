@@ -20,6 +20,32 @@ try {
     await get("/purchase-orders");
     await get("/purchase-orders/po_001/lines");
     await get("/purchase-orders/po_001/confirmations");
+    const seededRfqs = await get("/quotation-requests");
+    assert(Array.isArray(seededRfqs) && seededRfqs.length >= 3, "RFQ list should include seeded quotation requests");
+    const seededRfqDetail = await get("/quotation-requests/qr-0001");
+    assert(
+        Array.isArray(seededRfqDetail.lines) && seededRfqDetail.lines.length >= 2 && seededRfqDetail.lines[0].item_id,
+        "RFQ detail should expose child lines with real item ids"
+    );
+    const seededOptions = await get("/quotations/qt_021/options");
+    assert(Array.isArray(seededOptions) && seededOptions.length >= 2, "Seed quotation should expose multiple quote options");
+    const blockedConfirm = await fetch(`${baseUrl}/quotations/qt_021/mark-final`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+    });
+    const blockedConfirmPayload = await blockedConfirm.json();
+    assert(
+        blockedConfirm.status === 409 && blockedConfirmPayload.errors?.[0]?.error_code === "BUSINESS_RULE_VIOLATION",
+        "Quotation confirm should require a selected option"
+    );
+    const selectedSeed = await post("/quotations/qt_021/select-option", { option_id: seededOptions[0].id });
+    assert(selectedSeed.selected_option_id === seededOptions[0].id, "select-option should persist the selected option");
+    const confirmedSeed = await post("/quotations/qt_021/mark-final", {});
+    assert(confirmedSeed.status === "CONFIRMED", "mark-final should confirm after selecting an option");
+    const confirmedRfq = await get("/quotation-requests/qr-0003");
+    assert(confirmedRfq.status === "CONFIRMED", "linked RFQ should move to CONFIRMED when quotation is confirmed");
+
     // Reversed flow: a PO can only be created from a CONFIRMED quotation.
     const poQuotation = await post("/quotations", {
         customer_ref: "KBI",
@@ -28,6 +54,7 @@ try {
         mode: "SEA_FCL",
         currency_code: "USD"
     });
+    await seedAndSelectOptions(poQuotation.id);
     await post(`/quotations/${poQuotation.id}/mark-final`, {});
 
     // Gate proof: creating a PO without a CONFIRMED quotation must be rejected.
@@ -67,6 +94,7 @@ try {
     const quotation = await post(`/delivery-orders/${deliveryOrder.id}/quotations`, {
         quotation_type: "FREIGHT"
     });
+    await seedAndSelectOptions(quotation.id);
     await post(`/quotations/${quotation.id}/mark-final`, {});
 
     // DO screen-DTO is backend-owned and carries a real task summary.
@@ -151,6 +179,34 @@ async function post(path, body) {
         },
         body: JSON.stringify(body)
     });
+}
+
+async function seedAndSelectOptions(quotationId) {
+    const first = await post(`/quotations/${quotationId}/options`, {
+        carrier_code: "MSC",
+        carrier_name: "Mediterranean Shipping Company",
+        vessel_or_flight: "MSC ANNA",
+        voyage_flight_no: "FE512A",
+        etd: "2026-07-25",
+        eta: "2026-08-21",
+        transit_time_days: 27,
+        risk_warning: "Roll risk in peak season",
+        headline_amount: 21500000,
+        is_recommended: true
+    });
+    await post(`/quotations/${quotationId}/options`, {
+        carrier_code: "COSCO",
+        carrier_name: "COSCO Shipping Lines",
+        vessel_or_flight: "COSCO SHIPPING PEONY",
+        voyage_flight_no: "CS728S",
+        etd: "2026-07-28",
+        eta: "2026-08-18",
+        transit_time_days: 21,
+        risk_warning: "Limited free-time at destination",
+        headline_amount: 22800000,
+        is_recommended: false
+    });
+    await post(`/quotations/${quotationId}/select-option`, { option_id: first.id });
 }
 
 async function request(path, options) {

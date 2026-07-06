@@ -202,17 +202,5 @@
     "confirmed_qty": 80,
     "cargo_ready_date": "2026-07-02",
     "note": "Gasket kits available one day after main engine line."
-  },
-  {
-    "create_at": "2026-07-01T08:29:35.662Z",
-    "update_at": "2026-07-01T08:29:35.662Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "pocl_018",
-    "purchase_order_confirmation_id": "poc_015",
-    "purchase_order_line_id": "po_line_018",
-    "confirmed_qty": 1,
-    "cargo_ready_date": "2026-07-05",
-    "note": null
   }
 ]

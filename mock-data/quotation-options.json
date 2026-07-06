@@ -1,0 +1,42 @@
+[
+  {
+    "create_at": "2026-07-06T09:00:00+07:00",
+    "update_at": "2026-07-06T09:00:00+07:00",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qo-0001",
+    "quotation_id": "qt_021",
+    "option_no": 1,
+    "carrier_code": "MSC",
+    "carrier_name": "Mediterranean Shipping Company",
+    "vessel_or_flight": "MSC ANNA",
+    "voyage_flight_no": "FE512A",
+    "etd": "2026-07-25",
+    "eta": "2026-08-21",
+    "transit_time_days": 27,
+    "risk_warning": "Roll risk in peak season",
+    "headline_amount": 21500000,
+    "is_recommended": true,
+    "is_selected": false
+  },
+  {
+    "create_at": "2026-07-06T09:05:00+07:00",
+    "update_at": "2026-07-06T09:05:00+07:00",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qo-0002",
+    "quotation_id": "qt_021",
+    "option_no": 2,
+    "carrier_code": "COSCO",
+    "carrier_name": "COSCO Shipping Lines",
+    "vessel_or_flight": "COSCO SHIPPING PEONY",
+    "voyage_flight_no": "CS728S",
+    "etd": "2026-07-28",
+    "eta": "2026-08-18",
+    "transit_time_days": 21,
+    "risk_warning": "Limited free-time at destination",
+    "headline_amount": 22800000,
+    "is_recommended": false,
+    "is_selected": false
+  }
+]

@@ -148,6 +148,38 @@ Detailed SLA engine
 RBAC/users
 ```
 
+## 5.2 RFQ and Quotation Options
+
+RFQ (`quotation_requests` + `quotation_request_lines`) is the inbound KBI-entered
+request before an FDS quotation. It is PO-shaped: supplier, customer SAP PO
+reference, incoterm, mode, route, currency, cargo hints, and item lines. It is
+not derived from a FDS internal PO.
+It has its own lifecycle:
+
+```txt
+SUBMITTED -> RECEIVED -> QUOTED -> CONFIRMED
+SUBMITTED|RECEIVED|QUOTED -> CANCELLED
+```
+
+Rules:
+
+```txt
+- RFQ links to quotations through quotations.rfq_id.
+- Creating a quotation from an RFQ copies customer_ref, supplier_id, currency_code,
+  incoterm_code, mode, origin_port and destination_port, then moves the RFQ to QUOTED.
+- A quotation can expose multiple quotation_options with carrier, ETD/ETA,
+  transit time, risk warning and headline amount.
+- KBI must select one option before a quotation can be confirmed/finalized.
+- Confirming a quotation linked to an RFQ moves that RFQ to CONFIRMED.
+- `GET /api/v1/currency-rates` returns seeded `{ code, vnd_rate }` rows with
+  VND as base `1`; no live bank/API source is used by the mock.
+- Quotation charge lines persist `currency_code` and `charge_group`
+  (`FREIGHT|ORIGIN|DESTINATION`). The frontend normalizes quote comparison
+  totals to VND with the seeded rate table while each line keeps its own currency.
+- The FDS internal PO may be created after quotation confirmation; its goods
+  lines can be prefilled from the originating RFQ lines.
+```
+
 ## 5.1 PO lifecycle_status (resolved stage)
 
 Every enriched PO carries a computed `lifecycle_status` — the **laggard

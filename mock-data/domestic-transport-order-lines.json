@@ -236,19 +236,5 @@
     "qty": 240,
     "unit": "PCS",
     "sort_order": 2
-  },
-  {
-    "create_at": "2026-07-01T08:42:30.779Z",
-    "update_at": "2026-07-01T08:42:30.779Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "dto_line_018",
-    "domestic_transport_order_id": "dto_017",
-    "purchase_order_line_id": "po_line_018",
-    "po_lot_id": "lot_016",
-    "item_id": "item_001",
-    "qty": 1,
-    "unit": "M",
-    "sort_order": 1
   }
 ]

@@ -250,23 +250,5 @@
     "vat_rate": 10,
     "co_form": "E",
     "preferential_tax_rate": 0
-  },
-  {
-    "create_at": "2026-07-01T08:33:50.217Z",
-    "update_at": "2026-07-01T08:33:50.217Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "cd_line_015",
-    "customs_declaration_id": "cd_015",
-    "item_id": "item_001",
-    "hs_code": "52081200",
-    "item_description": "Vải cotton 60/40 khổ 1.5m",
-    "quantity": 1,
-    "unit": "M",
-    "customs_value": 0,
-    "import_duty_rate": 12,
-    "vat_rate": 10,
-    "co_form": "E",
-    "preferential_tax_rate": 7
   }
 ]

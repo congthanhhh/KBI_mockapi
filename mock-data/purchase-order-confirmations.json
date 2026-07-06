@@ -208,20 +208,5 @@
     "is_full_shipment": true,
     "allow_partial_shipment": false,
     "note": "Anti-static packing and QC photos provided."
-  },
-  {
-    "create_at": "2026-07-01T08:29:35.660Z",
-    "update_at": "2026-07-01T08:29:35.660Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "poc_015",
-    "purchase_order_id": "po_015",
-    "confirmed_by": "thanh",
-    "confirmed_at": "2026-07-01T08:29:35.659Z",
-    "supplier_ref_no": "abcthanh",
-    "cargo_ready_date": null,
-    "is_full_shipment": true,
-    "allow_partial_shipment": false,
-    "note": null
   }
 ]

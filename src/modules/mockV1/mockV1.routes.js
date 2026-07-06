@@ -71,6 +71,14 @@ router.get("/delivery-orders/:id", asyncHandler(controller.getDeliveryOrder));
 router.patch("/delivery-order-documents/:documentId", asyncHandler(controller.updateDeliveryOrderDocument));
 router.delete("/delivery-order-documents/:documentId", asyncHandler(controller.deleteDeliveryOrderDocument));
 
+router.get("/quotation-requests", asyncHandler(controller.listQuotationRequests));
+router.post("/quotation-requests", asyncHandler(controller.createQuotationRequest));
+router.post("/quotation-requests/:id/receive", asyncHandler(controller.receiveQuotationRequest));
+router.post("/quotation-requests/:id/cancel", asyncHandler(controller.cancelQuotationRequest));
+router.post("/quotation-requests/:id/quotations", asyncHandler(controller.createQuotationFromRequest));
+router.get("/quotation-requests/:id", asyncHandler(controller.getQuotationRequest));
+
+router.get("/currency-rates", asyncHandler(controller.listCurrencyRates));
 router.get("/quotations", asyncHandler(controller.listQuotations));
 router.post("/quotations", asyncHandler(controller.createQuotation));
 router.post("/quotations/:id/create-version", asyncHandler(controller.createQuotationVersion));
@@ -81,10 +89,15 @@ router.post("/quotations/:id/cancel", asyncHandler(controller.cancelQuotation));
 router.post("/quotations/:id/request", asyncHandler(controller.requestQuotation));
 router.post("/quotations/:id/receive", asyncHandler(controller.receiveQuotation));
 router.post("/quotations/:id/submit-to-kbi", asyncHandler(controller.submitQuotationToKbi));
+router.get("/quotations/:id/options", asyncHandler(controller.listQuotationOptions));
+router.post("/quotations/:id/options", asyncHandler(controller.createQuotationOption));
+router.post("/quotations/:id/select-option", asyncHandler(controller.selectQuotationOption));
 router.get("/quotations/:id/charge-lines", asyncHandler(controller.listQuotationChargeLines));
 router.post("/quotations/:id/charge-lines", asyncHandler(controller.createQuotationChargeLine));
 router.get("/quotations/:id/events", asyncHandler(controller.listQuotationEvents));
 router.get("/quotations/:id", asyncHandler(controller.getQuotation));
+router.patch("/quotation-options/:optionId", asyncHandler(controller.updateQuotationOption));
+router.delete("/quotation-options/:optionId", asyncHandler(controller.deleteQuotationOption));
 router.patch("/quotation-charge-lines/:lineId", asyncHandler(controller.updateQuotationChargeLine));
 router.delete("/quotation-charge-lines/:lineId", asyncHandler(controller.deleteQuotationChargeLine));
 

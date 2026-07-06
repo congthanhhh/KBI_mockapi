@@ -277,6 +277,13 @@ Supported query filters:
 
 Quotations:
 
+- `GET /api/v1/quotation-requests`
+- `GET /api/v1/quotation-requests/:id`
+- `POST /api/v1/quotation-requests`
+- `POST /api/v1/quotation-requests/:id/receive`
+- `POST /api/v1/quotation-requests/:id/cancel`
+- `POST /api/v1/quotation-requests/:id/quotations`
+- `GET /api/v1/currency-rates`
 - `GET /api/v1/quotations`
 - `GET /api/v1/quotations/:id`
 - `GET /api/v1/delivery-orders/:id/quotations`
@@ -289,6 +296,11 @@ Quotations:
 - `POST /api/v1/quotations/:id/request` — forward transition DRAFT → REQUESTED
 - `POST /api/v1/quotations/:id/receive` — forward transition DRAFT|REQUESTED → RECEIVED
 - `POST /api/v1/quotations/:id/submit-to-kbi` — forward transition RECEIVED → SUBMITTED_TO_KBI
+- `GET /api/v1/quotations/:id/options`
+- `POST /api/v1/quotations/:id/options`
+- `POST /api/v1/quotations/:id/select-option`
+- `PATCH /api/v1/quotation-options/:optionId`
+- `DELETE /api/v1/quotation-options/:optionId`
 - `GET /api/v1/quotations/:id/charge-lines`
 - `POST /api/v1/quotations/:id/charge-lines`
 - `PATCH /api/v1/quotation-charge-lines/:lineId`
@@ -297,7 +309,13 @@ Quotations:
 
 `GET /api/v1/quotations` supports `page`, `limit`, `search`/`q`, `ref_type`, `ref_id`, `status`, `supplier_id`, `from_date`, and `to_date`. The response meta includes `total` and `pagination`.
 
-Quotation detail responses include `supplier`, `currency`, `charge_lines`, and `events`. Charge lines are normalized with `line_no`, `unit`, `tax_amount`, and `total_amount` so quotation tables can render totals even when older mock rows only contain base amounts.
+Currency rates are seeded mock transaction rates, returned by `GET /api/v1/currency-rates` as `{ code, vnd_rate }` rows with VND base `1`; no live bank/API source is used.
+
+Quotation request detail responses include KBI-entered PO-shaped header fields (`customer_po_ref`, `supplier_id`, `currency_code`, route/mode/incoterm), child `lines[]` from `quotation_request_lines`, embedded `supplier`/`item` display data, and responding `quotations`. Creating a quotation from an RFQ accepts optional `{ currency_code, valid_until, charge_lines }`, copies `customer_ref`, `supplier_id`, `incoterm_code`, `mode`, `origin_port`, and `destination_port`, stores `rfq_id`, and moves the RFQ to `QUOTED`.
+
+Quotation detail responses include `supplier`, `currency`, `rfq_id`, `origin_port`, `destination_port`, `selected_option_id`, `options`, `charge_lines`, and `events`. Charge lines are normalized with `line_no`, `unit`, `tax_amount`, `total_amount`, per-line `currency_code`, and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`) so quotation tables can render manual grouped totals even when older mock rows only contain base amounts.
+
+Quotation options compare carrier, vessel/flight, ETD/ETA, transit days, risk warning, headline amount, recommendation flag, and selected flag. `POST /api/v1/quotations/:id/select-option` accepts `{ "option_id": "..." }`, marks exactly one option selected for that quotation, clears sibling selections, and writes `quotation.selected_option_id`.
 
 Charge-line `charge_type` is an open string (unknown values default to `OTHER`), but the Incoterms-aware quotation form emits a known vocabulary so each fee renders as a typed line:
 
@@ -306,9 +324,11 @@ Charge-line `charge_type` is an open string (unknown values default to `OTHER`),
 - Customs & domestic transport: `CUSTOMS_FEE`, `TRUCKING`, `LOWERING_FEE` (Hạ xa), `LOADING_FEE` (bốc xếp xe → pallet)
 - Other: `DEMURRAGE`, `DETENTION`, `WAREHOUSE`, `DOCUMENT_FEE`, `OTHER`
 
-Which fees apply depends on the originating PO Incoterms group (EXW/FCA, FOB, CFR) and the shipping mode (FCL/LCL/AIR); see `docs/quotation_Incoterms.md`. The `unit` field carries the pricing basis (`CONT`, `RT`, `KGS`, `BL`, `DECLARATION`).
+The quotation UI no longer filters fee rows by Incoterm. Users add active charge codes manually under `FREIGHT`, `ORIGIN`, or `DESTINATION`; `chargeCodeToChargeType` still maps the selected code and mode into `charge_type`. The `unit` field carries the pricing basis (`CONT`, `RT`, `KGS`, `BL`, `DECLARATION`), and the frontend normalizes comparison totals to VND with `/api/v1/currency-rates`.
 
-Marking a quotation final sets `quotation.status = CONFIRMED_BY_KBI`, `quotation.is_final = true`, clears `is_final` from other quotations in the same `quotation_group_id`, and updates the linked delivery order to `QUOTATION_CONFIRMED`. `POST /api/v1/quotations/:id/confirm-by-kbi` follows the same finalization rule for compatibility.
+Marking a quotation final requires `selected_option_id`; missing selection returns `BUSINESS_RULE_VIOLATION`. Finalization sets `quotation.status = CONFIRMED`, `quotation.is_final = true`, clears `is_final` from other quotations in the same `quotation_group_id`, and moves a linked RFQ to `CONFIRMED`. `POST /api/v1/quotations/:id/confirm-by-kbi` follows the same finalization rule for compatibility.
+
+FDS internal purchase orders are created only after a quotation is confirmed. When a confirmed quotation carries `rfq_id`, the frontend can fetch the RFQ detail and prefill PO lines from `quotation_request_lines`; KBI SAP PO remains the free-text `customer_po_ref` on the RFQ.
 
 Shipments:
 

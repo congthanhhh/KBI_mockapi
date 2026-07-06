@@ -264,24 +264,5 @@
     "destination_address": "Tan Son Nhat Airport",
     "warehouse_name": "Kim Binh Main Warehouse",
     "notes": "ECU modules delivered by air with anti-static packaging."
-  },
-  {
-    "create_at": "2026-07-01T08:30:30.209Z",
-    "update_at": "2026-07-01T08:31:49.451Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "do_015",
-    "delivery_order_no": "DO-KBI-2026-015",
-    "purchase_order_id": "po_015",
-    "transport_mode_id": "tm_sea",
-    "status": "ASSIGNED_TO_SHIPMENT",
-    "requested_pickup_date": "2026-07-05",
-    "planned_cargo_ready_date": "2026-07-05",
-    "planned_etd": "2026-07-03",
-    "planned_eta": "2026-07-10",
-    "origin_address": "Shanghai Port",
-    "destination_address": "CatLai Port",
-    "warehouse_name": "Kim Binh Main Warehouse",
-    "notes": "Created from PO PO-2026-190742 LOT Planning"
   }
 ]

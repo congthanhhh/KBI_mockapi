@@ -1,7 +1,7 @@
 [
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_001",
@@ -19,7 +19,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_002",
@@ -37,7 +37,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_003",
@@ -55,7 +55,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_004",
@@ -73,7 +73,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_005",
@@ -91,7 +91,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_006",
@@ -109,7 +109,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_007",
@@ -127,7 +127,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_008",
@@ -145,7 +145,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_009",
@@ -163,7 +163,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_010",
@@ -181,7 +181,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_011",
@@ -199,7 +199,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_012",
@@ -217,7 +217,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_013",
@@ -235,7 +235,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "cdo_014",
@@ -250,23 +250,5 @@
     "currency_code": "VND",
     "status": "RELEASED",
     "note": "Priority release for high-value air cargo."
-  },
-  {
-    "create_at": "2026-07-01T08:39:05.680Z",
-    "update_at": "2026-07-01T08:39:16.802Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "cdo_015",
-    "shipment_id": "shp_015",
-    "carrier_do_no": "CDO-KBI-2026-015",
-    "forwarder_id": "fwd_001",
-    "issued_date": "2026-07-10",
-    "expired_date": "2026-07-11",
-    "release_location": "abc16",
-    "container_no": "thanh16",
-    "local_charge_amount": 100000,
-    "currency_code": "VND",
-    "status": "RELEASED",
-    "note": null
   }
 ]

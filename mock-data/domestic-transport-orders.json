@@ -1,7 +1,7 @@
 [
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_001",
@@ -26,7 +26,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_002",
@@ -51,7 +51,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_003",
@@ -76,7 +76,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_004",
@@ -101,7 +101,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_005",
@@ -126,7 +126,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_006",
@@ -151,7 +151,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_007",
@@ -176,7 +176,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_008",
@@ -202,7 +202,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_009",
@@ -227,7 +227,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_010",
@@ -252,7 +252,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_011",
@@ -277,7 +277,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_012",
@@ -302,7 +302,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_013",
@@ -327,7 +327,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_014",
@@ -352,7 +352,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_015",
@@ -378,7 +378,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
     "id": "dto_016",
@@ -400,33 +400,5 @@
     "pod_document_ref": null,
     "status": "QUOTE_CONFIRMED",
     "note": "Consolidated LCL pickup for SHP-002 + SHP-007 (same POD VNHPH)."
-  },
-  {
-    "create_at": "2026-07-01T08:42:30.773Z",
-    "update_at": "2026-07-01T08:42:30.773Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "dto_017",
-    "dto_no": "DTO-KBI-2026-017",
-    "shipment_id": "shp_015",
-    "carrier_delivery_order_id": null,
-    "truck_vendor_id": "fwd_001",
-    "origin": "Hai Phong Port",
-    "destination": "Kim Binh Factory",
-    "warehouse": "KBF Warehouse",
-    "vehicle_type": null,
-    "vehicle_plate": null,
-    "driver_name": null,
-    "driver_phone": null,
-    "container_no": [
-      "thanh16"
-    ],
-    "scheduled_pickup_at": "2026-07-12T01:00:00.000Z",
-    "actual_pickup_at": null,
-    "scheduled_delivery_at": null,
-    "actual_delivery_at": null,
-    "pod_document_ref": null,
-    "status": "DRAFT",
-    "note": null
   }
 ]
