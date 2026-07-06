@@ -1772,6 +1772,7 @@ export async function listQuotationRequests(query = {}) {
                 request.rfq_no,
                 request.customer_ref,
                 request.customer_po_ref,
+                request.customer_contract_ref,
                 supplier.supplier_code,
                 supplier.supplier_name
             ].some((value) => String(value || "").toLowerCase().includes(search));
@@ -1804,6 +1805,7 @@ export async function createQuotationRequest(body = {}) {
         status: "SUBMITTED",
         customer_ref: body.customer_ref || null,
         customer_po_ref: body.customer_po_ref || null,
+        customer_contract_ref: body.customer_contract_ref || null,
         supplier_id: body.supplier_id || null,
         incoterm_code: body.incoterm_code || null,
         mode: body.mode || null,
