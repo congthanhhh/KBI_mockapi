@@ -138,5 +138,85 @@
     "delivery_order_id": "do_014",
     "po_lot_id": "lot_015",
     "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_015",
+    "delivery_order_id": "do_015",
+    "po_lot_id": "lot_016",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_016",
+    "delivery_order_id": "do_016",
+    "po_lot_id": "lot_017",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_017",
+    "delivery_order_id": "do_017",
+    "po_lot_id": "lot_018",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_018",
+    "delivery_order_id": "do_018",
+    "po_lot_id": "lot_019",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_019",
+    "delivery_order_id": "do_019",
+    "po_lot_id": "lot_020",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_020",
+    "delivery_order_id": "do_020",
+    "po_lot_id": "lot_021",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_021",
+    "delivery_order_id": "do_021",
+    "po_lot_id": "lot_022",
+    "sort_order": 1
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "do_lot_022",
+    "delivery_order_id": "do_022",
+    "po_lot_id": "lot_023",
+    "sort_order": 1
   }
 ]

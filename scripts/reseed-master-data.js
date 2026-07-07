@@ -41,14 +41,16 @@ export async function reseedMasterData() {
         forwarderRows,
         taskRows,
         chargeRows,
-        uomRows
+        uomRows,
+        containerTypeRows
     ] = await Promise.all([
         parseSheet("01_Item_Master.html"),
         parseSheet("02_Supplier.html"),
         parseSheet("03_Forwarder.html"),
         parseSheet("04_Task_Template.html"),
         parseSheet("05_Charge_Code.html"),
-        parseSheet("06_UOM.html")
+        parseSheet("06_UOM.html"),
+        parseSheet("07_Cont_type.html")
     ]);
 
     const itemGroups = buildItemGroups();
@@ -61,6 +63,7 @@ export async function reseedMasterData() {
     const taskTemplates = buildTaskTemplates(taskRows);
     const chargeCodes = buildChargeCodes(chargeRows);
     const uoms = buildUoms(uomRows);
+    const containerTypes = buildContainerTypes(containerTypeRows);
     const currencies = buildCurrencies();
     const incoterms = buildIncoterms();
 
@@ -76,7 +79,8 @@ export async function reseedMasterData() {
         writeJson("carriers", carriers),
         writeJson("task-templates", taskTemplates),
         writeJson("charge-codes", chargeCodes),
-        writeJson("uoms", uoms)
+        writeJson("uoms", uoms),
+        writeJson("container-types", containerTypes)
     ]);
 
     const remapSummary = await remapTransactionReferences({
@@ -99,7 +103,8 @@ export async function reseedMasterData() {
             carriers: carriers.length,
             "task-templates": taskTemplates.length,
             "charge-codes": chargeCodes.length,
-            uoms: uoms.length
+            uoms: uoms.length,
+            "container-types": containerTypes.length
         },
         remap: remapSummary
     };
@@ -434,6 +439,28 @@ function buildUoms(rows) {
     }));
 
     return uoms;
+}
+
+function buildContainerTypes(rows) {
+    const dataRows = rows
+        .map((row) => (/^\d+$/.test(row[0] || "") ? row.slice(1) : row))
+        .filter((row) => /^[0-9][0-9A-Z]{3}$/i.test(row[0] || "") && row[1] && row[2]);
+
+    return dataRows.map((row) => audit({
+        id: `ct_${slug(row[0])}`,
+        cont_code: upper(row[0]),
+        iso_code: upper(row[1]),
+        name_en: row[2].trim(),
+        name_vn: row[3].trim(),
+        category: row[4].trim(),
+        size_ft: numberOrBlank(row[5]),
+        teu: numberOrBlank(row[6]),
+        tare_kg: numberOrBlank(row[12]),
+        payload_kg: numberOrBlank(row[13]),
+        gross_kg: numberOrBlank(row[14]),
+        capacity_cbm: numberOrBlank(row[15]),
+        is_active: true
+    }));
 }
 
 function buildCurrencies() {
@@ -868,6 +895,13 @@ function numberOrNull(value) {
 function numberOrDefault(value, fallback) {
     const numeric = numberOrNull(value);
     return numeric ?? fallback;
+}
+
+function numberOrBlank(value) {
+    const raw = String(value || "").replace(/,/g, "").trim();
+    if (!raw) return null;
+    const numeric = Number(raw);
+    return Number.isFinite(numeric) ? numeric : null;
 }
 
 function optionalString(value) {

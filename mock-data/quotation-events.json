@@ -152,5 +152,27 @@
     "event_code": "MARK_FINAL",
     "event_at": "2026-07-26T04:00:00.000Z",
     "note": "High-value air quote accepted."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_015",
+    "quotation_id": "qt_025",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-30T03:00:00.000Z",
+    "note": "Confirmed by KBI from RFQ RFQ-2026-0004."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_016",
+    "quotation_id": "qt_026",
+    "event_code": "SUBMIT_TO_KBI",
+    "event_at": "2026-06-30T03:30:00.000Z",
+    "note": "Submitted to KBI with recommended option."
   }
 ]

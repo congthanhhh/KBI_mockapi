@@ -34,6 +34,12 @@ export const createUom = create("uoms", "uom");
 export const updateUom = update("uoms");
 export const deleteUom = remove("uoms");
 
+export const listContainerTypes = list("container-types");
+export const getContainerType = detail("container-types");
+export const createContainerType = create("container-types", "ct");
+export const updateContainerType = update("container-types");
+export const deleteContainerType = remove("container-types");
+
 export const listForwarders = list("forwarders");
 export const getForwarder = detail("forwarders");
 export const createForwarder = create("forwarders", "fwd");

@@ -36,6 +36,12 @@ router.post("/uoms", asyncHandler(controller.createUom));
 router.patch("/uoms/:id", asyncHandler(controller.updateUom));
 router.delete("/uoms/:id", asyncHandler(controller.deleteUom));
 
+router.get("/container-types", asyncHandler(controller.listContainerTypes));
+router.get("/container-types/:id", asyncHandler(controller.getContainerType));
+router.post("/container-types", asyncHandler(controller.createContainerType));
+router.patch("/container-types/:id", asyncHandler(controller.updateContainerType));
+router.delete("/container-types/:id", asyncHandler(controller.deleteContainerType));
+
 router.get("/forwarders", asyncHandler(controller.listForwarders));
 router.get("/forwarders/:id", asyncHandler(controller.getForwarder));
 router.post("/forwarders", asyncHandler(controller.createForwarder));
