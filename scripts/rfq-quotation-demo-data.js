@@ -40,26 +40,38 @@ const quotationSpecs = [
     ["qt_032", "qr-0015", "CONFIRMED", "2026-06-15T10:40:00+07:00", true]
 ];
 
+// Extra REJECTED versions (v2/v3) FDS created via "Sửa phương án và chi phí" after KBI rejected.
+// [newId, baseQuotationId, version, at, priceFactor] — all REJECTED; priceFactor drops so v1 > v2 > v3.
+const versionSpecs = [
+    ["qt_033", "qt_028", 2, "2026-06-27T18:30:00+07:00", 0.94],
+    ["qt_034", "qt_028", 3, "2026-06-28T09:15:00+07:00", 0.88],
+    ["qt_035", "qt_029", 2, "2026-06-25T14:40:00+07:00", 0.93],
+    ["qt_036", "qt_029", 3, "2026-06-26T08:50:00+07:00", 0.86]
+];
+
 export function applyRfqQuotationDemoData(seedFiles, base) {
     const rfqs = rfqSpecs.map((spec) => buildRfq(spec, base));
     const rfqById = new Map(rfqs.map((rfq) => [rfq.id, rfq]));
     const built = quotationSpecs.map((spec, index) => buildQuotationBundle(spec, index, rfqById, base));
-    const standaloneIds = new Set(built.map((item) => item.quotation.id));
+    const builtById = new Map(built.map((item) => [item.quotation.id, item]));
+    const versionBundles = versionSpecs.map((spec, index) => buildVersionBundle(spec, index, builtById, base));
+    const allBundles = [...built, ...versionBundles];
+    const standaloneIds = new Set(allBundles.map((item) => item.quotation.id));
     const legacyQuotationIds = new Set((seedFiles["quotations"] || [])
         .filter((quotation) => quotation.ref_type != null && !standaloneIds.has(quotation.id))
         .map((quotation) => quotation.id));
 
-    const standaloneChargeLines = built.flatMap((item) => item.chargeLines);
+    const standaloneChargeLines = allBundles.flatMap((item) => item.chargeLines);
 
     seedFiles["quotation-requests"] = rfqs;
     seedFiles["quotation-request-lines"] = buildRfqLines(base);
     seedFiles["quotations"] = [
         ...(seedFiles["quotations"] || []).filter((quotation) => legacyQuotationIds.has(quotation.id)),
-        ...built.map((item) => item.quotation)
+        ...allBundles.map((item) => item.quotation)
     ];
     seedFiles["quotation-options"] = [
         ...(seedFiles["quotation-options"] || []).filter((option) => legacyQuotationIds.has(option.quotation_id)),
-        ...built.flatMap((item) => item.options)
+        ...allBundles.flatMap((item) => item.options)
     ];
     seedFiles["quotation-charge-lines"] = [
         ...(seedFiles["quotation-charge-lines"] || []).filter((line) => legacyQuotationIds.has(line.quotation_id)),
@@ -68,7 +80,7 @@ export function applyRfqQuotationDemoData(seedFiles, base) {
     seedFiles["quotation-line-adjustments"] = buildAdjustments(standaloneChargeLines, base);
     seedFiles["quotation-events"] = [
         ...(seedFiles["quotation-events"] || []).filter((event) => legacyQuotationIds.has(event.quotation_id)),
-        ...built.flatMap((item, index) => buildQuotationEvents(item.quotation, index, base))
+        ...allBundles.flatMap((item, index) => buildQuotationEvents(item.quotation, index, base))
     ];
 
     zeroQuotationTaxes(seedFiles);
@@ -200,9 +212,70 @@ function buildQuotationBundle(spec, index, rfqById, base) {
             is_final: status === "CONFIRMED",
             confirmed_at: status === "CONFIRMED" ? at : null,
             rejected_at: status === "REJECTED" ? at : null,
+            reject_reason: status === "REJECTED" ? "KBI từ chối toàn bộ báo giá, đề nghị FDS chào lại giá tốt hơn." : null,
             quoted_at,
             valid_until: quoted_at ? addDays(at, 21) : null,
             note: quotationNote(status, rfqId),
+            ...totals,
+            create_at: at,
+            update_at: at
+        }),
+        options,
+        chargeLines
+    };
+}
+
+function buildVersionBundle(spec, versionIndex, builtById, base) {
+    const [newId, baseId, version, at, priceFactor] = spec;
+    const source = builtById.get(baseId);
+    const src = source.quotation;
+    const lineBase = 560 + versionIndex * 20;
+    const optBase = 200 + versionIndex * 2;
+
+    const chargeLines = source.chargeLines.map((line, li) => {
+        const unit_price = roundNumber(Number(line.unit_price || 0) * priceFactor);
+        const amount = roundNumber(Number(line.quantity || 0) * unit_price);
+        return base({
+            ...line,
+            id: `qt_line_${String(lineBase + li).padStart(3, "0")}`,
+            quotation_id: newId,
+            unit_price,
+            amount,
+            tax_amount: 0,
+            total_amount: amount,
+            create_at: at,
+            update_at: at
+        });
+    });
+
+    const options = source.options.map((opt, oi) => base({
+        ...opt,
+        id: `qo-${String(optBase + oi).padStart(4, "0")}`,
+        quotation_id: newId,
+        headline_amount: Math.round(Number(opt.headline_amount || 0) * priceFactor),
+        is_selected: false,
+        create_at: at,
+        update_at: at
+    }));
+
+    const totals = quotationTotals(chargeLines);
+
+    return {
+        quotation: base({
+            ...src,
+            id: newId,
+            quotation_group_id: `qg_${baseId}`,
+            quotation_no: `${src.quotation_no}-V${version}`,
+            version,
+            status: "REJECTED",
+            is_final: false,
+            confirmed_at: null,
+            rejected_at: at,
+            reject_reason: "KBI thấy giá còn cao, đề nghị FDS chào lại.",
+            quoted_at: at,
+            valid_until: addDays(at, 21),
+            selected_option_id: null,
+            note: `Revised after KBI rejection (version ${version}).`,
             ...totals,
             create_at: at,
             update_at: at

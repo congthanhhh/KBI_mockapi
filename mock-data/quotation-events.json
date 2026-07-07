@@ -251,5 +251,49 @@
     "event_code": "MARK_FINAL",
     "event_at": "2026-06-15T10:40:00+07:00",
     "note": "Quotation moved to CONFIRMED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_033",
+    "quotation_id": "qt_033",
+    "event_code": "REJECT",
+    "event_at": "2026-06-27T18:30:00+07:00",
+    "note": "Quotation moved to REJECTED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_034",
+    "quotation_id": "qt_034",
+    "event_code": "REJECT",
+    "event_at": "2026-06-28T09:15:00+07:00",
+    "note": "Quotation moved to REJECTED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_035",
+    "quotation_id": "qt_035",
+    "event_code": "REJECT",
+    "event_at": "2026-06-25T14:40:00+07:00",
+    "note": "Quotation moved to REJECTED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_036",
+    "quotation_id": "qt_036",
+    "event_code": "REJECT",
+    "event_at": "2026-06-26T08:50:00+07:00",
+    "note": "Quotation moved to REJECTED in seeded RFQ flow."
   }
 ]
