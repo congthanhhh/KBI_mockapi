@@ -626,6 +626,7 @@ POST /api/v1/quotations/:id/create-version
 POST /api/v1/quotations/:id/request           # -> REQUEST_FOR_QUOTATION
 POST /api/v1/quotations/:id/receive           # REQUEST_FOR_QUOTATION -> DRAFT
 POST /api/v1/quotations/:id/submit-to-kbi     # DRAFT -> PENDING_APPROVAL
+POST /api/v1/quotations/:id/negotiate         # KBI/FDS line-level price negotiation
 POST /api/v1/quotations/:id/mark-final        # -> CONFIRMED
 POST /api/v1/quotations/:id/confirm-by-kbi    # -> CONFIRMED
 POST /api/v1/quotations/:id/reject            # -> REJECTED, body { reason }
@@ -638,6 +639,8 @@ Rules:
 - Do not mutate old price directly when price changes; create a new version.
 - Versions share quotation_group_id; only one quotation in a group can be CONFIRMED.
 - reject stores body.reason as reject_reason.
+- negotiate stores quotation_line_adjustments rows per changed charge line, updates charge-line unit_price/amount/tax_amount/total_amount, and appends a quotation_events NEGOTIATE event.
+- KBI negotiate is allowed only from PENDING_APPROVAL and moves the quotation to PENDING_ADJUSTMENT; FDS negotiate is allowed only from PENDING_ADJUSTMENT and moves it back to PENDING_APPROVAL.
 ```
 
 5-state forward flow (who acts):

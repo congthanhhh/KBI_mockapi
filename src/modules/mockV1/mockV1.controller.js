@@ -299,6 +299,10 @@ export async function rejectQuotation(req, res) {
     res.json(success(await service.rejectQuotation(req.params.id, req.body)));
 }
 
+export async function negotiateQuotation(req, res) {
+    res.json(success(await service.negotiateQuotation(req.params.id, req.body)));
+}
+
 export async function cancelQuotation(req, res) {
     res.json(success(await service.cancelQuotation(req.params.id, req.body)));
 }

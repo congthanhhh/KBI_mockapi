@@ -551,6 +551,7 @@ const files = {
         base({ id: "qt_event_015", quotation_id: "qt_025", event_code: "MARK_FINAL", event_at: "2026-06-30T03:00:00.000Z", note: "Confirmed by KBI from RFQ RFQ-2026-0004." }),
         base({ id: "qt_event_016", quotation_id: "qt_026", event_code: "SUBMIT_TO_KBI", event_at: "2026-06-30T03:30:00.000Z", note: "Submitted to KBI with recommended option." })
     ],
+    "quotation-line-adjustments": [],
     "shipments": [
         base({ id: "shp_001", shipment_no: "SHP-KBI-2026-001", delivery_order_id: "do_001", mode: "SEA", load_type: "FCL", forwarder_id: "fwd_001", carrier_id: "carr_003", carrier: "COSCO Shipping Lines", vessel_flight: "COSCO STAR 126E", bl_awb_no: "BL-SHA-001", container_no: "CBHU1234567", pol: "CNSHA", pod: "VNHPH", etd: "2026-07-08", eta: "2026-07-16", atd: null, ata: null, status: "BOOKING_CONFIRMED" }),
         base({ id: "shp_002", shipment_no: "SHP-KBI-2026-002", delivery_order_id: "do_002", mode: "SEA", load_type: "LCL", forwarder_id: "fwd_001", carrier_id: "carr_001", carrier: "Mediterranean Shipping Company", vessel_flight: "OOCL ASIA 021S", bl_awb_no: "BL-SHA-002", container_no: "LCL-SHA-002", pol: "CNSHA", pod: "VNHPH", etd: "2026-06-24", eta: "2026-07-02", atd: "2026-06-24", ata: null, status: "CUSTOMS_CLEARED" }),
@@ -773,6 +774,7 @@ files["purchase-orders"] = enrichPurchaseOrders(files);
 files["po-lot-lines"] = enrichPoLotLines(files);
 files["purchase-order-lines"] = enrichPurchaseOrderLines(files);
 normalizeTransportModeReferences(files);
+enrichQuotationDemoData(files);
 
 const screenFiles = buildScreenFiles(files);
 
@@ -1150,6 +1152,450 @@ function enrichPurchaseOrders(seedFiles) {
             actual_warehouse_ata: purchaseOrder.actual_warehouse_ata || firstTransportOrder?.actual_delivery_at || expectedWarehouseEta
         };
     });
+}
+
+function quotationChargeTemplatesByMode() {
+    return {
+        SEA_FCL: [
+        { charge_group: "FREIGHT", charge_type: "OCEAN_FREIGHT", charge_code: "OFR", description: "Main ocean freight FCL", quantity: 1, unit: "CNTR", currency_code: "USD", unit_price: 1280, tax_rate: 0 },
+        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "BAF", description: "Bunker adjustment factor", quantity: 1, unit: "CNTR", currency_code: "USD", unit_price: 145, tax_rate: 0 },
+        { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "OTH", description: "Origin terminal handling", quantity: 1, unit: "CNTR", currency_code: "CNY", unit_price: 620, tax_rate: 0 },
+        { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "EXD", description: "Export documentation", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 260, tax_rate: 0 },
+        { charge_group: "DESTINATION", charge_type: "DO_FEE", charge_code: "DOF", description: "Delivery order fee", quantity: 1, unit: "BL", currency_code: "VND", unit_price: 1150000, tax_rate: 10 },
+        { charge_group: "DESTINATION", charge_type: "TRUCKING", charge_code: "LMD", description: "Port to KBI warehouse trucking", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 7200000, tax_rate: 10 }
+    ],
+    SEA_LCL: [
+        { charge_group: "FREIGHT", charge_type: "OCEAN_FREIGHT", charge_code: "OFL", description: "Main ocean freight LCL", quantity: 4.5, unit: "WM", currency_code: "USD", unit_price: 92, tax_rate: 0 },
+        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "LSS", description: "Low sulphur surcharge", quantity: 4.5, unit: "WM", currency_code: "USD", unit_price: 18, tax_rate: 0 },
+        { charge_group: "ORIGIN", charge_type: "CFS", charge_code: "OTL", description: "Origin CFS handling", quantity: 4.5, unit: "WM", currency_code: "CNY", unit_price: 85, tax_rate: 0 },
+        { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "EXD", description: "Export documentation", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 220, tax_rate: 0 },
+        { charge_group: "DESTINATION", charge_type: "CFS", charge_code: "DTL", description: "Destination CFS handling", quantity: 4.5, unit: "WM", currency_code: "VND", unit_price: 210000, tax_rate: 10 },
+        { charge_group: "DESTINATION", charge_type: "DO_FEE", charge_code: "DOF", description: "Delivery order fee", quantity: 1, unit: "BL", currency_code: "VND", unit_price: 950000, tax_rate: 10 }
+    ],
+    AIR: [
+        { charge_group: "FREIGHT", charge_type: "AIR_FREIGHT", charge_code: "AFR", description: "PVG to HAN air freight", quantity: 180, unit: "KG", currency_code: "USD", unit_price: 4.35, tax_rate: 0 },
+        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "FSC", description: "Fuel surcharge", quantity: 180, unit: "KG", currency_code: "USD", unit_price: 0.42, tax_rate: 0 },
+        { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "EXC", description: "Export customs clearance", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 360, tax_rate: 0 },
+        { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "AWF", description: "Air waybill fee", quantity: 1, unit: "AWB", currency_code: "USD", unit_price: 35, tax_rate: 0 },
+        { charge_group: "DESTINATION", charge_type: "CUSTOMS_FEE", charge_code: "IMC", description: "Import customs clearance", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 1850000, tax_rate: 10 },
+        { charge_group: "DESTINATION", charge_type: "TRUCKING", charge_code: "LMD", description: "Airport to KBI warehouse trucking", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 3600000, tax_rate: 10 }
+    ],
+    TRUCKING: [
+        { charge_group: "FREIGHT", charge_type: "TRUCKING", charge_code: "RDC", description: "Cross-border trucking freight", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 14500000, tax_rate: 10 },
+        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "RFS", description: "Road fuel surcharge", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 1750000, tax_rate: 10 },
+        { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "EXC", description: "Export border clearance", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 420, tax_rate: 0 },
+        { charge_group: "ORIGIN", charge_type: "HANDLING", charge_code: "HDL", description: "Origin handling", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 280, tax_rate: 0 },
+        { charge_group: "DESTINATION", charge_type: "CUSTOMS_FEE", charge_code: "IMC", description: "Import customs clearance", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 2100000, tax_rate: 10 },
+        { charge_group: "DESTINATION", charge_type: "WAREHOUSE", charge_code: "WHF", description: "Warehouse handling", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 950000, tax_rate: 10 }
+    ]
+    };
+}
+
+function enrichQuotationDemoData(seedFiles) {
+    const quotations = seedFiles["quotations"] || [];
+    const originalChargeLines = seedFiles["quotation-charge-lines"] || [];
+    const originalOptions = seedFiles["quotation-options"] || [];
+    let nextLineNo = nextSeedNumber(originalChargeLines, "qt_line");
+    let nextOptionNo = nextSeedNumber(originalOptions, "qo");
+
+    const enrichedChargeLines = [];
+    const enrichedOptions = [];
+    const totalsByQuotationId = new Map();
+
+    for (const [quotationIndex, quotation] of quotations.entries()) {
+        const linesForQuotation = originalChargeLines.filter((line) => line.quotation_id === quotation.id);
+        const chargeLines = buildQuotationChargeLines(quotation, quotationIndex, linesForQuotation, () => {
+            const id = `qt_line_${String(nextLineNo).padStart(3, "0")}`;
+            nextLineNo += 1;
+            return id;
+        });
+        const optionsForQuotation = originalOptions.filter((option) => option.quotation_id === quotation.id);
+        const options = buildQuotationOptions(quotation, quotationIndex, optionsForQuotation, quotationTotals(quotation, chargeLines), () => {
+            const id = `qo-${String(nextOptionNo).padStart(4, "0")}`;
+            nextOptionNo += 1;
+            return id;
+        });
+        const hybridChargeLines = buildHybridQuotationChargeLines(chargeLines, options, () => {
+            const id = `qt_line_${String(nextLineNo).padStart(3, "0")}`;
+            nextLineNo += 1;
+            return id;
+        });
+        const recommendedOptionNo = options.find((option) => option.is_selected)?.option_no
+            ?? options.find((option) => option.is_recommended)?.option_no
+            ?? options[0]?.option_no
+            ?? null;
+        const visibleChargeLines = selectHybridChargeLines(hybridChargeLines, recommendedOptionNo);
+        totalsByQuotationId.set(quotation.id, quotationTotals(quotation, visibleChargeLines));
+        enrichedChargeLines.push(...hybridChargeLines);
+        enrichedOptions.push(...options.map((option) => ({
+            ...option,
+            headline_amount: optionHeadlineFromChargeLines(hybridChargeLines, option.option_no)
+        })));
+    }
+
+    seedFiles["quotation-charge-lines"] = enrichedChargeLines;
+    seedFiles["quotation-options"] = enrichedOptions;
+    seedFiles["quotations"] = quotations.map((quotation) => ({
+        ...quotation,
+        ...(totalsByQuotationId.get(quotation.id) || {})
+    }));
+}
+
+function buildQuotationChargeLines(quotation, quotationIndex, existingLines, nextId) {
+    const targetCount = quotationIndex % 3 === 0 ? 4 : quotationIndex % 3 === 1 ? 5 : 6;
+    const templates = quotationTemplatesForMode(quotation.mode, quotation.quotation_type);
+    const selected = existingLines
+        .sort((left, right) => String(left.id).localeCompare(String(right.id)))
+        .slice(0, targetCount)
+        .map((line, lineIndex) => normalizeQuotationChargeLine(line, quotation, lineIndex, quotationIndex));
+    const usedCodes = new Set(selected.map((line) => line.charge_code));
+
+    for (const group of ["FREIGHT", "ORIGIN", "DESTINATION"]) {
+        if (selected.some((line) => line.charge_group === group)) {
+            continue;
+        }
+
+        const template = templates.find((item) => item.charge_group === group && !usedCodes.has(item.charge_code))
+            || templates.find((item) => item.charge_group === group);
+        const generated = materializeQuotationChargeLine(template, quotation, quotationIndex, selected.length, nextId());
+        usedCodes.add(generated.charge_code);
+
+        if (selected.length < targetCount) {
+            selected.push(generated);
+        } else {
+            const replaceIndex = Math.max(0, selected.length - 1);
+            selected[replaceIndex] = generated;
+        }
+    }
+
+    for (const template of templates) {
+        if (selected.length >= targetCount) {
+            break;
+        }
+        if (usedCodes.has(template.charge_code)) {
+            continue;
+        }
+        const generated = materializeQuotationChargeLine(template, quotation, quotationIndex, selected.length, nextId());
+        usedCodes.add(generated.charge_code);
+        selected.push(generated);
+    }
+
+    return selected
+        .slice(0, targetCount)
+        .map((line, index) => ({ ...line, line_no: index + 1 }));
+}
+
+function normalizeQuotationChargeLine(line, quotation, lineIndex, quotationIndex) {
+    const templates = quotationTemplatesForMode(quotation.mode, quotation.quotation_type);
+    const fallback = templates[lineIndex % templates.length];
+    const byType = templates.find((template) => template.charge_type === line.charge_type);
+    const template = byType || fallback;
+    const quantity = Number(line.quantity ?? template.quantity);
+    const unitPrice = Number(line.unit_price ?? template.unit_price);
+    const calculatedAmount = quantity * unitPrice;
+    const amount = Number.isFinite(Number(line.amount))
+        ? Number(line.amount)
+        : roundNumber(Number.isFinite(calculatedAmount) ? calculatedAmount : template.quantity * template.unit_price);
+    const taxRate = Number(line.tax_rate ?? template.tax_rate ?? 0);
+    const taxAmount = roundNumber(line.tax_amount ?? amount * taxRate / 100);
+
+    return {
+        ...line,
+        charge_group: line.charge_group || template.charge_group,
+        option_no: line.option_no ?? null,
+        charge_code: line.charge_code || template.charge_code,
+        charge_type: byType ? line.charge_type : template.charge_type,
+        description: line.description || template.description,
+        quantity,
+        unit: line.unit || template.unit,
+        currency_code: line.currency_code || template.currency_code || quotation.currency_code || "USD",
+        unit_price: unitPrice,
+        amount: roundNumber(amount),
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        total_amount: roundNumber(line.total_amount ?? amount + taxAmount),
+        note: line.note ?? null,
+        update_at: line.update_at || now
+    };
+}
+
+function materializeQuotationChargeLine(template, quotation, quotationIndex, lineIndex, id) {
+    const priceBump = quotationIndex * 17 + lineIndex * 9;
+    const unitPrice = template.currency_code === "VND"
+        ? template.unit_price + priceBump * 10000
+        : template.unit_price + priceBump;
+    const quantity = template.quantity;
+    const amount = roundNumber(quantity * unitPrice);
+    const taxAmount = roundNumber(amount * Number(template.tax_rate || 0) / 100);
+
+    return base({
+        id,
+        quotation_id: quotation.id,
+        charge_group: template.charge_group,
+        option_no: null,
+        charge_type: template.charge_type,
+        charge_code: template.charge_code,
+        description: template.description,
+        quantity,
+        unit: template.unit,
+        currency_code: template.currency_code,
+        unit_price: unitPrice,
+        amount,
+        tax_rate: template.tax_rate,
+        tax_amount: taxAmount,
+        total_amount: roundNumber(amount + taxAmount),
+        note: null
+    });
+}
+
+function buildHybridQuotationChargeLines(chargeLines, options, nextId) {
+    const sharedLines = chargeLines
+        .filter((line) => line.charge_group !== "FREIGHT")
+        .map((line) => ({ ...line, option_no: null }));
+    const freightLines = chargeLines.filter((line) => line.charge_group === "FREIGHT");
+    const fallbackFreight = freightLines[0];
+    const optionFreightLines = [];
+    const usedIds = new Set(sharedLines.map((line) => line.id));
+
+    for (const [optionIndex, option] of options.entries()) {
+        const template = freightLines.find((line) => line.option_no === option.option_no)
+            || freightLines[optionIndex % Math.max(freightLines.length, 1)]
+            || fallbackFreight;
+
+        if (!template) {
+            continue;
+        }
+
+        const keepOriginalId = !usedIds.has(template.id) && optionIndex === 0;
+        const unitPrice = adjustedOptionUnitPrice(template.unit_price, optionIndex);
+        const quantity = Number(template.quantity ?? 1);
+        const amount = roundNumber(quantity * unitPrice);
+        const taxRate = Number(template.tax_rate || 0);
+        const taxAmount = roundNumber(amount * taxRate / 100);
+        const carrierSuffix = option.carrier_code ? ` (${option.carrier_code})` : "";
+        const id = keepOriginalId ? template.id : nextId();
+        usedIds.add(id);
+        optionFreightLines.push({
+            ...template,
+            id,
+            option_no: option.option_no,
+            description: `${String(template.description || "Freight").replace(/\s+\([^)]+\)$/, "")}${carrierSuffix}`,
+            unit_price: unitPrice,
+            amount,
+            tax_amount: taxAmount,
+            total_amount: roundNumber(amount + taxAmount)
+        });
+    }
+
+    return [...sharedLines, ...optionFreightLines].map((line, index) => ({
+        ...line,
+        line_no: index + 1
+    }));
+}
+
+function adjustedOptionUnitPrice(unitPrice, optionIndex) {
+    const numeric = Number(unitPrice || 0);
+    const factor = 1 + optionIndex * 0.085;
+    return roundNumber(numeric * factor);
+}
+
+function selectHybridChargeLines(chargeLines, optionNo) {
+    return chargeLines.filter((line) => line.option_no == null || line.option_no === optionNo);
+}
+
+function optionHeadlineFromChargeLines(chargeLines, optionNo) {
+    const totalVnd = selectHybridChargeLines(chargeLines, optionNo).reduce((total, line) => {
+        const amount = Number(line.total_amount ?? line.amount ?? 0);
+        return total + convertQuotationMoney(amount, line.currency_code, "VND");
+    }, 0);
+    return Math.round(totalVnd);
+}
+
+function buildQuotationOptions(quotation, quotationIndex, existingOptions, totals, nextId) {
+    const targetCount = quotationIndex % 2 === 0 ? 2 : 3;
+    const carriers = [
+        { carrier_code: "COSCO", carrier_name: "COSCO Shipping Lines" },
+        { carrier_code: "EVERGREEN", carrier_name: "Evergreen Marine Corp" },
+        { carrier_code: "VN", carrier_name: "Vietnam Airlines Cargo" }
+    ];
+    const selectedOptionId = quotation.selected_option_id || null;
+    const sortedExisting = existingOptions
+        .sort((left, right) => Number(left.option_no || 0) - Number(right.option_no || 0))
+        .slice(0, targetCount)
+        .map((option, optionIndex) => normalizeQuotationOption(option, quotation, quotationIndex, optionIndex, carriers, totals));
+
+    while (sortedExisting.length < targetCount) {
+        sortedExisting.push(materializeQuotationOption(quotation, quotationIndex, sortedExisting.length, carriers, totals, nextId()));
+    }
+
+    if (selectedOptionId && !sortedExisting.some((option) => option.id === selectedOptionId)) {
+        sortedExisting[targetCount - 1] = materializeQuotationOption(quotation, quotationIndex, targetCount - 1, carriers, totals, selectedOptionId);
+    }
+
+    const recommendedIndex = selectedOptionId
+        ? Math.max(0, sortedExisting.findIndex((option) => option.id === selectedOptionId))
+        : quotationIndex % sortedExisting.length;
+    const breakdownHeadlineAmount = breakdownGrandTotalVnd(quotation, totals);
+
+    return sortedExisting.map((option, index) => ({
+        ...option,
+        option_no: index + 1,
+        is_recommended: index === recommendedIndex,
+        is_selected: selectedOptionId ? option.id === selectedOptionId : false,
+        headline_amount: optionHeadlineAmountVnd(breakdownHeadlineAmount, index, recommendedIndex)
+    }));
+}
+
+function normalizeQuotationOption(option, quotation, quotationIndex, optionIndex, carriers, totals) {
+    const carrier = carriers[optionIndex % carriers.length];
+    const normalizedCarrier = carriers.find((item) => item.carrier_code === option.carrier_code) || carrier;
+
+    return {
+        ...option,
+        carrier_code: normalizedCarrier.carrier_code,
+        carrier_name: normalizedCarrier.carrier_name,
+        mode: option.mode || quotation.mode || null,
+        vessel_or_flight: option.vessel_or_flight || vesselOrFlight(quotation, quotationIndex, optionIndex),
+        voyage_flight_no: option.voyage_flight_no || voyageNo(quotation, quotationIndex, optionIndex),
+        etd: option.etd || optionDate(quotationIndex, optionIndex, 10),
+        eta: option.eta || optionDate(quotationIndex, optionIndex, transitDays(quotation, optionIndex) + 10),
+        transit_time_days: Number(option.transit_time_days ?? transitDays(quotation, optionIndex)),
+        headline_amount: Number(option.headline_amount ?? headlineAmountVnd(quotation, totals, optionIndex)),
+        risk_warning: option.risk_warning ?? (optionIndex === 1 ? "Limited free time at destination" : null),
+        update_at: option.update_at || now
+    };
+}
+
+function materializeQuotationOption(quotation, quotationIndex, optionIndex, carriers, totals, id) {
+    const carrier = carriers[optionIndex % carriers.length];
+    return base({
+        id,
+        quotation_id: quotation.id,
+        option_no: optionIndex + 1,
+        carrier_code: carrier.carrier_code,
+        carrier_name: carrier.carrier_name,
+        mode: quotation.mode || null,
+        vessel_or_flight: vesselOrFlight(quotation, quotationIndex, optionIndex),
+        voyage_flight_no: voyageNo(quotation, quotationIndex, optionIndex),
+        etd: optionDate(quotationIndex, optionIndex, 10),
+        eta: optionDate(quotationIndex, optionIndex, transitDays(quotation, optionIndex) + 10),
+        transit_time_days: transitDays(quotation, optionIndex),
+        risk_warning: optionIndex === 1 ? "Limited free time at destination" : null,
+        headline_amount: headlineAmountVnd(quotation, totals, optionIndex),
+        is_recommended: false,
+        is_selected: false
+    });
+}
+
+function quotationTemplatesForMode(mode, quotationType) {
+    const templates = quotationChargeTemplatesByMode();
+    if (quotationType === "TRUCKING") return templates.TRUCKING;
+    const normalized = String(mode || "").toUpperCase();
+    if (normalized.includes("AIR")) return templates.AIR;
+    if (normalized.includes("LCL")) return templates.SEA_LCL;
+    return templates.SEA_FCL;
+}
+
+function quotationTotals(quotation, chargeLines) {
+    const currencyCode = quotation.currency_code || "USD";
+    const totalAmount = roundNumber(chargeLines.reduce((total, line) => (
+        total + convertQuotationMoney(line.amount, line.currency_code, currencyCode)
+    ), 0));
+    const totalTaxAmount = roundNumber(chargeLines.reduce((total, line) => (
+        total + convertQuotationMoney(line.tax_amount, line.currency_code, currencyCode)
+    ), 0));
+
+    return {
+        total_amount: totalAmount,
+        total_tax_amount: totalTaxAmount,
+        grand_total_amount: roundNumber(totalAmount + totalTaxAmount)
+    };
+}
+
+function convertQuotationMoney(amount, fromCurrency, toCurrency) {
+    const fromRate = quotationRateToVnd(fromCurrency);
+    const toRate = quotationRateToVnd(toCurrency);
+    return Number(amount || 0) * fromRate / toRate;
+}
+
+function quotationRateToVnd(currencyCode) {
+    const rates = {
+        CNY: 3620,
+        USD: 26301,
+        VND: 1
+    };
+    return rates[String(currencyCode || "USD").toUpperCase()] || rates.USD;
+}
+
+function headlineAmountVnd(quotation, totals, optionIndex) {
+    const vndAmount = breakdownGrandTotalVnd(quotation, totals);
+    return optionHeadlineAmountVnd(vndAmount, optionIndex, 0);
+}
+
+function breakdownGrandTotalVnd(quotation, totals) {
+    const grandTotal = Number(totals?.grand_total_amount ?? 0);
+    const currencyCode = quotation.currency_code || "USD";
+    const vndAmount = convertQuotationMoney(grandTotal || 700, currencyCode, "VND");
+    return Math.round(vndAmount || 18500000);
+}
+
+function optionHeadlineAmountVnd(breakdownHeadlineAmount, optionIndex, recommendedIndex) {
+    if (optionIndex === recommendedIndex) {
+        return breakdownHeadlineAmount;
+    }
+
+    const distance = Math.abs(optionIndex - recommendedIndex);
+    const factor = optionIndex < recommendedIndex
+        ? 1 + distance * 0.075
+        : Math.max(0.82, 1 - distance * 0.045);
+
+    return Math.round(breakdownHeadlineAmount * factor);
+}
+
+function transitDays(quotation, optionIndex) {
+    const mode = String(quotation.mode || "").toUpperCase();
+    if (quotation.quotation_type === "TRUCKING") return 3 + optionIndex;
+    if (mode.includes("AIR")) return 2 + optionIndex;
+    if (mode.includes("LCL")) return 9 + optionIndex * 2;
+    return 7 + optionIndex * 2;
+}
+
+function vesselOrFlight(quotation, quotationIndex, optionIndex) {
+    if (String(quotation.mode || "").toUpperCase().includes("AIR")) {
+        return optionIndex === 0 ? "VN 553" : "VN 571";
+    }
+    if (quotation.quotation_type === "TRUCKING") {
+        return "CN-VN cross-border truck";
+    }
+    return optionIndex === 0 ? "COSCO SHIPPING PEONY" : optionIndex === 1 ? "EVER URBAN" : "COSCO STAR";
+}
+
+function voyageNo(quotation, quotationIndex, optionIndex) {
+    if (String(quotation.mode || "").toUpperCase().includes("AIR")) {
+        return optionIndex === 0 ? "VN553" : "VN571";
+    }
+    if (quotation.quotation_type === "TRUCKING") {
+        return `TRK-${String(quotationIndex + 21).padStart(3, "0")}`;
+    }
+    return `${optionIndex === 1 ? "EGLV" : "CS"}${String(quotationIndex + 120)}${optionIndex}S`;
+}
+
+function optionDate(quotationIndex, optionIndex, daysFromSeed) {
+    const date = new Date("2026-07-01T00:00:00.000Z");
+    date.setDate(date.getDate() + daysFromSeed + quotationIndex + optionIndex * 3);
+    return date.toISOString().slice(0, 10);
+}
+
+function nextSeedNumber(rows, prefix) {
+    const max = rows.reduce((value, row) => {
+        const id = String(row.id || "");
+        if (!id.startsWith(prefix)) {
+            return value;
+        }
+        const match = id.match(/(\d+)$/);
+        return match ? Math.max(value, Number(match[1])) : value;
+    }, 0);
+    return max + 1;
 }
 
 function normalizeTransportModeReferences(seedFiles) {

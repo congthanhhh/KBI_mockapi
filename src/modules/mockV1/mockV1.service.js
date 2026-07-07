@@ -31,6 +31,7 @@ const collections = {
     quotationOptions: "quotation-options",
     quotationChargeLines: "quotation-charge-lines",
     quotationEvents: "quotation-events",
+    quotationLineAdjustments: "quotation-line-adjustments",
     shipments: "shipments",
     shipmentLines: "shipment-lines",
     shipmentMilestones: "shipment-milestones",
@@ -69,6 +70,7 @@ const collectionAliases = Object.freeze({
     quotation_options: collections.quotationOptions,
     quotation_charge_lines: collections.quotationChargeLines,
     quotation_events: collections.quotationEvents,
+    quotation_line_adjustments: collections.quotationLineAdjustments,
     quotation_request_lines: collections.quotationRequestLines,
     quotation_requests: collections.quotationRequests,
     quotations: collections.quotations,
@@ -1710,6 +1712,7 @@ export async function createQuotation(body = {}) {
             charge_type: line.charge_type || "OTHER",
             charge_code: line.charge_code || null,
             charge_group: line.charge_group || null,
+            option_no: line.option_no ?? null,
             description: line.description || null,
             quantity,
             unit: line.unit || "SET",
@@ -1836,6 +1839,10 @@ export async function createQuotationRequest(body = {}) {
             unit: line.unit || null,
             unit_price: line.unit_price ?? null,
             gross_weight_kg: line.gross_weight_kg ?? null,
+            length_cm: line.length_cm ?? null,
+            width_cm: line.width_cm ?? null,
+            height_cm: line.height_cm ?? null,
+            cbm: line.cbm ?? null,
             note: line.note || null,
             create_at: now,
             update_at: now,
@@ -1944,6 +1951,7 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
             charge_type: line.charge_type || "OTHER",
             charge_code: line.charge_code || null,
             charge_group: line.charge_group || null,
+            option_no: line.option_no ?? null,
             description: line.description || null,
             quantity,
             unit: line.unit || "SET",
@@ -2090,6 +2098,7 @@ export async function createQuotationVersion(id, body = {}) {
                 charge_type: line.charge_type || "OTHER",
                 charge_code: line.charge_code || null,
                 charge_group: line.charge_group || null,
+                option_no: line.option_no ?? null,
                 description: line.description || null,
                 quantity,
                 unit: line.unit || "SET",
@@ -2191,6 +2200,7 @@ export async function createQuotationOption(id, body = {}) {
         option_no: maxNumber(quotationOptions, "option_no") + 1,
         carrier_code: body.carrier_code || null,
         carrier_name: body.carrier_name || null,
+        mode: body.mode || null,
         vessel_or_flight: body.vessel_or_flight || null,
         voyage_flight_no: body.voyage_flight_no || null,
         etd: body.etd || null,
@@ -2208,6 +2218,7 @@ export async function updateQuotationOption(optionId, body = {}) {
     const allowedFields = [
         "carrier_code",
         "carrier_name",
+        "mode",
         "vessel_or_flight",
         "voyage_flight_no",
         "etd",
@@ -2270,6 +2281,7 @@ export async function createQuotationChargeLine(id, body) {
         charge_type: body.charge_type || "OTHER",
         charge_code: body.charge_code || null,
         charge_group: body.charge_group || null,
+        option_no: body.option_no ?? null,
         description: body.description || null,
         quantity,
         unit: body.unit || "SET",
@@ -2285,7 +2297,7 @@ export async function createQuotationChargeLine(id, body) {
 
 export async function updateQuotationChargeLine(lineId, body) {
     await requireRecord(collections.quotationChargeLines, lineId, "Quotation charge line not found");
-    const allowedFields = ["line_no", "charge_type", "charge_code", "charge_group", "description", "quantity", "unit", "unit_price", "amount", "currency_code", "tax_rate", "tax_amount", "total_amount", "note"];
+    const allowedFields = ["line_no", "charge_type", "charge_code", "charge_group", "option_no", "description", "quantity", "unit", "unit_price", "amount", "currency_code", "tax_rate", "tax_amount", "total_amount", "note"];
     return repo.update(collections.quotationChargeLines, lineId, pick(body, allowedFields));
 }
 
@@ -2297,6 +2309,107 @@ export async function deleteQuotationChargeLine(lineId) {
     return deleted;
 }
 
+export async function negotiateQuotation(id, body = {}) {
+    const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
+    const actorRole = String(body.actor_role || "").toUpperCase();
+    if (!["KBI", "FDS"].includes(actorRole)) {
+        throw apiError("VALIDATION_ERROR", "actor_role must be KBI or FDS", { actor_role: body.actor_role }, 400);
+    }
+
+    const expectedStatus = actorRole === "KBI" ? "PENDING_APPROVAL" : "PENDING_ADJUSTMENT";
+    if (quotation.status !== expectedStatus) {
+        throw apiError(
+            "STATE_CONFLICT",
+            `Quotation must be ${expectedStatus} for ${actorRole} negotiation`,
+            { id, status: quotation.status, actor_role: actorRole },
+            409
+        );
+    }
+
+    const lines = Array.isArray(body.lines) ? body.lines : [];
+    const validLines = lines.filter((line) => line?.charge_line_id && Number.isFinite(Number(line.proposed_unit_price)));
+    if (validLines.length === 0) {
+        throw apiError("VALIDATION_ERROR", "At least one changed line is required", { lines: body.lines }, 400);
+    }
+
+    const [allChargeLines, existingAdjustments] = await Promise.all([
+        active(collections.quotationChargeLines),
+        active(collections.quotationLineAdjustments)
+    ]);
+    const currentLines = allChargeLines.filter((line) => line.quotation_id === id);
+    const roundNo = maxNumber(existingAdjustments.filter((row) => row.quotation_id === id), "round_no") + 1;
+    const startAdjustmentNo = nextNumber(existingAdjustments, "qt_adj");
+    const changedSummaries = [];
+
+    for (const [index, linePatch] of validLines.entries()) {
+        const chargeLine = currentLines.find((line) => line.id === linePatch.charge_line_id);
+        if (!chargeLine) {
+            throw apiError(
+                "BUSINESS_RULE_VIOLATION",
+                "Charge line must belong to the quotation",
+                { quotation_id: id, charge_line_id: linePatch.charge_line_id },
+                409
+            );
+        }
+
+        const proposedUnitPrice = Number(linePatch.proposed_unit_price);
+        const baseUnitPrice = Number(chargeLine.unit_price ?? 0);
+        const status = proposedUnitPrice === baseUnitPrice
+            ? "ACCEPTED"
+            : actorRole === "FDS"
+                ? "COUNTERED"
+                : "PROPOSED";
+        const amountPatch = buildChargeLineAmountPatch(chargeLine, proposedUnitPrice);
+
+        await repo.insert(collections.quotationLineAdjustments, {
+            id: formatId("qt_adj", startAdjustmentNo + index),
+            quotation_id: id,
+            charge_line_id: chargeLine.id,
+            round_no: roundNo,
+            actor_role: actorRole,
+            base_unit_price: baseUnitPrice,
+            proposed_unit_price: proposedUnitPrice,
+            currency_code: chargeLine.currency_code || quotation.currency_code || null,
+            note: linePatch.note || null,
+            status
+        });
+
+        await repo.update(collections.quotationChargeLines, chargeLine.id, amountPatch);
+        changedSummaries.push({
+            charge_line_id: chargeLine.id,
+            description: chargeLine.description || chargeLine.charge_type || null,
+            base_unit_price: baseUnitPrice,
+            proposed_unit_price: proposedUnitPrice,
+            currency_code: chargeLine.currency_code || quotation.currency_code || null,
+            delta_unit_price: roundNumber(proposedUnitPrice - baseUnitPrice),
+            status
+        });
+    }
+
+    const targetStatus = actorRole === "KBI" ? "PENDING_ADJUSTMENT" : "PENDING_APPROVAL";
+    await repo.update(collections.quotations, id, { status: targetStatus });
+    const events = await active(collections.quotationEvents);
+    await repo.insert(collections.quotationEvents, {
+        id: nextId(events, "qt_event"),
+        quotation_id: id,
+        event_code: "NEGOTIATE",
+        event_type: "NEGOTIATE",
+        old_status: quotation.status,
+        new_status: targetStatus,
+        actor_name: actorRole,
+        event_at: new Date().toISOString(),
+        note: body.note || `Round ${roundNo}: ${actorRole} adjusted ${changedSummaries.length} line(s).`,
+        payload: {
+            round_no: roundNo,
+            actor_role: actorRole,
+            changed_line_count: changedSummaries.length,
+            lines: changedSummaries
+        }
+    });
+
+    return getQuotation(id);
+}
+
 export async function listQuotationEvents(id) {
     await requireRecord(collections.quotations, id, "Quotation not found");
     return (await active(collections.quotationEvents)).filter((event) => event.quotation_id === id);
@@ -2304,12 +2417,13 @@ export async function listQuotationEvents(id) {
 
 export async function getQuotation(id) {
     const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
-    const [chargeLines, events, suppliers, currencies, options] = await Promise.all([
+    const [chargeLines, events, suppliers, currencies, options, adjustments] = await Promise.all([
         active(collections.quotationChargeLines),
         active(collections.quotationEvents),
         active(collections.suppliers),
         active(collections.currencies),
-        active(collections.quotationOptions)
+        active(collections.quotationOptions),
+        active(collections.quotationLineAdjustments)
     ]);
     const quotationChargeLines = chargeLines
         .filter((line) => line.quotation_id === id)
@@ -2327,7 +2441,28 @@ export async function getQuotation(id) {
             .filter((option) => option.quotation_id === id)
             .sort((left, right) => Number(left.option_no || 0) - Number(right.option_no || 0)),
         charge_lines: quotationChargeLines,
-        events: events.filter((event) => event.quotation_id === id)
+        events: events.filter((event) => event.quotation_id === id),
+        adjustments: adjustments
+            .filter((adjustment) => adjustment.quotation_id === id)
+            .sort((left, right) => (
+                Number(left.round_no || 0) - Number(right.round_no || 0) ||
+                String(left.create_at || "").localeCompare(String(right.create_at || ""))
+            ))
+    };
+}
+
+function buildChargeLineAmountPatch(line, unitPrice) {
+    const quantity = Number(line.quantity ?? 1);
+    const safeUnitPrice = Number(unitPrice || 0);
+    const amount = roundNumber(quantity * safeUnitPrice);
+    const taxRate = Number(line.tax_rate || 0);
+    const taxAmount = roundNumber(amount * taxRate / 100);
+
+    return {
+        unit_price: safeUnitPrice,
+        amount,
+        tax_amount: taxAmount,
+        total_amount: roundNumber(amount + taxAmount)
     };
 }
 
@@ -3971,6 +4106,7 @@ function idPrefixForCollection(collectionName) {
         quotations: "qt",
         quotation_charge_lines: "qt_line",
         quotation_events: "qt_event",
+        quotation_line_adjustments: "qt_adj",
         shipments: "shp",
         shipment_lines: "shp_line",
         shipment_milestones: "ms",

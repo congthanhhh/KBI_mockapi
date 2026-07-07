@@ -85,6 +85,7 @@ router.post("/quotations/:id/create-version", asyncHandler(controller.createQuot
 router.post("/quotations/:id/mark-final", asyncHandler(controller.markQuotationFinal));
 router.post("/quotations/:id/confirm-by-kbi", asyncHandler(controller.confirmQuotationByKbi));
 router.post("/quotations/:id/reject", asyncHandler(controller.rejectQuotation));
+router.post("/quotations/:id/negotiate", asyncHandler(controller.negotiateQuotation));
 router.post("/quotations/:id/cancel", asyncHandler(controller.cancelQuotation));
 router.post("/quotations/:id/request", asyncHandler(controller.requestQuotation));
 router.post("/quotations/:id/receive", asyncHandler(controller.receiveQuotation));
