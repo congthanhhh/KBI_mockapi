@@ -1670,6 +1670,7 @@ export async function createQuotation(body = {}) {
     ]);
     const newId = nextId(quotations, "qt");
     const groupId = body.quotation_group_id || `qg_${newId}`;
+    const initialStatus = body.status || "DRAFT";
 
     const quotation = await repo.insert(collections.quotations, {
         id: newId,
@@ -1690,9 +1691,9 @@ export async function createQuotation(body = {}) {
         currency_code: body.currency_code || "USD",
         currency_id: body.currency_id || null,
         exchange_rate: body.exchange_rate || 25000,
-        status: body.status || "DRAFT",
+        status: initialStatus,
         is_final: false,
-        quoted_at: body.quoted_at || new Date().toISOString(),
+        quoted_at: body.quoted_at ?? (initialStatus !== "DRAFT" ? new Date().toISOString() : null),
         valid_until: body.valid_until || null,
         note: body.note || null
     });
@@ -1703,8 +1704,8 @@ export async function createQuotation(body = {}) {
         const quantity = Number(line.quantity ?? 1);
         const unitPrice = Number(line.unit_price ?? line.amount ?? 0);
         const amount = Number(line.amount ?? quantity * unitPrice);
-        const taxRate = Number(line.tax_rate || 0);
-        const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
+        const taxRate = 0;
+        const taxAmount = 0;
         await repo.insert(collections.quotationChargeLines, {
             id: formatId("qt_line", start + index),
             quotation_id: quotation.id,
@@ -1721,7 +1722,7 @@ export async function createQuotation(body = {}) {
             currency_code: line.currency_code || quotation.currency_code,
             tax_rate: taxRate,
             tax_amount: taxAmount,
-            total_amount: Number(line.total_amount ?? amount + taxAmount),
+            total_amount: amount,
             note: line.note || null
         });
     }
@@ -1754,6 +1755,27 @@ async function enrichQuotationRequest(request, context = {}) {
                 .map((quotation) => getQuotation(quotation.id))
         )
     };
+}
+
+async function syncRfqStatusFromQuotation(quotation) {
+    if (!quotation?.rfq_id) return null;
+
+    const request = await repo.findById(collections.quotationRequests, quotation.rfq_id);
+    if (!request || request.status === "CANCELLED") return request;
+
+    const nextStatusByQuotationStatus = {
+        DRAFT: "RECEIVED",
+        PENDING_APPROVAL: "QUOTED",
+        PENDING_ADJUSTMENT: "QUOTED",
+        CONFIRMED: "CONFIRMED",
+        REJECTED: "QUOTED"
+    };
+    const nextStatus = nextStatusByQuotationStatus[quotation.status];
+    if (!nextStatus) return request;
+    if (request.status === "CONFIRMED" && nextStatus !== "CONFIRMED") return request;
+    if (request.status === nextStatus) return request;
+
+    return repo.update(collections.quotationRequests, request.id, { status: nextStatus });
 }
 
 export async function listQuotationRequests(query = {}) {
@@ -1889,7 +1911,7 @@ export async function createQuotationFromRequest(id, body = {}) {
         destination_port: request.destination_port,
         status: "DRAFT"
     });
-    await repo.update(collections.quotationRequests, id, { status: "QUOTED" });
+    await syncRfqStatusFromQuotation(quotation);
     return quotation;
 }
 
@@ -1942,8 +1964,8 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
         const quantity = Number(line.quantity ?? 1);
         const unitPrice = Number(line.unit_price ?? line.amount ?? 0);
         const amount = Number(line.amount ?? quantity * unitPrice);
-        const taxRate = Number(line.tax_rate || 0);
-        const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
+        const taxRate = 0;
+        const taxAmount = 0;
         await repo.insert(collections.quotationChargeLines, {
             id: formatId("qt_line", start + index),
             quotation_id: quotation.id,
@@ -1960,7 +1982,7 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
             currency_code: line.currency_code || quotation.currency_code,
             tax_rate: taxRate,
             tax_amount: taxAmount,
-            total_amount: Number(line.total_amount ?? amount + taxAmount),
+            total_amount: amount,
             note: line.note || null
         });
     }
@@ -1970,6 +1992,14 @@ export async function createQuotationForDeliveryOrder(deliveryOrderId, body) {
 
 export async function markQuotationFinal(id) {
     const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
+    if (quotation.status !== "PENDING_APPROVAL") {
+        throw apiError(
+            "STATE_CONFLICT",
+            "Quotation must be PENDING_APPROVAL to confirm",
+            { quotation_id: id, status: quotation.status },
+            409
+        );
+    }
     if (!quotation.selected_option_id) {
         throw apiError(
             "BUSINESS_RULE_VIOLATION",
@@ -2001,9 +2031,7 @@ export async function markQuotationFinal(id) {
         note: "Marked final in mock flow."
     });
 
-    if (quotation.rfq_id) {
-        await repo.update(collections.quotationRequests, quotation.rfq_id, { status: "CONFIRMED" });
-    }
+    await syncRfqStatusFromQuotation({ ...quotation, status: "CONFIRMED" });
 
     return getQuotation(id);
 }
@@ -2038,7 +2066,7 @@ export async function listQuotations(query = {}) {
                 supplier.supplier_name
             ].some((value) => String(value || "").toLowerCase().includes(search));
         })
-        .sort((left, right) => String(right.quoted_at || right.create_at || "").localeCompare(String(left.quoted_at || left.create_at || "")));
+        .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
 
     const items = await Promise.all(matchedQuotations.map((quotation) => getQuotation(quotation.id)));
     return paginateResult(items, query);
@@ -2061,14 +2089,15 @@ export async function createQuotationVersion(id, body = {}) {
     ]);
     const groupQuotations = quotations.filter((quotation) => quotation.quotation_group_id === source.quotation_group_id);
     const nextVersion = maxNumber(groupQuotations, "version") + 1;
+    const versionStatus = body.status || "DRAFT";
     const quotation = await repo.insert(collections.quotations, {
         ...source,
         id: nextId(quotations, "qt"),
         quotation_no: body.quotation_no || `${source.quotation_no}-V${nextVersion}`,
         version: nextVersion,
-        status: body.status || "DRAFT",
+        status: versionStatus,
         is_final: false,
-        quoted_at: body.quoted_at || new Date().toISOString(),
+        quoted_at: body.quoted_at ?? (versionStatus !== "DRAFT" ? new Date().toISOString() : null),
         valid_until: body.valid_until ?? source.valid_until,
         note: body.note ?? source.note,
         // Header overrides — when the caller supplies edited values, prefer them over the source clone
@@ -2089,8 +2118,8 @@ export async function createQuotationVersion(id, body = {}) {
             const quantity = Number(line.quantity ?? 1);
             const unitPrice = Number(line.unit_price ?? line.amount ?? 0);
             const amount = Number(line.amount ?? quantity * unitPrice);
-            const taxRate = Number(line.tax_rate || 0);
-            const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
+            const taxRate = 0;
+            const taxAmount = 0;
             await repo.insert(collections.quotationChargeLines, {
                 id: formatId("qt_line", start + index),
                 quotation_id: quotation.id,
@@ -2107,7 +2136,7 @@ export async function createQuotationVersion(id, body = {}) {
                 currency_code: line.currency_code || quotation.currency_code,
                 tax_rate: taxRate,
                 tax_amount: taxAmount,
-                total_amount: Number(line.total_amount ?? amount + taxAmount),
+                total_amount: amount,
                 note: line.note || null
             });
         }
@@ -2131,6 +2160,15 @@ export async function confirmQuotationByKbi(id) {
 }
 
 export async function rejectQuotation(id, body = {}) {
+    const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
+    if (quotation.status !== "PENDING_APPROVAL") {
+        throw apiError(
+            "STATE_CONFLICT",
+            "Quotation must be PENDING_APPROVAL to reject",
+            { quotation_id: id, status: quotation.status },
+            409
+        );
+    }
     return updateQuotationStatus(id, "REJECTED", { reject_reason: body.reason || body.reject_reason || null });
 }
 
@@ -2138,14 +2176,12 @@ export async function cancelQuotation(id, body = {}) {
     return updateQuotationStatus(id, "REJECTED", { reject_reason: body.reason || body.reject_reason || "Cancelled" });
 }
 
-// Forward quotation status transitions for the 5-state flow
-// (REQUEST_FOR_QUOTATION -> DRAFT -> PENDING_APPROVAL -> CONFIRMED, with REJECTED).
+// Forward quotation status transitions for the RFQ-backed flow
+// (DRAFT -> PENDING_APPROVAL -> CONFIRMED, with PENDING_ADJUSTMENT/REJECTED).
 // KBI raises the RFQ; FDS drafts (receive) then submits (submit-to-kbi); KBI
 // confirms (mark-final) or rejects. Each enforces a legal from-state + event.
 const quotationForwardTransitions = {
-    REQUEST_FOR_QUOTATION: { from: ["DRAFT"], event: "REQUEST" },
-    DRAFT: { from: ["REQUEST_FOR_QUOTATION"], event: "RECEIVE" },
-    PENDING_APPROVAL: { from: ["DRAFT", "REQUEST_FOR_QUOTATION"], event: "SUBMIT_TO_KBI" }
+    PENDING_APPROVAL: { from: ["DRAFT", "PENDING_ADJUSTMENT"], event: "SUBMIT_TO_KBI" }
 };
 
 async function advanceQuotationStatus(id, targetStatus) {
@@ -2160,6 +2196,7 @@ async function advanceQuotationStatus(id, targetStatus) {
         );
     }
     await repo.update(collections.quotations, id, { status: targetStatus });
+    await syncRfqStatusFromQuotation({ ...quotation, status: targetStatus });
     const events = await active(collections.quotationEvents);
     await repo.insert(collections.quotationEvents, {
         id: nextId(events, "qt_event"),
@@ -2171,12 +2208,9 @@ async function advanceQuotationStatus(id, targetStatus) {
     return getQuotation(id);
 }
 
-export async function requestQuotation(id) {
-    return advanceQuotationStatus(id, "REQUEST_FOR_QUOTATION");
-}
-
 export async function receiveQuotation(id) {
-    return advanceQuotationStatus(id, "DRAFT");
+    const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
+    return getQuotation(quotation.id);
 }
 
 export async function submitQuotationToKbi(id) {
@@ -2272,8 +2306,8 @@ export async function createQuotationChargeLine(id, body) {
     const quantity = Number(body.quantity ?? 1);
     const unitPrice = Number(body.unit_price ?? body.amount ?? 0);
     const amount = Number(body.amount ?? quantity * unitPrice);
-    const taxRate = Number(body.tax_rate || 0);
-    const taxAmount = Number(body.tax_amount ?? amount * taxRate / 100);
+    const taxRate = 0;
+    const taxAmount = 0;
     return repo.insert(collections.quotationChargeLines, {
         id: nextId(chargeLines, "qt_line"),
         quotation_id: id,
@@ -2290,15 +2324,25 @@ export async function createQuotationChargeLine(id, body) {
         currency_code: body.currency_code || "USD",
         tax_rate: taxRate,
         tax_amount: taxAmount,
-        total_amount: Number(body.total_amount ?? amount + taxAmount),
+        total_amount: amount,
         note: body.note || null
     });
 }
 
 export async function updateQuotationChargeLine(lineId, body) {
-    await requireRecord(collections.quotationChargeLines, lineId, "Quotation charge line not found");
+    const line = await requireRecord(collections.quotationChargeLines, lineId, "Quotation charge line not found");
     const allowedFields = ["line_no", "charge_type", "charge_code", "charge_group", "option_no", "description", "quantity", "unit", "unit_price", "amount", "currency_code", "tax_rate", "tax_amount", "total_amount", "note"];
-    return repo.update(collections.quotationChargeLines, lineId, pick(body, allowedFields));
+    const patch = pick(body, allowedFields);
+    const quantity = Number(patch.quantity ?? line.quantity ?? 1);
+    const unitPrice = Number(patch.unit_price ?? line.unit_price ?? 0);
+    const amount = Number(patch.amount ?? quantity * unitPrice);
+    return repo.update(collections.quotationChargeLines, lineId, {
+        ...patch,
+        amount,
+        tax_rate: 0,
+        tax_amount: 0,
+        total_amount: amount
+    });
 }
 
 export async function deleteQuotationChargeLine(lineId) {
@@ -2388,6 +2432,7 @@ export async function negotiateQuotation(id, body = {}) {
 
     const targetStatus = actorRole === "KBI" ? "PENDING_ADJUSTMENT" : "PENDING_APPROVAL";
     await repo.update(collections.quotations, id, { status: targetStatus });
+    await syncRfqStatusFromQuotation({ ...quotation, status: targetStatus });
     const events = await active(collections.quotationEvents);
     await repo.insert(collections.quotationEvents, {
         id: nextId(events, "qt_event"),
@@ -2417,20 +2462,25 @@ export async function listQuotationEvents(id) {
 
 export async function getQuotation(id) {
     const quotation = await requireRecord(collections.quotations, id, "Quotation not found");
-    const [chargeLines, events, suppliers, currencies, options, adjustments] = await Promise.all([
+    const [chargeLines, events, suppliers, currencies, options, adjustments, quotationRequests] = await Promise.all([
         active(collections.quotationChargeLines),
         active(collections.quotationEvents),
         active(collections.suppliers),
         active(collections.currencies),
         active(collections.quotationOptions),
-        active(collections.quotationLineAdjustments)
+        active(collections.quotationLineAdjustments),
+        active(collections.quotationRequests)
     ]);
     const quotationChargeLines = chargeLines
         .filter((line) => line.quotation_id === id)
         .map((line, index) => enrichQuotationChargeLine(line, quotation, index));
+    const rfq = quotation.rfq_id
+        ? quotationRequests.find((request) => request.id === quotation.rfq_id)
+        : null;
 
     return {
         ...quotation,
+        rfq_no: rfq?.rfq_no ?? null,
         supplier: suppliers.find((supplier) => supplier.id === quotation.supplier_id) || null,
         currency: currencies.find((currency) => (
             currency.id === quotation.currency_id ||
@@ -2455,14 +2505,15 @@ function buildChargeLineAmountPatch(line, unitPrice) {
     const quantity = Number(line.quantity ?? 1);
     const safeUnitPrice = Number(unitPrice || 0);
     const amount = roundNumber(quantity * safeUnitPrice);
-    const taxRate = Number(line.tax_rate || 0);
-    const taxAmount = roundNumber(amount * taxRate / 100);
+    const taxRate = 0;
+    const taxAmount = 0;
 
     return {
         unit_price: safeUnitPrice,
         amount,
+        tax_rate: taxRate,
         tax_amount: taxAmount,
-        total_amount: roundNumber(amount + taxAmount)
+        total_amount: amount
     };
 }
 
@@ -2470,8 +2521,8 @@ function enrichQuotationChargeLine(line, quotation, index) {
     const quantity = Number(line.quantity ?? 1);
     const unitPrice = Number(line.unit_price ?? 0);
     const amount = Number(line.amount ?? quantity * unitPrice);
-    const taxRate = Number(line.tax_rate ?? 0);
-    const taxAmount = Number(line.tax_amount ?? amount * taxRate / 100);
+    const taxRate = 0;
+    const taxAmount = 0;
 
     return {
         ...line,
@@ -2483,7 +2534,7 @@ function enrichQuotationChargeLine(line, quotation, index) {
         amount,
         tax_rate: taxRate,
         tax_amount: taxAmount,
-        total_amount: Number(line.total_amount ?? amount + taxAmount)
+        total_amount: amount
     };
 }
 
@@ -3433,6 +3484,7 @@ async function updateQuotationStatus(id, status, extraPatch = {}) {
         rejected_at: status === "REJECTED" ? now : quotation.rejected_at || null,
         ...extraPatch
     });
+    await syncRfqStatusFromQuotation({ ...quotation, status });
     return getQuotation(id);
 }
 

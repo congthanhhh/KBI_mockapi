@@ -307,10 +307,6 @@ export async function cancelQuotation(req, res) {
     res.json(success(await service.cancelQuotation(req.params.id, req.body)));
 }
 
-export async function requestQuotation(req, res) {
-    res.json(success(await service.requestQuotation(req.params.id)));
-}
-
 export async function receiveQuotation(req, res) {
     res.json(success(await service.receiveQuotation(req.params.id)));
 }

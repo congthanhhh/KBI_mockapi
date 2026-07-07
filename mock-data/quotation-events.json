@@ -158,21 +158,98 @@
     "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
-    "id": "qt_event_015",
-    "quotation_id": "qt_025",
-    "event_code": "MARK_FINAL",
-    "event_at": "2026-06-30T03:00:00.000Z",
-    "note": "Confirmed by KBI from RFQ RFQ-2026-0004."
+    "id": "qt_event_024",
+    "quotation_id": "qt_024",
+    "event_code": "SUBMIT_TO_KBI",
+    "event_at": "2026-07-01T15:00:00+07:00",
+    "note": "Quotation moved to PENDING_APPROVAL in seeded RFQ flow."
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
     "update_at": "2026-06-12T00:00:00.000Z",
     "delete_at": null,
     "is_delete": false,
-    "id": "qt_event_016",
+    "id": "qt_event_025",
+    "quotation_id": "qt_025",
+    "event_code": "SUBMIT_TO_KBI",
+    "event_at": "2026-06-30T11:30:00+07:00",
+    "note": "Quotation moved to PENDING_APPROVAL in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_026",
     "quotation_id": "qt_026",
     "event_code": "SUBMIT_TO_KBI",
-    "event_at": "2026-06-30T03:30:00.000Z",
-    "note": "Submitted to KBI with recommended option."
+    "event_at": "2026-06-29T18:15:00+07:00",
+    "note": "Quotation moved to PENDING_APPROVAL in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_027",
+    "quotation_id": "qt_027",
+    "event_code": "NEGOTIATE",
+    "event_at": "2026-06-28T12:40:00+07:00",
+    "note": "Quotation moved to PENDING_ADJUSTMENT in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_028",
+    "quotation_id": "qt_028",
+    "event_code": "REJECT",
+    "event_at": "2026-06-27T16:05:00+07:00",
+    "note": "Quotation moved to REJECTED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_029",
+    "quotation_id": "qt_029",
+    "event_code": "REJECT",
+    "event_at": "2026-06-25T10:20:00+07:00",
+    "note": "Quotation moved to REJECTED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_030",
+    "quotation_id": "qt_030",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-24T16:00:00+07:00",
+    "note": "Quotation moved to CONFIRMED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_031",
+    "quotation_id": "qt_031",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-20T12:20:00+07:00",
+    "note": "Quotation moved to CONFIRMED in seeded RFQ flow."
+  },
+  {
+    "create_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-06-12T00:00:00.000Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_event_032",
+    "quotation_id": "qt_032",
+    "event_code": "MARK_FINAL",
+    "event_at": "2026-06-15T10:40:00+07:00",
+    "note": "Quotation moved to CONFIRMED in seeded RFQ flow."
   }
 ]

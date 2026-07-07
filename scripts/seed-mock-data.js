@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { applyRfqQuotationDemoData } from "./rfq-quotation-demo-data.js";
 import { reseedMasterData } from "./reseed-master-data.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -449,7 +450,7 @@ const files = {
         // Standalone pre-PO freight quotations (reversed flow). Not bound to a DO;
         // carry their own customer_ref + incoterm_code + mode. One per status so the
         // 5-state tabs all have data; qt_023 (CONFIRMED) seeds the create-PO demo.
-        base({ id: "qt_020", quotation_group_id: "qg_qt_020", quotation_no: "QT-KBI-2026-020", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_FCL", currency_code: "USD", exchange_rate: 25000, status: "REQUEST_FOR_QUOTATION", is_final: false, quoted_at: "2026-06-26T02:00:00.000Z", valid_until: "2026-07-26", note: "RFQ from KBI — awaiting FDS draft." }),
+        base({ id: "qt_020", quotation_group_id: "qg_qt_020", quotation_no: "QT-KBI-2026-020", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_FCL", currency_code: "USD", exchange_rate: 25000, status: "DRAFT", is_final: false, quoted_at: null, valid_until: "2026-07-26", note: "RFQ from KBI — FDS is drafting the quotation." }),
         base({ id: "qt_021", quotation_group_id: "qg_qt_021", quotation_no: "QT-KBI-2026-021", version: 1, ref_type: null, ref_id: null, rfq_id: "qr-0003", customer_ref: "KBI", supplier_id: "sup_004", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_LCL", origin_port: "Ningbo (CNNGB)", destination_port: "Cat Lai (VNCLI)", selected_option_id: null, currency_code: "USD", exchange_rate: 25000, status: "DRAFT", is_final: false, quoted_at: "2026-06-27T02:00:00.000Z", valid_until: "2026-07-27", note: "FDS drafting LCL freight options from RFQ RFQ-2026-0003." }),
         base({ id: "qt_022", quotation_group_id: "qg_qt_022", quotation_no: "QT-KBI-2026-022", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_LCL", currency_code: "USD", exchange_rate: 25000, status: "PENDING_APPROVAL", is_final: false, quoted_at: "2026-06-28T02:00:00.000Z", valid_until: "2026-07-28", note: "Sent to KBI for confirmation." }),
         base({ id: "qt_023", quotation_group_id: "qg_qt_023", quotation_no: "QT-KBI-2026-023", version: 1, ref_type: null, ref_id: null, customer_ref: "KBI", supplier_id: "sup_fds_forwarder", quotation_type: "FREIGHT", incoterm_code: "FOB", mode: "SEA_FCL", currency_code: "USD", exchange_rate: 25000, status: "CONFIRMED", is_final: true, confirmed_at: "2026-06-29T02:00:00.000Z", quoted_at: "2026-06-29T01:00:00.000Z", valid_until: "2026-07-29", note: "Confirmed by KBI — ready to create PO." }),
@@ -775,6 +776,7 @@ files["po-lot-lines"] = enrichPoLotLines(files);
 files["purchase-order-lines"] = enrichPurchaseOrderLines(files);
 normalizeTransportModeReferences(files);
 enrichQuotationDemoData(files);
+applyRfqQuotationDemoData(files, base);
 
 const screenFiles = buildScreenFiles(files);
 

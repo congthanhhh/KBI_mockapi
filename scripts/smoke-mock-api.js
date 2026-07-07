@@ -29,6 +29,8 @@ try {
     );
     const seededOptions = await get("/quotations/qt_021/options");
     assert(Array.isArray(seededOptions) && seededOptions.length >= 2, "Seed quotation should expose multiple quote options");
+    const submittedSeed = await post("/quotations/qt_021/submit-to-kbi", {});
+    assert(submittedSeed.status === "PENDING_APPROVAL", "submit-to-kbi should move a draft quotation to pending approval");
     const blockedConfirm = await fetch(`${baseUrl}/quotations/qt_021/mark-final`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,7 +45,7 @@ try {
     assert(selectedSeed.selected_option_id === seededOptions[0].id, "select-option should persist the selected option");
     const confirmedSeed = await post("/quotations/qt_021/mark-final", {});
     assert(confirmedSeed.status === "CONFIRMED", "mark-final should confirm after selecting an option");
-    const confirmedRfq = await get("/quotation-requests/qr-0003");
+    const confirmedRfq = await get(`/quotation-requests/${confirmedSeed.rfq_id}`);
     assert(confirmedRfq.status === "CONFIRMED", "linked RFQ should move to CONFIRMED when quotation is confirmed");
 
     // Reversed flow: a PO can only be created from a CONFIRMED quotation.
@@ -55,6 +57,7 @@ try {
         currency_code: "USD"
     });
     await seedAndSelectOptions(poQuotation.id);
+    await post(`/quotations/${poQuotation.id}/submit-to-kbi`, {});
     await post(`/quotations/${poQuotation.id}/mark-final`, {});
 
     // Gate proof: creating a PO without a CONFIRMED quotation must be rejected.
@@ -95,6 +98,7 @@ try {
         quotation_type: "FREIGHT"
     });
     await seedAndSelectOptions(quotation.id);
+    await post(`/quotations/${quotation.id}/submit-to-kbi`, {});
     await post(`/quotations/${quotation.id}/mark-final`, {});
 
     // DO screen-DTO is backend-owned and carries a real task summary.

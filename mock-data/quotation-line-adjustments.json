@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "create_at": "2026-06-28T13:10:00+07:00",
+    "update_at": "2026-06-28T13:10:00+07:00",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_adj_001",
+    "quotation_id": "qt_027",
+    "charge_line_id": "qt_line_442",
+    "round_no": 1,
+    "actor_role": "KBI",
+    "base_unit_price": 1595,
+    "proposed_unit_price": 1499.3,
+    "currency_code": "USD",
+    "note": "KBI requested sharper base freight.",
+    "status": "PROPOSED"
+  },
+  {
+    "create_at": "2026-06-28T13:10:00+07:00",
+    "update_at": "2026-06-28T13:10:00+07:00",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qt_adj_002",
+    "quotation_id": "qt_027",
+    "charge_line_id": "qt_line_443",
+    "round_no": 1,
+    "actor_role": "KBI",
+    "base_unit_price": 1722.6,
+    "proposed_unit_price": 1653.7,
+    "currency_code": "USD",
+    "note": "KBI asked to reduce surcharge.",
+    "status": "PROPOSED"
+  }
+]
