@@ -736,7 +736,7 @@
   },
   {
     "create_at": "2026-07-07T11:20:00+07:00",
-    "update_at": "2026-07-07T11:20:00+07:00",
+    "update_at": "2026-07-08T03:27:55.560Z",
     "delete_at": null,
     "is_delete": false,
     "id": "qo-0100",
@@ -753,11 +753,11 @@
     "risk_warning": null,
     "headline_amount": 1450,
     "is_recommended": true,
-    "is_selected": false
+    "is_selected": true
   },
   {
     "create_at": "2026-07-07T11:20:00+07:00",
-    "update_at": "2026-07-07T11:20:00+07:00",
+    "update_at": "2026-07-08T03:27:55.562Z",
     "delete_at": null,
     "is_delete": false,
     "id": "qo-0101",
@@ -1446,6 +1446,48 @@
     "risk_warning": "Limited free time at destination",
     "headline_amount": 2928,
     "is_recommended": false,
+    "is_selected": false
+  },
+  {
+    "create_at": "2026-07-08T03:29:53.662Z",
+    "update_at": "2026-07-08T03:29:53.662Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qo-0208",
+    "quotation_id": "qt_037",
+    "option_no": 1,
+    "carrier_code": "MSC",
+    "carrier_name": "Mediterranean Shipping Company",
+    "mode": "SEA",
+    "vessel_or_flight": null,
+    "voyage_flight_no": null,
+    "etd": null,
+    "eta": null,
+    "transit_time_days": null,
+    "risk_warning": null,
+    "headline_amount": 3225279,
+    "is_recommended": true,
+    "is_selected": false
+  },
+  {
+    "create_at": "2026-07-08T03:37:43.916Z",
+    "update_at": "2026-07-08T03:37:43.916Z",
+    "delete_at": null,
+    "is_delete": false,
+    "id": "qo-0209",
+    "quotation_id": "qt_038",
+    "option_no": 1,
+    "carrier_code": "MSC",
+    "carrier_name": "Mediterranean Shipping Company",
+    "mode": "SEA",
+    "vessel_or_flight": null,
+    "voyage_flight_no": null,
+    "etd": "2026-07-08",
+    "eta": "2026-07-18",
+    "transit_time_days": 10,
+    "risk_warning": null,
+    "headline_amount": 377,
+    "is_recommended": true,
     "is_selected": false
   }
 ]

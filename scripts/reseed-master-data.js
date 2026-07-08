@@ -466,7 +466,7 @@ function buildContainerTypes(rows) {
 function buildCurrencies() {
     return [
         audit({ id: "cur_vnd", currency_code: "VND", currency_name: "Vietnam Dong", symbol: "VND", decimal_places: 0, is_active: true }),
-        audit({ id: "cur_usd", currency_code: "USD", currency_name: "US Dollar", symbol: "$", decimal_places: 2, is_active: true }),
+        audit({ id: "cur_usd", currency_code: "USD", currency_name: "US Dollar", symbol: "USD", decimal_places: 2, is_active: true }),
         audit({ id: "cur_cny", currency_code: "CNY", currency_name: "Chinese Yuan", symbol: "CNY", decimal_places: 2, is_active: true }),
         audit({ id: "cur_eur", currency_code: "EUR", currency_name: "Euro", symbol: "EUR", decimal_places: 2, is_active: true }),
         audit({ id: "cur_krw", currency_code: "KRW", currency_name: "South Korean Won", symbol: "KRW", decimal_places: 0, is_active: true })

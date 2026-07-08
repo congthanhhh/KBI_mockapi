@@ -27,7 +27,7 @@ const base = (record) => ({
 const files = {
     "currencies": [
         base({ id: "cur_vnd", currency_code: "VND", currency_name: "Vietnam Dong", symbol: "VND", decimal_places: 0, is_active: true }),
-        base({ id: "cur_usd", currency_code: "USD", currency_name: "US Dollar", symbol: "$", decimal_places: 2, is_active: true }),
+        base({ id: "cur_usd", currency_code: "USD", currency_name: "US Dollar", symbol: "USD", decimal_places: 2, is_active: true }),
         base({ id: "cur_cny", currency_code: "CNY", currency_name: "Chinese Yuan", symbol: "CNY", decimal_places: 2, is_active: true }),
         base({ id: "cur_eur", currency_code: "EUR", currency_name: "Euro", symbol: "EUR", decimal_places: 2, is_active: true }),
         base({ id: "cur_krw", currency_code: "KRW", currency_name: "South Korean Won", symbol: "KRW", decimal_places: 0, is_active: true })
@@ -1159,37 +1159,37 @@ function enrichPurchaseOrders(seedFiles) {
 function quotationChargeTemplatesByMode() {
     return {
         SEA_FCL: [
-        { charge_group: "FREIGHT", charge_type: "OCEAN_FREIGHT", charge_code: "OFR", description: "Main ocean freight FCL", quantity: 1, unit: "CNTR", currency_code: "USD", unit_price: 1280, tax_rate: 0 },
-        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "BAF", description: "Bunker adjustment factor", quantity: 1, unit: "CNTR", currency_code: "USD", unit_price: 145, tax_rate: 0 },
-        { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "OTH", description: "Origin terminal handling", quantity: 1, unit: "CNTR", currency_code: "CNY", unit_price: 620, tax_rate: 0 },
-        { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "EXD", description: "Export documentation", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 260, tax_rate: 0 },
-        { charge_group: "DESTINATION", charge_type: "DO_FEE", charge_code: "DOF", description: "Delivery order fee", quantity: 1, unit: "BL", currency_code: "VND", unit_price: 1150000, tax_rate: 10 },
-        { charge_group: "DESTINATION", charge_type: "TRUCKING", charge_code: "LMD", description: "Port to KBI warehouse trucking", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 7200000, tax_rate: 10 }
-    ],
-    SEA_LCL: [
-        { charge_group: "FREIGHT", charge_type: "OCEAN_FREIGHT", charge_code: "OFL", description: "Main ocean freight LCL", quantity: 4.5, unit: "WM", currency_code: "USD", unit_price: 92, tax_rate: 0 },
-        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "LSS", description: "Low sulphur surcharge", quantity: 4.5, unit: "WM", currency_code: "USD", unit_price: 18, tax_rate: 0 },
-        { charge_group: "ORIGIN", charge_type: "CFS", charge_code: "OTL", description: "Origin CFS handling", quantity: 4.5, unit: "WM", currency_code: "CNY", unit_price: 85, tax_rate: 0 },
-        { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "EXD", description: "Export documentation", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 220, tax_rate: 0 },
-        { charge_group: "DESTINATION", charge_type: "CFS", charge_code: "DTL", description: "Destination CFS handling", quantity: 4.5, unit: "WM", currency_code: "VND", unit_price: 210000, tax_rate: 10 },
-        { charge_group: "DESTINATION", charge_type: "DO_FEE", charge_code: "DOF", description: "Delivery order fee", quantity: 1, unit: "BL", currency_code: "VND", unit_price: 950000, tax_rate: 10 }
-    ],
-    AIR: [
-        { charge_group: "FREIGHT", charge_type: "AIR_FREIGHT", charge_code: "AFR", description: "PVG to HAN air freight", quantity: 180, unit: "KG", currency_code: "USD", unit_price: 4.35, tax_rate: 0 },
-        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "FSC", description: "Fuel surcharge", quantity: 180, unit: "KG", currency_code: "USD", unit_price: 0.42, tax_rate: 0 },
-        { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "EXC", description: "Export customs clearance", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 360, tax_rate: 0 },
-        { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "AWF", description: "Air waybill fee", quantity: 1, unit: "AWB", currency_code: "USD", unit_price: 35, tax_rate: 0 },
-        { charge_group: "DESTINATION", charge_type: "CUSTOMS_FEE", charge_code: "IMC", description: "Import customs clearance", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 1850000, tax_rate: 10 },
-        { charge_group: "DESTINATION", charge_type: "TRUCKING", charge_code: "LMD", description: "Airport to KBI warehouse trucking", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 3600000, tax_rate: 10 }
-    ],
-    TRUCKING: [
-        { charge_group: "FREIGHT", charge_type: "TRUCKING", charge_code: "RDC", description: "Cross-border trucking freight", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 14500000, tax_rate: 10 },
-        { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "RFS", description: "Road fuel surcharge", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 1750000, tax_rate: 10 },
-        { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "EXC", description: "Export border clearance", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 420, tax_rate: 0 },
-        { charge_group: "ORIGIN", charge_type: "HANDLING", charge_code: "HDL", description: "Origin handling", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 280, tax_rate: 0 },
-        { charge_group: "DESTINATION", charge_type: "CUSTOMS_FEE", charge_code: "IMC", description: "Import customs clearance", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 2100000, tax_rate: 10 },
-        { charge_group: "DESTINATION", charge_type: "WAREHOUSE", charge_code: "WHF", description: "Warehouse handling", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 950000, tax_rate: 10 }
-    ]
+            { charge_group: "FREIGHT", charge_type: "OCEAN_FREIGHT", charge_code: "OFR", description: "Main ocean freight FCL", quantity: 1, unit: "CNTR", currency_code: "USD", unit_price: 1280, tax_rate: 0 },
+            { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "BAF", description: "Bunker adjustment factor", quantity: 1, unit: "CNTR", currency_code: "USD", unit_price: 145, tax_rate: 0 },
+            { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "OTH", description: "Origin terminal handling", quantity: 1, unit: "CNTR", currency_code: "CNY", unit_price: 620, tax_rate: 0 },
+            { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "EXD", description: "Export documentation", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 260, tax_rate: 0 },
+            { charge_group: "DESTINATION", charge_type: "DO_FEE", charge_code: "DOF", description: "Delivery order fee", quantity: 1, unit: "BL", currency_code: "VND", unit_price: 1150000, tax_rate: 10 },
+            { charge_group: "DESTINATION", charge_type: "TRUCKING", charge_code: "LMD", description: "Port to KBI warehouse trucking", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 7200000, tax_rate: 10 }
+        ],
+        SEA_LCL: [
+            { charge_group: "FREIGHT", charge_type: "OCEAN_FREIGHT", charge_code: "OFL", description: "Main ocean freight LCL", quantity: 4.5, unit: "WM", currency_code: "USD", unit_price: 92, tax_rate: 0 },
+            { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "LSS", description: "Low sulphur surcharge", quantity: 4.5, unit: "WM", currency_code: "USD", unit_price: 18, tax_rate: 0 },
+            { charge_group: "ORIGIN", charge_type: "CFS", charge_code: "OTL", description: "Origin CFS handling", quantity: 4.5, unit: "WM", currency_code: "CNY", unit_price: 85, tax_rate: 0 },
+            { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "EXD", description: "Export documentation", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 220, tax_rate: 0 },
+            { charge_group: "DESTINATION", charge_type: "CFS", charge_code: "DTL", description: "Destination CFS handling", quantity: 4.5, unit: "WM", currency_code: "VND", unit_price: 210000, tax_rate: 10 },
+            { charge_group: "DESTINATION", charge_type: "DO_FEE", charge_code: "DOF", description: "Delivery order fee", quantity: 1, unit: "BL", currency_code: "VND", unit_price: 950000, tax_rate: 10 }
+        ],
+        AIR: [
+            { charge_group: "FREIGHT", charge_type: "AIR_FREIGHT", charge_code: "AFR", description: "PVG to HAN air freight", quantity: 180, unit: "KG", currency_code: "USD", unit_price: 4.35, tax_rate: 0 },
+            { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "FSC", description: "Fuel surcharge", quantity: 180, unit: "KG", currency_code: "USD", unit_price: 0.42, tax_rate: 0 },
+            { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "EXC", description: "Export customs clearance", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 360, tax_rate: 0 },
+            { charge_group: "ORIGIN", charge_type: "DOCUMENT_FEE", charge_code: "AWF", description: "Air waybill fee", quantity: 1, unit: "AWB", currency_code: "USD", unit_price: 35, tax_rate: 0 },
+            { charge_group: "DESTINATION", charge_type: "CUSTOMS_FEE", charge_code: "IMC", description: "Import customs clearance", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 1850000, tax_rate: 10 },
+            { charge_group: "DESTINATION", charge_type: "TRUCKING", charge_code: "LMD", description: "Airport to KBI warehouse trucking", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 3600000, tax_rate: 10 }
+        ],
+        TRUCKING: [
+            { charge_group: "FREIGHT", charge_type: "TRUCKING", charge_code: "RDC", description: "Cross-border trucking freight", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 14500000, tax_rate: 10 },
+            { charge_group: "FREIGHT", charge_type: "OTHER", charge_code: "RFS", description: "Road fuel surcharge", quantity: 1, unit: "TRIP", currency_code: "VND", unit_price: 1750000, tax_rate: 10 },
+            { charge_group: "ORIGIN", charge_type: "ORIGIN_CHARGE", charge_code: "EXC", description: "Export border clearance", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 420, tax_rate: 0 },
+            { charge_group: "ORIGIN", charge_type: "HANDLING", charge_code: "HDL", description: "Origin handling", quantity: 1, unit: "SET", currency_code: "CNY", unit_price: 280, tax_rate: 0 },
+            { charge_group: "DESTINATION", charge_type: "CUSTOMS_FEE", charge_code: "IMC", description: "Import customs clearance", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 2100000, tax_rate: 10 },
+            { charge_group: "DESTINATION", charge_type: "WAREHOUSE", charge_code: "WHF", description: "Warehouse handling", quantity: 1, unit: "SET", currency_code: "VND", unit_price: 950000, tax_rate: 10 }
+        ]
     };
 }
 

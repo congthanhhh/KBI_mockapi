@@ -19,7 +19,7 @@
     "id": "cur_usd",
     "currency_code": "USD",
     "currency_name": "US Dollar",
-    "symbol": "$",
+    "symbol": "USD",
     "decimal_places": 2,
     "is_active": true
   },
