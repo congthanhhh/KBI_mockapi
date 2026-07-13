@@ -578,9 +578,32 @@ The frontend no longer synthesizes screen fields; the backend computes the real 
 - task_summary       : from logistics-tasks matched by do_number
                        (total / completed / blocked / required_tasks_remaining).
 - missing_documents  : REJECTED shipment documents of the DO's linked shipment(s).
+                       NOTE: this is "rejected", NOT "not yet uploaded". For the
+                       upload-completeness gate use documents_outstanding below.
+- required_documents : codes from the admin-configurable `document-types` catalog
+                       where is_required = true (falls back to Invoice / Packing List
+                       / B/L / CO when the catalog is empty).
+- documents_complete : true when every required type has >= 1 usable DO document
+                       (status RECEIVED or better; REJECTED/CANCELLED ignored).
+- documents_outstanding : required types with NO usable file (blocks DO closure).
+- documents_unverified  : required types that have file(s) but none VERIFIED
+                          (soft warning only; RECEIVED still opens the gate).
 - actual_entry_date  : from a linked DTO that reached POD_RECEIVED / CLOSED.
 - order_info.status  : derived (see below) — NOT the raw delivery_order.status.
 ```
+
+The same `documents_complete` / `documents_outstanding` / `documents_unverified`
+signal is mirrored onto the shipment record (`GET /api/v1/shipments/:id`) from its
+parent DO so the shipment milestone panel can show the badge without recomputing it.
+
+### document-types (master data)
+
+`document-types` is a reference master collection (`GET/POST/PATCH/DELETE
+/api/document-types`) — the admin-configurable catalog that owns which DO document
+types are required (`is_required`), mirroring the Task Template `is_required_for_closure`
+pattern. Fields: `code` (matches DO `document_type`), `label_en`, `label_vi`,
+`is_required`, `sort_order`, `is_active`. It is the single source for the required set;
+`REQUIRED_DO_DOCUMENT_TYPES` remains only as an empty-catalog fallback.
 
 ### DO screen status is derived from the linked shipment
 
@@ -1233,34 +1256,39 @@ Rules:
 
 # 18. Task Template ↔ Runtime Task Linkage
 
-`task-templates` is the SOP catalog (20 tasks). The runtime task-list screen
-(`screens/task-list`, served by `GET /api/v1/tasks`) is **linked** to it:
+`task-templates` is the SOP catalog (20 tasks). `logistics-tasks` is the sole
+runtime task pool; Tasks, the PO task board, and DO summaries project from it.
 
 ```txt
-- Each task screen item carries task_template_id plus template-derived fields:
-  milestone_code, department, sla_hours, sla_text, related_documents,
-  template_group_code, template_group_name.
-- The seed (buildScreenFiles / applyTaskTemplate) maps each operational task to
-  the closest SOP template, e.g. task_005 -> tt_007 (Booking, MS1),
-  task_007 -> tt_015 (Customs cleared / release).
-- Derived fields are pulled from the linked template at seed time so they stay
-  consistent. When you change a task template's milestone/department/SLA,
-  re-run `npm run mock:seed` so linked runtime tasks update too.
+- Every row has `task_template_id` and snapshots `milestone_code`, `group_code`,
+  `group_name`, `department`, `assignee_code`, `sla_hours`, `sla_text`, and
+  `related_documents`.
+- Ownership is SOP `department` (DepartmentCode) plus `assignee_code` such as
+  `FDS_OPS` + `O01`; synthetic task roles and free-text departments are not used.
+- `is_required_for_closure` is a **manually-curated master-data property on the task
+  template** — toggled per template via the Task Template form; the generic
+  `createRecord`/`updateRecord` persist it verbatim (no whitelist). The reseed formula
+  (operational MS1–MS8 tasks except the accounting/settlement group) is only the seed
+  DEFAULT. Runtime rows INHERIT it (seed snapshot + `resolveTaskTemplateFields`), never
+  set per task instance. `required_tasks_remaining` on the DO summary counts required
+  tasks not COMPLETED.
+- A blocked row stores `blocked_reason` + `blocked_by_party`
+  (`SUPPLIER|CARRIER|CUSTOMER|CUSTOMS|INTERNAL`) — a manual flag (no dependency engine).
 
-Manual create / edit endpoints (write to the `screens/task-list` DTO):
+Manual create / edit endpoints mutate `logistics-tasks`:
 
 ```txt
 POST  /api/v1/tasks          create a task; task_name required; optional
                              task_template_id derives milestone/department/sla/
                              related_documents/group via resolveTaskTemplateFields.
-PATCH /api/v1/tasks/:id      edit status/progress/note + task_name/role/stage/
-                             ref_*/priority/assignee; passing task_template_id
-                             re-derives the template snapshot (null clears it).
+PATCH /api/v1/tasks/:id      edit status/progress/note + task_name/department/
+                             assignee_code/blocked_reason/blocked_by_party/DO/PO
+                             fields; passing task_template_id re-derives the
+                             template snapshot (null clears it).
 ```
 
 ```txt
-- createTask assigns the next task_XXX id and appends to the task-list screen,
-  then rebuilds summary.
+- createTask assigns the next task_XXX id and appends to `logistics-tasks`.
 - buildTaskPatch only copies provided fields, so partial PATCH stays safe and
   template fields persist when not edited.
 ```

@@ -295,16 +295,5 @@
     "event_code": "REJECT",
     "event_at": "2026-06-26T08:50:00+07:00",
     "note": "Quotation moved to REJECTED in seeded RFQ flow."
-  },
-  {
-    "create_at": "2026-07-08T03:29:28.678Z",
-    "update_at": "2026-07-08T03:29:28.678Z",
-    "delete_at": null,
-    "is_delete": false,
-    "id": "qt_event_037",
-    "quotation_id": "qt_020",
-    "event_code": "SUBMIT_TO_KBI",
-    "event_at": "2026-07-08T03:29:28.677Z",
-    "note": "Quotation moved to PENDING_APPROVAL in mock flow."
   }
 ]

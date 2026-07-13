@@ -42,6 +42,12 @@ router.post("/container-types", asyncHandler(controller.createContainerType));
 router.patch("/container-types/:id", asyncHandler(controller.updateContainerType));
 router.delete("/container-types/:id", asyncHandler(controller.deleteContainerType));
 
+router.get("/document-types", asyncHandler(controller.listDocumentTypes));
+router.get("/document-types/:id", asyncHandler(controller.getDocumentType));
+router.post("/document-types", asyncHandler(controller.createDocumentType));
+router.patch("/document-types/:id", asyncHandler(controller.updateDocumentType));
+router.delete("/document-types/:id", asyncHandler(controller.deleteDocumentType));
+
 router.get("/forwarders", asyncHandler(controller.listForwarders));
 router.get("/forwarders/:id", asyncHandler(controller.getForwarder));
 router.post("/forwarders", asyncHandler(controller.createForwarder));

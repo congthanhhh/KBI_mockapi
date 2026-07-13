@@ -25,6 +25,7 @@ const collections = {
     deliveryOrderLots: "delivery-order-lots",
     deliveryOrderLines: "delivery-order-lines",
     deliveryOrderDocuments: "delivery-order-documents",
+    documentTypes: "document-types",
     quotationRequests: "quotation-requests",
     quotationRequestLines: "quotation-request-lines",
     quotations: "quotations",
@@ -44,8 +45,7 @@ const collections = {
     domesticTransportOrders: "domestic-transport-orders",
     domesticTransportOrderLines: "domestic-transport-order-lines",
     shipmentDtoLinks: "shipment-dto-links",
-    logisticsTasks: "logistics-tasks",
-    taskListScreen: "screens/task-list"
+    logisticsTasks: "logistics-tasks"
 };
 
 const collectionAliases = Object.freeze({
@@ -54,6 +54,7 @@ const collectionAliases = Object.freeze({
     customs_declaration_lines: collections.customsDeclarationLines,
     customs_declarations: collections.customsDeclarations,
     delivery_order_documents: collections.deliveryOrderDocuments,
+    document_types: collections.documentTypes,
     delivery_order_lines: collections.deliveryOrderLines,
     delivery_order_lots: collections.deliveryOrderLots,
     delivery_orders: collections.deliveryOrders,
@@ -1085,14 +1086,17 @@ export async function listLogisticsTasks() {
 }
 
 export async function listTasks(query = {}) {
-    const screen = await readTaskListScreen();
-    const items = filterTasks(screen.items || [], query);
+    const taskRows = await active(collections.logisticsTasks);
+    const items = filterTasks(taskRows.map(projectLogisticsTaskToScreenItem), query);
 
     return {
         data: {
             items,
             summary: buildTaskSummary(items),
-            filters: screen.filters || {}
+            filters: {
+                statuses: taskStatuses,
+                priorities: ["LOW", "MEDIUM", "HIGH", "URGENT"]
+            }
         },
         meta: {
             total: items.length
@@ -1101,12 +1105,6 @@ export async function listTasks(query = {}) {
 }
 
 export async function getTask(id) {
-    const detail = await readScreenOrNull(taskDetailCollectionName(id));
-
-    if (detail) {
-        return detail;
-    }
-
     const task = await findTaskItem(id);
 
     if (!task) {
@@ -1123,14 +1121,8 @@ export async function getTask(id) {
 
 export async function listPurchaseOrderTasks(purchaseOrderId) {
     const purchaseOrder = await requireRecord(collections.purchaseOrders, purchaseOrderId, "Purchase order not found");
-    const screen = await readScreenOrNull(poTasksCollectionName(purchaseOrderId));
-
-    if (screen) {
-        return screen;
-    }
-
-    const taskList = await readTaskListScreen();
-    return buildPurchaseOrderTaskScreen(purchaseOrder, taskList.items || []);
+    const taskRows = await active(collections.logisticsTasks);
+    return buildPurchaseOrderTaskScreen(purchaseOrder, taskRows.map(projectLogisticsTaskToScreenItem));
 }
 
 export async function createTask(body = {}) {
@@ -1144,44 +1136,49 @@ export async function createTask(body = {}) {
         throw apiError("VALIDATION_ERROR", "Invalid task status", { status: body.status }, 400);
     }
 
-    const screen = await readTaskListScreen();
-    const items = screen.items || [];
+    const items = await active(collections.logisticsTasks);
     const id = nextTaskId(items);
     const templateFields = await resolveTaskTemplateFields(body.task_template_id || null);
     const nowIso = new Date().toISOString();
     const refNo = body.ref_no || body.ref_id || "";
 
     const task = {
+        id,
+        task_id: id,
+        task_no: body.task_no || id.toUpperCase().replace("_", "-"),
+        task_name: taskName || templateFields.task_name || "Untitled task",
+        do_number: body.do_number || (body.ref_type === "DELIVERY_ORDER" ? refNo : null),
+        po_number: body.po_number || (body.ref_type !== "DELIVERY_ORDER" ? refNo : null),
+        request_code: body.request_code || refNo,
+        hbl_number: body.hbl_number || null,
+        production_contract_number: body.production_contract_number || "",
+        assignee: {
+            id: body.assignee?.id ?? body.assignee?.user_id ?? null,
+            name: body.assignee?.name || "Unassigned",
+            department: body.department ?? templateFields.department ?? null
+        },
+        assignee_code: body.assignee_code ?? body.assignee?.code ?? templateFields.assignee_code ?? null,
+        department: body.department ?? templateFields.department ?? null,
+        status: body.status || "PENDING",
+        priority: body.priority || "MEDIUM",
+        due_date: body.due_date || body.due_at || null,
+        completed_at: null,
+        progress: Number(body.progress) || 0,
+        blocked_reason: body.blocked_reason ?? null,
+        blocked_by_party: body.blocked_by_party ?? null,
+        notes: body.note || body.notes || null,
+        is_required_for_do_closure: Boolean(body.is_required_for_do_closure),
+        created_at: nowIso,
+        assigned_at: nowIso,
         create_at: nowIso,
         update_at: nowIso,
         delete_at: null,
         is_delete: false,
-        id,
-        task_no: body.task_no || id.toUpperCase().replace("_", "-"),
-        task_name: taskName,
-        ref_type: body.ref_type || "PURCHASE_ORDER",
-        ref_id: body.ref_id || refNo,
-        ref_no: refNo,
-        stage: body.stage || "SUPPLIER_CONFIRMATION",
-        role: body.role || "BUYER",
-        assignee: {
-            id: body.assignee?.id ?? null,
-            name: body.assignee?.name || "Unassigned",
-            department: body.assignee?.department ?? null
-        },
-        status: body.status || "PENDING",
-        priority: body.priority || "MEDIUM",
-        due_at: body.due_at || null,
-        completed_at: null,
-        progress: Number(body.progress) || 0,
-        blocked_reason: null,
-        note: body.note || body.notes || null,
-        ...templateFields
+        ...templateFields,
+        task_name: taskName || templateFields.task_name || "Untitled task"
     };
 
-    screen.items = [...items, task];
-    screen.summary = buildTaskSummary(screen.items);
-    await repo.writeCollection(collections.taskListScreen, screen);
+    await repo.insert(collections.logisticsTasks, task);
 
     return getTask(id);
 }
@@ -1216,11 +1213,14 @@ function nextTaskId(items) {
 async function resolveTaskTemplateFields(templateId) {
     const fields = {
         task_template_id: templateId || null,
+        task_name: null,
         milestone_code: null,
         department: null,
+        assignee_code: null,
         sla_hours: null,
         sla_text: null,
         related_documents: null,
+        is_required_for_do_closure: false,
         template_group_code: null,
         template_group_name: null
     };
@@ -1239,9 +1239,12 @@ async function resolveTaskTemplateFields(templateId) {
         ...fields,
         milestone_code: template.milestone_code ?? null,
         department: template.department ?? null,
+        assignee_code: template.assignee_code ?? null,
+        task_name: template.task_name ?? null,
         sla_hours: template.sla_hours ?? null,
         sla_text: template.sla_text ?? null,
         related_documents: template.related_documents ?? null,
+        is_required_for_do_closure: template.is_required_for_closure ?? false,
         template_group_code: template.group_code ?? null,
         template_group_name: template.group_name ?? null
     };
@@ -1431,16 +1434,58 @@ function computeDeliveryOrderMissingDocuments(shipments, shipmentDocuments) {
     return [...new Set(rejected)];
 }
 
-// Required customs documents tracked by the DO documents checklist (labels kept
-// in sync with the frontend documentLabels map).
+// Fallback required set, used only when the document-types catalog is empty. The
+// authoritative required set is the admin-configurable `document-types` collection
+// (is_required) read via getRequiredDocumentTypeCodes.
 const REQUIRED_DO_DOCUMENT_TYPES = ["Invoice", "Packing List", "B/L", "CO"];
 
-function computeDeliveryOrderDocumentsList(deliveryOrderId, deliveryOrderDocuments) {
+// Admin-configurable required-document codes from the document-types master catalog.
+async function getRequiredDocumentTypeCodes() {
+    const types = await active(collections.documentTypes);
+    const required = types
+        .filter((type) => type.is_required && type.is_active !== false)
+        .sort(bySortOrder)
+        .map((type) => type.code)
+        .filter(Boolean);
+    return required.length > 0 ? required : [...REQUIRED_DO_DOCUMENT_TYPES];
+}
+
+function computeDeliveryOrderDocumentsList(deliveryOrderId, deliveryOrderDocuments, requiredTypes = REQUIRED_DO_DOCUMENT_TYPES) {
     const received = (deliveryOrderDocuments || [])
         .filter((doc) => doc.delivery_order_id === deliveryOrderId && doc.status !== "REJECTED" && doc.status !== "CANCELLED")
         .map((doc) => doc.document_type)
         .filter(Boolean);
-    return REQUIRED_DO_DOCUMENT_TYPES.filter((type) => received.includes(type));
+    return requiredTypes.filter((type) => received.includes(type));
+}
+
+// Derived, reversible "documents complete" gate for a DO. Two tiers matching the
+// closure dialog: a required type with NO usable file -> outstanding (blocks close);
+// a required type that has file(s) but none VERIFIED -> unverified (soft warning).
+// RECEIVED opens the gate; REJECTED/CANCELLED files are ignored.
+function computeDeliveryOrderDocumentsCompletion(deliveryOrderId, deliveryOrderDocuments, requiredTypes = REQUIRED_DO_DOCUMENT_TYPES) {
+    const byType = new Map();
+    for (const doc of deliveryOrderDocuments || []) {
+        if (doc.delivery_order_id !== deliveryOrderId) continue;
+        if (doc.status === "REJECTED" || doc.status === "CANCELLED") continue;
+        const list = byType.get(doc.document_type) || [];
+        list.push(doc);
+        byType.set(doc.document_type, list);
+    }
+    const documents_outstanding = [];
+    const documents_unverified = [];
+    for (const type of requiredTypes) {
+        const list = byType.get(type) || [];
+        if (list.length === 0) {
+            documents_outstanding.push(type);
+        } else if (!list.some((doc) => doc.status === "VERIFIED")) {
+            documents_unverified.push(type);
+        }
+    }
+    return {
+        documents_complete: documents_outstanding.length === 0,
+        documents_outstanding,
+        documents_unverified
+    };
 }
 
 function computeDeliveryOrderActualEntry(shipments, dtos) {
@@ -1469,6 +1514,8 @@ function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
     const plannedCargoReady = toDateOnlyValue(enrichedDeliveryOrder.planned_cargo_ready_date);
     const warehouseDeadline = plannedEta || plannedCargoReady || plannedEtd || toDateOnlyValue(enrichedDeliveryOrder.create_at);
     const shippingMethod = inferDeliveryOrderShippingMethod(enrichedDeliveryOrder);
+    const requiredDocumentTypes = extras.requiredDocumentTypes || REQUIRED_DO_DOCUMENT_TYPES;
+    const documentsCompletion = computeDeliveryOrderDocumentsCompletion(enrichedDeliveryOrder.id, extras.deliveryOrderDocuments, requiredDocumentTypes);
 
     return {
         id: enrichedDeliveryOrder.id,
@@ -1510,8 +1557,12 @@ function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
             vessel_code: null,
             port_of_departure: enrichedDeliveryOrder.origin_address || "",
             port_of_destination: resolveDeliveryOrderDestinationPort(enrichedDeliveryOrder, firstLot, shippingMethod),
-            documents_list: computeDeliveryOrderDocumentsList(enrichedDeliveryOrder.id, extras.deliveryOrderDocuments),
+            documents_list: computeDeliveryOrderDocumentsList(enrichedDeliveryOrder.id, extras.deliveryOrderDocuments, requiredDocumentTypes),
             missing_documents: computeDeliveryOrderMissingDocuments(enrichedDeliveryOrder.shipments, extras.shipmentDocuments),
+            required_documents: requiredDocumentTypes,
+            documents_complete: documentsCompletion.documents_complete,
+            documents_outstanding: documentsCompletion.documents_outstanding,
+            documents_unverified: documentsCompletion.documents_unverified,
             cut_off_date: null,
             etd_planned: plannedEtd || null,
             eta_planned: plannedEta || null
@@ -1537,19 +1588,20 @@ function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
 }
 
 export async function getDeliveryOrderScreen(id) {
-    const [enriched, lots, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments] = await Promise.all([
+    const [enriched, lots, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes] = await Promise.all([
         getDeliveryOrder(id),
         listDeliveryOrderLots(id),
         active(collections.logisticsTasks),
         active(collections.shipmentDocuments),
         active(collections.domesticTransportOrders),
-        active(collections.deliveryOrderDocuments)
+        active(collections.deliveryOrderDocuments),
+        getRequiredDocumentTypeCodes()
     ]);
-    return buildDeliveryOrderScreen(enriched, lots, { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments });
+    return buildDeliveryOrderScreen(enriched, lots, { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes });
 }
 
 export async function listDeliveryOrderScreens() {
-    const [deliveryOrders, doLots, doLines, allLots, context, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments] = await Promise.all([
+    const [deliveryOrders, doLots, doLines, allLots, context, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes] = await Promise.all([
         active(collections.deliveryOrders),
         active(collections.deliveryOrderLots),
         active(collections.deliveryOrderLines),
@@ -1558,9 +1610,10 @@ export async function listDeliveryOrderScreens() {
         active(collections.logisticsTasks),
         active(collections.shipmentDocuments),
         active(collections.domesticTransportOrders),
-        active(collections.deliveryOrderDocuments)
+        active(collections.deliveryOrderDocuments),
+        getRequiredDocumentTypeCodes()
     ]);
-    const extras = { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments };
+    const extras = { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes };
     return deliveryOrders.map((deliveryOrder) => {
         const enriched = {
             ...enrichDeliveryOrder(deliveryOrder, context),
@@ -1588,7 +1641,10 @@ export async function createDeliveryOrderDocument(id, body) {
     if (body.status && !deliveryOrderDocumentStatuses.includes(body.status)) {
         throw apiError("VALIDATION_ERROR", "Invalid document status", { status: body.status }, 400);
     }
-    const documents = await active(collections.deliveryOrderDocuments);
+    const [documents, requiredTypes] = await Promise.all([
+        active(collections.deliveryOrderDocuments),
+        getRequiredDocumentTypeCodes()
+    ]);
     const documentType = body.document_type || "OTHER";
     return repo.insert(collections.deliveryOrderDocuments, {
         id: nextId(documents, "do_doc"),
@@ -1600,7 +1656,7 @@ export async function createDeliveryOrderDocument(id, body) {
         mime_type: body.mime_type || null,
         received_at: body.received_at || null,
         status: body.status || "RECEIVED",
-        is_required: REQUIRED_DO_DOCUMENT_TYPES.includes(documentType),
+        is_required: requiredTypes.includes(documentType),
         notes: body.notes || null
     });
 }
@@ -1612,7 +1668,10 @@ export async function updateDeliveryOrderDocument(documentId, body) {
     }
     const allowedFields = ["document_type", "document_no", "file_url", "file_name", "mime_type", "received_at", "status", "notes"];
     const patch = pick(body, allowedFields);
-    if (patch.document_type) patch.is_required = REQUIRED_DO_DOCUMENT_TYPES.includes(patch.document_type);
+    if (patch.document_type) {
+        const requiredTypes = await getRequiredDocumentTypeCodes();
+        patch.is_required = requiredTypes.includes(patch.document_type);
+    }
     return repo.update(collections.deliveryOrderDocuments, documentId, patch);
 }
 
@@ -2681,18 +2740,26 @@ export async function listShipments(query = {}) {
 
 export async function getShipment(id) {
     const shipment = await requireRecord(collections.shipments, id, "Shipment not found");
-    const [lines, milestones, documents, containers, declarations, costs] = await Promise.all([
+    const [lines, milestones, documents, containers, declarations, costs, deliveryOrderDocuments, requiredDocumentTypes] = await Promise.all([
         active(collections.shipmentLines),
         active(collections.shipmentMilestones),
         active(collections.shipmentDocuments),
         active(collections.shipmentContainers),
         active(collections.customsDeclarations),
-        active(collections.shipmentCosts)
+        active(collections.shipmentCosts),
+        active(collections.deliveryOrderDocuments),
+        getRequiredDocumentTypeCodes()
     ]);
     const finalQuotation = shipment.final_quotation_id ? await getQuotation(shipment.final_quotation_id) : null;
+    // Mirror the parent DO's derived "documents complete" gate onto the shipment so the
+    // milestone panel can show the badge without synthesizing it (source of truth = DO).
+    const documentsCompletion = shipment.delivery_order_id
+        ? computeDeliveryOrderDocumentsCompletion(shipment.delivery_order_id, deliveryOrderDocuments, requiredDocumentTypes)
+        : { documents_complete: true, documents_outstanding: [], documents_unverified: [] };
 
     return {
         ...shipment,
+        ...documentsCompletion,
         customs_channel: pickShipmentCustomsChannel(declarations, id),
         final_quotation: finalQuotation,
         lines: lines.filter((line) => line.shipment_id === id),
@@ -3512,17 +3579,6 @@ async function updateDomesticTransportOrderStatus(id, status, extraPatch = {}) {
     return getDomesticTransportOrder(id);
 }
 
-async function readTaskListScreen() {
-    const screen = await readScreenOrNull(collections.taskListScreen);
-    if (screen) {
-        return screen;
-    }
-
-    return {
-        items: []
-    };
-}
-
 async function readScreenOrNull(collectionName) {
     try {
         return await repo.readCollection(collectionName);
@@ -3535,12 +3591,13 @@ async function readScreenOrNull(collectionName) {
 }
 
 async function findTaskItem(id) {
-    const screen = await readTaskListScreen();
-    return (screen.items || []).find((task) => task.id === id) || null;
+    const tasks = await active(collections.logisticsTasks);
+    const task = tasks.find((item) => item.id === id || item.task_id === id);
+    return task ? projectLogisticsTaskToScreenItem(task) : null;
 }
 
 function filterTasks(items, query) {
-    const filters = pick(query, ["status", "priority", "stage", "role", "ref_type", "ref_id", "assignee_id"]);
+    const filters = pick(query, ["status", "priority", "stage", "department", "ref_type", "ref_id", "assignee_id", "assignee_code"]);
 
     return items.filter((task) => Object.entries(filters).every(([key, value]) => {
         if (value === undefined || value === null || value === "") {
@@ -3591,11 +3648,15 @@ function buildTaskPatch(body = {}) {
         "due_at",
         "completed_at",
         "task_name",
-        "role",
-        "stage",
-        "ref_type",
-        "ref_id",
-        "ref_no"
+        "department",
+        "assignee_code",
+        "do_number",
+        "po_number",
+        "request_code",
+        "hbl_number",
+        "production_contract_number",
+        "is_required_for_do_closure",
+        "blocked_by_party"
     ]) {
         if (body[field] !== undefined) {
             patch[field] = body[field];
@@ -3606,8 +3667,12 @@ function buildTaskPatch(body = {}) {
         patch.assignee = {
             id: body.assignee?.id ?? null,
             name: body.assignee?.name || "Unassigned",
-            department: body.assignee?.department ?? null
+            department: body.department ?? body.assignee?.department ?? null
         };
+    }
+
+    if (body.due_at !== undefined || body.due_date !== undefined) {
+        patch.due_date = body.due_date ?? body.due_at;
     }
 
     if (body.notes !== undefined && body.note === undefined) {
@@ -3624,89 +3689,47 @@ function buildTaskPatch(body = {}) {
 
 function normalizeAssignee(body = {}) {
     const source = body.assignee || body;
-    const id = source.id || source.user_id;
+    const id = source.id || source.user_id || null;
+    const assigneeCode = body.assignee_code ?? source.assignee_code ?? source.code ?? null;
 
-    if (!id) {
-        throw apiError("VALIDATION_ERROR", "assignee.id is required", { field: "assignee.id" }, 400);
+    if (!id && !assigneeCode) {
+        throw apiError("VALIDATION_ERROR", "assignee_code or assignee.id is required", { field: "assignee_code" }, 400);
     }
 
     return {
         id,
         name: source.name || "Unassigned",
-        department: source.department || null
+        department: body.department || source.department || null,
+        assignee_code: assigneeCode
     };
 }
 
 async function persistTaskPatch(id, patch) {
-    const screen = await readTaskListScreen();
-    const index = (screen.items || []).findIndex((task) => task.id === id);
+    const current = await repo.findById(collections.logisticsTasks, id);
 
-    if (index < 0) {
+    if (!current) {
         throw apiError("NOT_FOUND", "Task not found", { id }, 404);
     }
 
-    const updatedTask = {
-        ...screen.items[index],
+    const assigneePatch = patch.assignee
+        ? { assignee: { ...patch.assignee, department: patch.department ?? patch.assignee.department ?? current.department ?? null } }
+        : {};
+    if (patch.assignee?.assignee_code !== undefined) {
+        patch.assignee_code = patch.assignee.assignee_code;
+        delete patch.assignee.assignee_code;
+    }
+    await repo.update(collections.logisticsTasks, id, {
         ...patch,
+        ...assigneePatch,
         update_at: new Date().toISOString()
-    };
-    screen.items[index] = updatedTask;
-    screen.summary = buildTaskSummary(screen.items);
-    await repo.writeCollection(collections.taskListScreen, screen);
-    await persistTaskDetailPatch(id, patch);
-    await persistPurchaseOrderTaskPatch(updatedTask, patch);
+    });
 
     return getTask(id);
 }
 
-async function persistTaskDetailPatch(id, patch) {
-    const collectionName = taskDetailCollectionName(id);
-    const detail = await readScreenOrNull(collectionName);
-
-    if (!detail) {
-        return;
-    }
-
-    await repo.writeCollection(collectionName, {
-        ...detail,
-        ...patch,
-        update_at: new Date().toISOString(),
-        activity: [
-            {
-                event_code: "TASK_UPDATED",
-                event_at: new Date().toISOString(),
-                note: "Task updated in mock API."
-            },
-            ...(detail.activity || [])
-        ]
-    });
-}
-
-async function persistPurchaseOrderTaskPatch(task, patch) {
-    if (task.ref_type !== "PURCHASE_ORDER" || !task.ref_id) {
-        return;
-    }
-
-    const collectionName = poTasksCollectionName(task.ref_id);
-    const screen = await readScreenOrNull(collectionName);
-
-    if (!screen) {
-        return;
-    }
-
-    const taskGroups = (screen.task_groups || []).map((group) => ({
-        ...group,
-        tasks: (group.tasks || []).map((row) => row.id === task.id ? { ...row, ...patch, update_at: new Date().toISOString() } : row)
-    }));
-
-    await repo.writeCollection(collectionName, {
-        ...screen,
-        task_groups: taskGroups
-    });
-}
-
 function buildPurchaseOrderTaskScreen(purchaseOrder, items) {
-    const poTasks = items.filter((task) => task.ref_type === "PURCHASE_ORDER" && task.ref_id === purchaseOrder.id);
+    const poTasks = items.filter((task) => task.po_number === purchaseOrder.po_no);
+    const groupCodes = [...new Set(poTasks.map((task) => task.template_group_code || task.milestone_code || "UNGROUPED"))];
 
     return {
         purchase_order: {
@@ -3714,7 +3737,7 @@ function buildPurchaseOrderTaskScreen(purchaseOrder, items) {
             po_no: purchaseOrder.po_no,
             status: purchaseOrder.status
         },
-        task_groups: taskStages.map((stage) => ({
+        task_groups: groupCodes.map((stage) => ({
             stage,
             tasks: poTasks
                 .filter((task) => task.stage === stage)
@@ -3723,12 +3746,50 @@ function buildPurchaseOrderTaskScreen(purchaseOrder, items) {
     };
 }
 
-function taskDetailCollectionName(id) {
-    return `screens/task-detail-${id}`;
-}
+function projectLogisticsTaskToScreenItem(task) {
+    const dueAt = task.due_date || task.due_at || null;
+    const department = task.department || task.template?.department || task.assignee?.department || null;
+    const groupCode = task.group_code || task.template_group_code || task.template?.group_code || null;
+    const groupName = task.group_name || task.template_group_name || task.template?.group_name || null;
+    const milestoneCode = task.milestone_code || task.template?.milestone_code || null;
+    const doNumber = task.do_number || null;
+    const poNumber = task.po_number || null;
 
-function poTasksCollectionName(purchaseOrderId) {
-    return `screens/po-tasks-${purchaseOrderId}`;
+    return {
+        id: task.id || task.task_id,
+        task_no: task.task_no || String(task.id || task.task_id || "").toUpperCase().replace("_", "-"),
+        task_name: task.task_name,
+        ref_type: doNumber ? "DELIVERY_ORDER" : "PURCHASE_ORDER",
+        ref_id: doNumber || poNumber || "",
+        ref_no: doNumber || poNumber || "",
+        po_number: poNumber,
+        stage: groupCode || milestoneCode || "UNGROUPED",
+        assignee: {
+            id: task.assignee?.id ?? task.assignee?.user_id ?? null,
+            name: task.assignee?.name || "Unassigned",
+            department
+        },
+        assignee_code: task.assignee_code ?? null,
+        status: task.status,
+        priority: task.priority,
+        due_at: dueAt,
+        completed_at: task.completed_at || null,
+        progress: Number(task.progress || 0),
+        blocked_reason: task.blocked_reason || null,
+        note: task.notes ?? task.note ?? null,
+        task_template_id: task.task_template_id ?? null,
+        milestone_code: milestoneCode,
+        department,
+        sla_hours: task.sla_hours ?? task.template?.sla_hours ?? null,
+        sla_text: task.sla_text ?? task.template?.sla_text ?? null,
+        related_documents: task.related_documents ?? task.template?.related_documents ?? null,
+        is_required_for_closure: Boolean(task.is_required_for_do_closure),
+        blocked_by_party: task.blocked_by_party ?? null,
+        template_group_code: groupCode,
+        template_group_name: groupName,
+        create_at: task.created_at || task.create_at || null,
+        update_at: task.update_at || null
+    };
 }
 
 async function active(collectionName) {

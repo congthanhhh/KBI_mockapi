@@ -40,6 +40,12 @@ export const createContainerType = create("container-types", "ct");
 export const updateContainerType = update("container-types");
 export const deleteContainerType = remove("container-types");
 
+export const listDocumentTypes = list("document-types");
+export const getDocumentType = detail("document-types");
+export const createDocumentType = create("document-types", "doct");
+export const updateDocumentType = update("document-types");
+export const deleteDocumentType = remove("document-types");
+
 export const listForwarders = list("forwarders");
 export const getForwarder = detail("forwarders");
 export const createForwarder = create("forwarders", "fwd");

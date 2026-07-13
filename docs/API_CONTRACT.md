@@ -213,7 +213,7 @@ Delivery order line rows include joined `item`, `purchase_order_line`, `item_cod
 
 `PATCH /api/v1/delivery-orders/:id` updates editable DO header fields such as `status`, `transport_mode_id`, planned dates, route addresses, `warehouse_name`, and `notes`, then returns the enriched DO detail with lots and lines.
 
-`GET /api/v1/delivery-orders/screen` and `/:id/screen` return the **DO screen-DTO** the frontend renders directly (the backend owns this shape; the frontend no longer joins lots/lines or synthesizes fields). Each screen object nests `order_info`, `product_details`, `source_lines`, `sap_integration`, `logistics_shipping`, `warehouse_tracking`, `finance_tax`, `flow_tags`, and a **real** `task_summary` (`total_tasks`/`completed_tasks`/`blocked_tasks`/`required_tasks_remaining`) computed from `logistics-tasks` by `do_number`. `logistics_shipping.missing_documents` is derived from REJECTED shipment documents, and `warehouse_tracking.actual_entry_date` from a linked DTO that reached `POD_RECEIVED`/`CLOSED`.
+`GET /api/v1/delivery-orders/screen` and `/:id/screen` return the **DO screen-DTO** the frontend renders directly (the backend owns this shape; the frontend no longer joins lots/lines or synthesizes fields). Each screen object nests `order_info`, `product_details`, `source_lines`, `sap_integration`, `logistics_shipping`, `warehouse_tracking`, `finance_tax`, `flow_tags`, and a **real** `task_summary` (`total_tasks`/`completed_tasks`/`blocked_tasks`/`required_tasks_remaining`) computed from `logistics-tasks` by `do_number`. `logistics_shipping.missing_documents` is derived from REJECTED shipment documents (this is "rejected", NOT "not yet uploaded"), and `warehouse_tracking.actual_entry_date` from a linked DTO that reached `POD_RECEIVED`/`CLOSED`. `logistics_shipping` also carries the document-completeness gate: `required_documents` (codes from the admin-configurable `document-types` catalog where `is_required`), `documents_complete` (every required type has ≥1 usable DO document — status `RECEIVED` or better), `documents_outstanding` (required types with no usable file — blocks DO closure), and `documents_unverified` (required types with file(s) but none `VERIFIED` — soft warning). The same `documents_complete`/`documents_outstanding`/`documents_unverified` triple is mirrored onto `GET /api/v1/shipments/:id` from its parent DO. The required set is owned by the `document-types` master collection (`GET/POST/PATCH/DELETE /api/document-types`, fields `code`/`label_en`/`label_vi`/`is_required`/`sort_order`).
 
 Dashboard Tasks:
 
@@ -224,9 +224,13 @@ Dashboard Tasks:
 - `PATCH /api/v1/tasks/:id`
 - `POST /api/v1/tasks/:id/assign`
 
-`GET /api/v1/logistics-tasks` returns frontend-ready task rows for dashboard urgency, overdue task grouping, task role progress, and monthly completed-task throughput.
+`logistics-tasks` is the single SOP-native runtime task pool. Its rows carry
+`task_template_id`, template snapshots (`milestone_code`, `group_code`,
+`group_name`, `department`, `assignee_code`, SLA and documents), assignee name,
+and DO/PO task state. All task endpoints project or mutate this collection.
 
-`GET /api/v1/tasks` returns screen-ready Task DTO rows from `mock-data/screens/task-list.json`:
+`GET /api/v1/tasks` returns screen-ready Task DTO rows projected from
+`logistics-tasks`:
 
 - `items[]`
 - `summary`
@@ -237,23 +241,15 @@ Supported query filters:
 - `status`
 - `priority`
 - `stage`
-- `role`
+- `department`
 - `ref_type`
 - `ref_id`
 - `assignee_id`
 
-`GET /api/v1/purchase-orders/:id/tasks` returns task groups by PO flow stage:
+`GET /api/v1/purchase-orders/:id/tasks` returns task groups by SOP group
+(`GR1` … `GR8`) or milestone.
 
-- `SUPPLIER_CONFIRMATION`
-- `LOT_PLANNING`
-- `INTERNAL_DO`
-- `QUOTATION`
-- `SHIPMENT`
-- `CUSTOMS`
-- `CARRIER_DO`
-- `DTO`
-
-`PATCH /api/v1/tasks/:id` updates only mock task screen state fields:
+`PATCH /api/v1/tasks/:id` mutates the runtime collection, including:
 
 - `status`
 - `note`
@@ -262,15 +258,17 @@ Supported query filters:
 - `blocked_reason`
 - `priority`
 - `due_at`
+- `department`
+- `assignee_code`
 
 `POST /api/v1/tasks/:id/assign` updates only mock task assignee:
 
 ```json
 {
   "assignee": {
-    "id": "user_buyer_001",
-    "name": "Nguyen Van A",
-    "department": "Procurement"
+    "name": "Mai Anh",
+    "department": "FDS_OPS",
+    "code": "O01"
   }
 }
 ```

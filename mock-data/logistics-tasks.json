@@ -11,12 +11,14 @@
     "request_code": "DO-KBI-2026-001",
     "po_number": "PO-KBI-2026-002",
     "production_contract_number": "KBI-CN-2026-002",
-    "task_name": "Bao gia cuoc FCL",
-    "role": "PIC Manager",
+    "task_name": "Booking tàu/chuyến bay với Carrier",
+    "task_template_id": "tt_007",
+    "department": "FDS_OPS",
+    "assignee_code": "O01",
     "assignee": {
       "user_id": "u_ops_01",
       "name": "Mai Anh",
-      "department": "Logistics"
+      "department": "FDS_OPS"
     },
     "progress": 40,
     "created_at": "2026-06-08T02:00:00.000Z",
@@ -25,9 +27,16 @@
     "status": "IN_PROGRESS",
     "priority": "HIGH",
     "due_date": "2026-06-12",
-    "notes": "Bao gia can chot de tao shipment.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Đang chốt booking với hãng tàu để tạo shipment.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS1_BOOKING_CONFIRMED",
+    "sla_hours": 24,
+    "sla_text": null,
+    "related_documents": "Booking confirmation",
+    "group_code": "GR3",
+    "group_name": "Booking & Chuẩn bị hàng",
+    "is_required_for_do_closure": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -41,12 +50,14 @@
     "request_code": "DO-KBI-2026-005",
     "po_number": "PO-KBI-2026-005",
     "production_contract_number": "KBI-CN-2026-005",
-    "task_name": "Booking tau Shanghai - Hai Phong",
-    "role": "Port Officer",
+    "task_name": "Booking tàu Shanghai – Hải Phòng",
+    "task_template_id": "tt_007",
+    "department": "FDS_OPS",
+    "assignee_code": "O01",
     "assignee": {
-      "user_id": "u_port_01",
-      "name": "Hoang Nam",
-      "department": "Port Ops"
+      "user_id": "u_ops_02",
+      "name": "Hoàng Nam",
+      "department": "FDS_OPS"
     },
     "progress": 25,
     "created_at": "2026-06-10T02:00:00.000Z",
@@ -55,9 +66,16 @@
     "status": "BLOCKED",
     "priority": "URGENT",
     "due_date": "2026-06-11",
-    "notes": "Booking bi giu do thieu SI.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": "Waiting supplier shipping instruction."
+    "notes": "Booking bị giữ do NCC chưa gửi Shipping Instruction.",
+    "blocked_reason": "Chờ NCC gửi Shipping Instruction (SI).",
+    "blocked_by_party": "SUPPLIER",
+    "milestone_code": "MS1_BOOKING_CONFIRMED",
+    "sla_hours": 24,
+    "sla_text": null,
+    "related_documents": "Booking confirmation",
+    "group_code": "GR3",
+    "group_name": "Booking & Chuẩn bị hàng",
+    "is_required_for_do_closure": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -71,12 +89,14 @@
     "request_code": "DO-KBI-2026-006",
     "po_number": "PO-KBI-2026-006",
     "production_contract_number": "KBI-CN-2026-006",
-    "task_name": "Xu ly chung tu air freight",
-    "role": "Sale Staff",
+    "task_name": "Chuẩn bị hồ sơ thông quan (hàng air)",
+    "task_template_id": "tt_013",
+    "department": "FDS_OPS_CUSTOMS",
+    "assignee_code": "O02",
     "assignee": {
-      "user_id": "u_sale_01",
-      "name": "Thu Ha",
-      "department": "Sales"
+      "user_id": "u_cus_02",
+      "name": "Thu Hà",
+      "department": "FDS_OPS_CUSTOMS"
     },
     "progress": 65,
     "created_at": "2026-06-11T02:00:00.000Z",
@@ -85,9 +105,16 @@
     "status": "WAITING",
     "priority": "HIGH",
     "due_date": "2026-06-12",
-    "notes": "Chung tu invoice packing list chua dong bo.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Chờ đồng bộ Commercial Invoice và Packing List.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS5_ARRIVED_PORT",
+    "sla_hours": 8,
+    "sla_text": null,
+    "related_documents": "Invoice, Packing List, B/L, C/O",
+    "group_code": "GR5",
+    "group_name": "Thông quan (Customs)",
+    "is_required_for_do_closure": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -101,12 +128,14 @@
     "request_code": "DO-KBI-2026-007",
     "po_number": "PO-KBI-2026-007",
     "production_contract_number": "KBI-CN-2026-007",
-    "task_name": "Mo to khai hai quan",
-    "role": "Customs Officer",
+    "task_name": "Nộp tờ khai hải quan (Customs Declaration)",
+    "task_template_id": "tt_014",
+    "department": "FDS_OPS_CUSTOMS",
+    "assignee_code": "O02",
     "assignee": {
       "user_id": "u_cus_01",
-      "name": "Quoc Bao",
-      "department": "Customs"
+      "name": "Quốc Bảo",
+      "department": "FDS_OPS_CUSTOMS"
     },
     "progress": 50,
     "created_at": "2026-06-09T02:00:00.000Z",
@@ -115,9 +144,16 @@
     "status": "IN_PROGRESS",
     "priority": "HIGH",
     "due_date": "2026-06-12",
-    "notes": "To khai can mapping HS code voi packing list.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Cần mapping HS code với Packing List trước khi nộp VNACCS.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS6_CUSTOMS_SUBMITTED",
+    "sla_hours": 4,
+    "sla_text": null,
+    "related_documents": "Customs declaration form",
+    "group_code": "GR5",
+    "group_name": "Thông quan (Customs)",
+    "is_required_for_do_closure": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -131,12 +167,14 @@
     "request_code": "DO-KBI-2026-009",
     "po_number": "PO-KBI-2026-009",
     "production_contract_number": "KBI-CN-2026-009",
-    "task_name": "Giao hang ve kho Kim Binh",
-    "role": "Warehouse Staff",
+    "task_name": "Vận chuyển trucking từ cảng về kho KBI",
+    "task_template_id": "tt_016",
+    "department": "FDS_OPS",
+    "assignee_code": "O01",
     "assignee": {
-      "user_id": "u_wh_01",
-      "name": "Minh Duc",
-      "department": "Warehouse"
+      "user_id": "u_ops_03",
+      "name": "Minh Đức",
+      "department": "FDS_OPS"
     },
     "progress": 10,
     "created_at": "2026-06-07T02:00:00.000Z",
@@ -145,9 +183,16 @@
     "status": "TODO",
     "priority": "URGENT",
     "due_date": "2026-06-10",
-    "notes": "Giao hang tre do xe chua duoc dieu phoi.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Giao hàng trễ do xe chưa được điều phối.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS7_CUSTOMS_CLEARED",
+    "sla_hours": 8,
+    "sla_text": null,
+    "related_documents": "Delivery order, Truck booking",
+    "group_code": "GR6",
+    "group_name": "Giao nhận & Kho",
+    "is_required_for_do_closure": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -161,12 +206,14 @@
     "request_code": "DO-KBI-2026-010",
     "po_number": "PO-KBI-2026-010",
     "production_contract_number": "KBI-CN-2026-010",
-    "task_name": "Kiem tra phi local charge",
-    "role": "Finance Officer",
+    "task_name": "Phát hành Debit Note / Hóa đơn dịch vụ",
+    "task_template_id": "tt_019",
+    "department": "FDS_ACCOUNTING",
+    "assignee_code": "A01",
     "assignee": {
-      "user_id": "u_fin_01",
-      "name": "Lan Phuong",
-      "department": "Finance"
+      "user_id": "u_acc_01",
+      "name": "Lan Phương",
+      "department": "FDS_ACCOUNTING"
     },
     "progress": 100,
     "created_at": "2026-06-05T02:00:00.000Z",
@@ -175,9 +222,16 @@
     "status": "COMPLETED",
     "priority": "MEDIUM",
     "due_date": "2026-06-12",
-    "notes": "Finance confirmed local charge.",
-    "is_required_for_do_closure": false,
-    "blocked_reason": null
+    "notes": "Đã tổng hợp phí local và phát hành Debit Note.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS8_DELIVERED_GATE",
+    "sla_hours": 48,
+    "sla_text": null,
+    "related_documents": "Debit Note, Tax invoice",
+    "group_code": "GR8",
+    "group_name": "Công nợ & Hóa đơn",
+    "is_required_for_do_closure": false
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -191,12 +245,14 @@
     "request_code": "DO-KBI-2026-011",
     "po_number": "PO-KBI-2026-011",
     "production_contract_number": "KBI-CN-2026-011",
-    "task_name": "Bao gia air freight khan",
-    "role": "PIC Manager",
+    "task_name": "Chuẩn bị & gửi báo giá (air freight khẩn)",
+    "task_template_id": "tt_002",
+    "department": "FDS_SALES",
+    "assignee_code": "S01",
     "assignee": {
-      "user_id": "u_ops_02",
-      "name": "Thanh Tung",
-      "department": "Logistics"
+      "user_id": "u_sale_01",
+      "name": "Thanh Tùng",
+      "department": "FDS_SALES"
     },
     "progress": 15,
     "created_at": "2026-06-12T02:00:00.000Z",
@@ -205,9 +261,16 @@
     "status": "TODO",
     "priority": "URGENT",
     "due_date": "2026-06-13",
-    "notes": "Bao gia can trong ngay de giu slot bay.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Báo giá cần chốt trong ngày để giữ slot bay.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "PRE_SHIPMENT",
+    "sla_hours": null,
+    "sla_text": "Trước ngày hàng hàng đi 2 ngày",
+    "related_documents": "Quotation email",
+    "group_code": "GR1",
+    "group_name": "Báo giá & Xác nhận dịch vụ",
+    "is_required_for_do_closure": false
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -221,12 +284,14 @@
     "request_code": "DO-KBI-2026-012",
     "po_number": "PO-KBI-2026-012",
     "production_contract_number": "KBI-CN-2026-012",
-    "task_name": "Booking breakbulk",
-    "role": "Port Officer",
+    "task_name": "Booking breakbulk với Carrier",
+    "task_template_id": "tt_007",
+    "department": "FDS_OPS",
+    "assignee_code": "O01",
     "assignee": {
-      "user_id": "u_port_02",
+      "user_id": "u_ops_04",
       "name": "Gia Huy",
-      "department": "Port Ops"
+      "department": "FDS_OPS"
     },
     "progress": 75,
     "created_at": "2026-06-10T02:00:00.000Z",
@@ -235,9 +300,16 @@
     "status": "IN_PROGRESS",
     "priority": "MEDIUM",
     "due_date": "2026-06-18",
-    "notes": "Booking dang cho hang tau xac nhan lich.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Đang chờ hãng tàu xác nhận lịch breakbulk.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS1_BOOKING_CONFIRMED",
+    "sla_hours": 24,
+    "sla_text": null,
+    "related_documents": "Booking confirmation",
+    "group_code": "GR3",
+    "group_name": "Booking & Chuẩn bị hàng",
+    "is_required_for_do_closure": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -251,12 +323,14 @@
     "request_code": "DO-KBI-2026-013",
     "po_number": "PO-KBI-2026-013",
     "production_contract_number": "KBI-CN-2026-013",
-    "task_name": "Xu ly chung tu CIF",
-    "role": "Sale Staff",
+    "task_name": "Thu thập & gửi bộ chứng từ gốc cho KBI",
+    "task_template_id": "tt_018",
+    "department": "FDS_OPS",
+    "assignee_code": "O02",
     "assignee": {
-      "user_id": "u_sale_02",
-      "name": "Bao Ngoc",
-      "department": "Sales"
+      "user_id": "u_ops_05",
+      "name": "Bảo Ngọc",
+      "department": "FDS_OPS"
     },
     "progress": 100,
     "created_at": "2026-06-06T02:00:00.000Z",
@@ -265,9 +339,16 @@
     "status": "COMPLETED",
     "priority": "LOW",
     "due_date": "2026-06-09",
-    "notes": "Chung tu CIF da hoan tat.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Đã gửi bộ chứng từ gốc (B/L, Invoice, C/O) cho KBI.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS8_DELIVERED_GATE",
+    "sla_hours": 48,
+    "sla_text": null,
+    "related_documents": "Full document set",
+    "group_code": "GR7",
+    "group_name": "Chứng từ hoàn chỉnh",
+    "is_required_for_do_closure": true
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
@@ -281,12 +362,14 @@
     "request_code": "DO-KBI-2026-014",
     "po_number": "PO-KBI-2026-014",
     "production_contract_number": "KBI-CN-2026-014",
-    "task_name": "Giao hang ECU ve kho",
-    "role": "Warehouse Staff",
+    "task_name": "Giao hàng ECU tại cổng kho KBI (Gate-in)",
+    "task_template_id": "tt_017",
+    "department": "FDS_OPS",
+    "assignee_code": "O01",
     "assignee": {
-      "user_id": "u_wh_02",
-      "name": "Nguyen Khoa",
-      "department": "Warehouse"
+      "user_id": "u_ops_06",
+      "name": "Nguyễn Khoa",
+      "department": "FDS_OPS"
     },
     "progress": 35,
     "created_at": "2026-06-12T02:00:00.000Z",
@@ -295,8 +378,15 @@
     "status": "IN_PROGRESS",
     "priority": "HIGH",
     "due_date": "2026-06-16",
-    "notes": "Giao hang dang cho lich xe noi dia.",
-    "is_required_for_do_closure": true,
-    "blocked_reason": null
+    "notes": "Đang chờ lịch xe nội địa để giao ECU về kho.",
+    "blocked_reason": null,
+    "blocked_by_party": null,
+    "milestone_code": "MS8_DELIVERED_GATE",
+    "sla_hours": 2,
+    "sla_text": null,
+    "related_documents": "Delivery receipt / Biên bản giao nhận",
+    "group_code": "GR6",
+    "group_name": "Giao nhận & Kho",
+    "is_required_for_do_closure": true
   }
 ]

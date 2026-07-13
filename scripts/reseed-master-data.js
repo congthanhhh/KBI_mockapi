@@ -331,22 +331,37 @@ function buildCarriers(rows) {
 function buildTaskTemplates(rows) {
     const dataRows = rows.filter((row) => /^\d+$/.test(row[1] || "") && row[2] && row[4]);
 
-    return dataRows.map((row, index) => audit({
-        id: formatId("tt", index + 1),
-        group_code: taskGroupCode(row[2]),
-        group_name: row[2].trim(),
-        task_name: row[4].trim(),
-        task_description: row[5].trim(),
-        milestone_code: milestoneCode(row[6]),
-        sla_hours: numberOrNull(row[7]),
-        sla_text: Number.isFinite(Number(row[7])) ? null : optionalString(row[7]),
-        department: departmentCode(row[8]),
-        assignee_role: optionalString(row[9]),
-        required_documents: optionalString(row[10]),
-        note: optionalString(row[11]),
-        sort_order: index + 1,
-        is_active: true
-    }));
+    return dataRows.map((row, index) => {
+        const groupName = row[2].trim();
+        const groupCode = taskGroupCode(row[2]);
+        const milestone = milestoneCode(row[6]);
+        const department = departmentCode(row[8]);
+        // Accounting / debt-settlement group runs after operational close, so it never gates it.
+        const isAccountingGroup = /công nợ/i.test(groupName) || department === "FDS_ACCOUNTING";
+
+        return audit({
+            id: formatId("tt", index + 1),
+            group_code: groupCode,
+            group_name: row[2].trim(),
+            task_name: row[4].trim(),
+            task_description: row[5].trim(),
+            milestone_code: milestone,
+            sla_hours: numberOrNull(row[7]),
+            sla_text: Number.isFinite(Number(row[7])) ? null : optionalString(row[7]),
+            department,
+            assignee_code: optionalString(row[9]),
+            related_documents: optionalString(row[10]),
+            // SEED DEFAULT ONLY — `is_required_for_closure` is now a MANUALLY-CURATED master-data
+            // field: admins toggle it per template in the Task Template form and the value persists
+            // (runtime tasks inherit it). This formula just picks a sensible initial default at seed
+            // time — operational milestone tasks (MS1–MS8) gate DO closure; accounting/settlement
+            // tasks (Debit Note, đối chiếu công nợ) run after close, so they start unchecked.
+            is_required_for_closure: /^MS[1-8]/.test(milestone || "") && !isAccountingGroup,
+            note: optionalString(row[11]),
+            sort_order: index + 1,
+            is_active: true
+        });
+    });
 }
 
 // Maps doc section headers to canonical macro group enum values.
