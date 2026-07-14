@@ -578,32 +578,10 @@ The frontend no longer synthesizes screen fields; the backend computes the real 
 - task_summary       : from logistics-tasks matched by do_number
                        (total / completed / blocked / required_tasks_remaining).
 - missing_documents  : REJECTED shipment documents of the DO's linked shipment(s).
-                       NOTE: this is "rejected", NOT "not yet uploaded". For the
-                       upload-completeness gate use documents_outstanding below.
-- required_documents : codes from the admin-configurable `document-types` catalog
-                       where is_required = true (falls back to Invoice / Packing List
-                       / B/L / CO when the catalog is empty).
-- documents_complete : true when every required type has >= 1 usable DO document
-                       (status RECEIVED or better; REJECTED/CANCELLED ignored).
-- documents_outstanding : required types with NO usable file (blocks DO closure).
-- documents_unverified  : required types that have file(s) but none VERIFIED
-                          (soft warning only; RECEIVED still opens the gate).
+                       NOTE: this is "rejected", NOT "not yet uploaded".
 - actual_entry_date  : from a linked DTO that reached POD_RECEIVED / CLOSED.
 - order_info.status  : derived (see below) — NOT the raw delivery_order.status.
 ```
-
-The same `documents_complete` / `documents_outstanding` / `documents_unverified`
-signal is mirrored onto the shipment record (`GET /api/v1/shipments/:id`) from its
-parent DO so the shipment milestone panel can show the badge without recomputing it.
-
-### document-types (master data)
-
-`document-types` is a reference master collection (`GET/POST/PATCH/DELETE
-/api/document-types`) — the admin-configurable catalog that owns which DO document
-types are required (`is_required`), mirroring the Task Template `is_required_for_closure`
-pattern. Fields: `code` (matches DO `document_type`), `label_en`, `label_vi`,
-`is_required`, `sort_order`, `is_active`. It is the single source for the required set;
-`REQUIRED_DO_DOCUMENT_TYPES` remains only as an empty-catalog fallback.
 
 ### DO screen status is derived from the linked shipment
 
@@ -1215,7 +1193,23 @@ Backend implementation is correct when:
 - POST /api/v1/shipments/:id/domestic-transport-orders/link links an existing DTO to a Shipment.
 - DELETE /api/v1/shipments/:id/domestic-transport-orders/:dtoId/unlink soft-deletes the junction record.
 - DTO response includes shipments[] array with all linked shipments.
+- PO List and DTO List return `meta.summary` (dataset-wide header metrics).
 ```
+
+## 16.1 List header metrics — `meta.summary`
+
+Paginated list endpoints attach `meta.summary` via `paginateResult(items, query, summarize)`,
+computed over the **full filtered set before the page slice** so frontend header metrics are
+dataset-wide, not page-scoped. The summary is computed over the base (primary-filtered) set,
+**excluding** the metric's own click-filter, so a metric count stays stable when toggled.
+
+- `listPurchaseOrders` → `{ total, delayed, awaiting_lot, on_time_rate }`; supports the global
+  click-filters `?delayed=true` (`delayed_days > 0`) and `?needs_lot=true`
+  (`purchaseOrderNeedsLot`: confirmed PO with a line where `qty_lotted < qty_confirmed||qty_ordered`).
+- `listDomesticTransportOrders` → `{ total, awaiting_dispatch, in_transit, closed }`; supports
+  `?status_group=awaiting_dispatch|in_transit|closed` (`DTO_STATUS_GROUPS`).
+
+A real backend replaces these with `COUNT(...) GROUP BY` behind the same `meta.summary` shape.
 
 ---
 

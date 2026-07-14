@@ -31,7 +31,13 @@ const oldSupplierToNewSupplier = {
     sup_fds_forwarder: "sup_001",
     sup_vn_trucking: "sup_002",
     sup_haiphong_trucking: "sup_003",
-    sup_north_trucking: "sup_004"
+    sup_north_trucking: "sup_004",
+    // Import-PO suppliers: spread demo POs across more of the master so the
+    // supplier leaderboard compares a realistic field instead of just two rows.
+    sup_kowei: "sup_002",
+    sup_choho: "sup_003",
+    sup_naibo: "sup_004",
+    sup_pairgears: "sup_005"
 };
 
 export async function reseedMasterData() {

@@ -25,7 +25,6 @@ const collections = {
     deliveryOrderLots: "delivery-order-lots",
     deliveryOrderLines: "delivery-order-lines",
     deliveryOrderDocuments: "delivery-order-documents",
-    documentTypes: "document-types",
     quotationRequests: "quotation-requests",
     quotationRequestLines: "quotation-request-lines",
     quotations: "quotations",
@@ -54,7 +53,6 @@ const collectionAliases = Object.freeze({
     customs_declaration_lines: collections.customsDeclarationLines,
     customs_declarations: collections.customsDeclarations,
     delivery_order_documents: collections.deliveryOrderDocuments,
-    document_types: collections.documentTypes,
     delivery_order_lines: collections.deliveryOrderLines,
     delivery_order_lots: collections.deliveryOrderLots,
     delivery_orders: collections.deliveryOrders,
@@ -264,7 +262,15 @@ export async function listPurchaseOrders(query = {}) {
     const fromDate = String(query.from_date || "").trim();
     const toDate = String(query.to_date || "").trim();
 
-    const items = purchaseOrders
+    // Cross-cutting "metric" filters — toggled by clicking a header metric. They
+    // are applied AFTER the summary is computed so the metric counts stay stable
+    // (faceted-search semantics: a facet count doesn't collapse when you click it).
+    const delayedOnly = isTrueFlag(query.delayed);
+    const needsLotOnly = isTrueFlag(query.needs_lot);
+
+    // Base set: primary filters (status/supplier/date/search) only. The header
+    // metrics are computed over this set so they describe the whole dataset.
+    const baseItems = purchaseOrders
         .map((purchaseOrder) => enrichPurchaseOrder(purchaseOrder, {
             ...context,
             suppliers
@@ -280,7 +286,34 @@ export async function listPurchaseOrders(query = {}) {
         })
         .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")));
 
-    return paginateResult(items, query);
+    const items = baseItems.filter((purchaseOrder) => {
+        if (delayedOnly && !(Number(purchaseOrder.delayed_days) > 0)) return false;
+        if (needsLotOnly && !purchaseOrderNeedsLot(purchaseOrder)) return false;
+        return true;
+    });
+
+    return paginateResult(items, query, () => summarizePurchaseOrders(baseItems));
+}
+
+// A confirmed (or further) PO that still has cargo not yet planned into a LOT.
+// Mirrors the frontend `getPoLineLotState` "needs-lot"/"partial" states so the
+// clickable metric count and the `needs_lot` filter agree exactly.
+function purchaseOrderNeedsLot(purchaseOrder) {
+    if (purchaseOrder.status === "DRAFT" || purchaseOrder.status === "CANCELLED") return false;
+    const lines = Array.isArray(purchaseOrder.lines) ? purchaseOrder.lines : [];
+    return lines.some((line) => {
+        const lotted = Number(line.qty_lotted) || 0;
+        const target = (Number(line.qty_confirmed) || 0) || (Number(line.qty_ordered) || 0);
+        return target > 0 && lotted < target;
+    });
+}
+
+function summarizePurchaseOrders(items) {
+    const total = items.length;
+    const delayed = items.filter((purchaseOrder) => Number(purchaseOrder.delayed_days) > 0).length;
+    const awaiting_lot = items.filter(purchaseOrderNeedsLot).length;
+    const on_time_rate = total === 0 ? 100 : Math.round(((total - delayed) / total) * 100);
+    return { total, delayed, awaiting_lot, on_time_rate };
 }
 
 export async function getPurchaseOrder(id) {
@@ -1434,58 +1467,14 @@ function computeDeliveryOrderMissingDocuments(shipments, shipmentDocuments) {
     return [...new Set(rejected)];
 }
 
-// Fallback required set, used only when the document-types catalog is empty. The
-// authoritative required set is the admin-configurable `document-types` collection
-// (is_required) read via getRequiredDocumentTypeCodes.
 const REQUIRED_DO_DOCUMENT_TYPES = ["Invoice", "Packing List", "B/L", "CO"];
 
-// Admin-configurable required-document codes from the document-types master catalog.
-async function getRequiredDocumentTypeCodes() {
-    const types = await active(collections.documentTypes);
-    const required = types
-        .filter((type) => type.is_required && type.is_active !== false)
-        .sort(bySortOrder)
-        .map((type) => type.code)
-        .filter(Boolean);
-    return required.length > 0 ? required : [...REQUIRED_DO_DOCUMENT_TYPES];
-}
-
-function computeDeliveryOrderDocumentsList(deliveryOrderId, deliveryOrderDocuments, requiredTypes = REQUIRED_DO_DOCUMENT_TYPES) {
+function computeDeliveryOrderDocumentsList(deliveryOrderId, deliveryOrderDocuments) {
     const received = (deliveryOrderDocuments || [])
         .filter((doc) => doc.delivery_order_id === deliveryOrderId && doc.status !== "REJECTED" && doc.status !== "CANCELLED")
         .map((doc) => doc.document_type)
         .filter(Boolean);
-    return requiredTypes.filter((type) => received.includes(type));
-}
-
-// Derived, reversible "documents complete" gate for a DO. Two tiers matching the
-// closure dialog: a required type with NO usable file -> outstanding (blocks close);
-// a required type that has file(s) but none VERIFIED -> unverified (soft warning).
-// RECEIVED opens the gate; REJECTED/CANCELLED files are ignored.
-function computeDeliveryOrderDocumentsCompletion(deliveryOrderId, deliveryOrderDocuments, requiredTypes = REQUIRED_DO_DOCUMENT_TYPES) {
-    const byType = new Map();
-    for (const doc of deliveryOrderDocuments || []) {
-        if (doc.delivery_order_id !== deliveryOrderId) continue;
-        if (doc.status === "REJECTED" || doc.status === "CANCELLED") continue;
-        const list = byType.get(doc.document_type) || [];
-        list.push(doc);
-        byType.set(doc.document_type, list);
-    }
-    const documents_outstanding = [];
-    const documents_unverified = [];
-    for (const type of requiredTypes) {
-        const list = byType.get(type) || [];
-        if (list.length === 0) {
-            documents_outstanding.push(type);
-        } else if (!list.some((doc) => doc.status === "VERIFIED")) {
-            documents_unverified.push(type);
-        }
-    }
-    return {
-        documents_complete: documents_outstanding.length === 0,
-        documents_outstanding,
-        documents_unverified
-    };
+    return REQUIRED_DO_DOCUMENT_TYPES.filter((type) => received.includes(type));
 }
 
 function computeDeliveryOrderActualEntry(shipments, dtos) {
@@ -1514,8 +1503,6 @@ function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
     const plannedCargoReady = toDateOnlyValue(enrichedDeliveryOrder.planned_cargo_ready_date);
     const warehouseDeadline = plannedEta || plannedCargoReady || plannedEtd || toDateOnlyValue(enrichedDeliveryOrder.create_at);
     const shippingMethod = inferDeliveryOrderShippingMethod(enrichedDeliveryOrder);
-    const requiredDocumentTypes = extras.requiredDocumentTypes || REQUIRED_DO_DOCUMENT_TYPES;
-    const documentsCompletion = computeDeliveryOrderDocumentsCompletion(enrichedDeliveryOrder.id, extras.deliveryOrderDocuments, requiredDocumentTypes);
 
     return {
         id: enrichedDeliveryOrder.id,
@@ -1557,12 +1544,8 @@ function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
             vessel_code: null,
             port_of_departure: enrichedDeliveryOrder.origin_address || "",
             port_of_destination: resolveDeliveryOrderDestinationPort(enrichedDeliveryOrder, firstLot, shippingMethod),
-            documents_list: computeDeliveryOrderDocumentsList(enrichedDeliveryOrder.id, extras.deliveryOrderDocuments, requiredDocumentTypes),
+            documents_list: computeDeliveryOrderDocumentsList(enrichedDeliveryOrder.id, extras.deliveryOrderDocuments),
             missing_documents: computeDeliveryOrderMissingDocuments(enrichedDeliveryOrder.shipments, extras.shipmentDocuments),
-            required_documents: requiredDocumentTypes,
-            documents_complete: documentsCompletion.documents_complete,
-            documents_outstanding: documentsCompletion.documents_outstanding,
-            documents_unverified: documentsCompletion.documents_unverified,
             cut_off_date: null,
             etd_planned: plannedEtd || null,
             eta_planned: plannedEta || null
@@ -1588,20 +1571,19 @@ function buildDeliveryOrderScreen(enrichedDeliveryOrder, lots, extras) {
 }
 
 export async function getDeliveryOrderScreen(id) {
-    const [enriched, lots, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes] = await Promise.all([
+    const [enriched, lots, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments] = await Promise.all([
         getDeliveryOrder(id),
         listDeliveryOrderLots(id),
         active(collections.logisticsTasks),
         active(collections.shipmentDocuments),
         active(collections.domesticTransportOrders),
-        active(collections.deliveryOrderDocuments),
-        getRequiredDocumentTypeCodes()
+        active(collections.deliveryOrderDocuments)
     ]);
-    return buildDeliveryOrderScreen(enriched, lots, { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes });
+    return buildDeliveryOrderScreen(enriched, lots, { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments });
 }
 
 export async function listDeliveryOrderScreens() {
-    const [deliveryOrders, doLots, doLines, allLots, context, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes] = await Promise.all([
+    const [deliveryOrders, doLots, doLines, allLots, context, logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments] = await Promise.all([
         active(collections.deliveryOrders),
         active(collections.deliveryOrderLots),
         active(collections.deliveryOrderLines),
@@ -1610,10 +1592,9 @@ export async function listDeliveryOrderScreens() {
         active(collections.logisticsTasks),
         active(collections.shipmentDocuments),
         active(collections.domesticTransportOrders),
-        active(collections.deliveryOrderDocuments),
-        getRequiredDocumentTypeCodes()
+        active(collections.deliveryOrderDocuments)
     ]);
-    const extras = { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments, requiredDocumentTypes };
+    const extras = { logisticsTasks, shipmentDocuments, domesticTransportOrders, deliveryOrderDocuments };
     return deliveryOrders.map((deliveryOrder) => {
         const enriched = {
             ...enrichDeliveryOrder(deliveryOrder, context),
@@ -1641,10 +1622,7 @@ export async function createDeliveryOrderDocument(id, body) {
     if (body.status && !deliveryOrderDocumentStatuses.includes(body.status)) {
         throw apiError("VALIDATION_ERROR", "Invalid document status", { status: body.status }, 400);
     }
-    const [documents, requiredTypes] = await Promise.all([
-        active(collections.deliveryOrderDocuments),
-        getRequiredDocumentTypeCodes()
-    ]);
+    const documents = await active(collections.deliveryOrderDocuments);
     const documentType = body.document_type || "OTHER";
     return repo.insert(collections.deliveryOrderDocuments, {
         id: nextId(documents, "do_doc"),
@@ -1656,7 +1634,7 @@ export async function createDeliveryOrderDocument(id, body) {
         mime_type: body.mime_type || null,
         received_at: body.received_at || null,
         status: body.status || "RECEIVED",
-        is_required: requiredTypes.includes(documentType),
+        is_required: REQUIRED_DO_DOCUMENT_TYPES.includes(documentType),
         notes: body.notes || null
     });
 }
@@ -1668,10 +1646,7 @@ export async function updateDeliveryOrderDocument(documentId, body) {
     }
     const allowedFields = ["document_type", "document_no", "file_url", "file_name", "mime_type", "received_at", "status", "notes"];
     const patch = pick(body, allowedFields);
-    if (patch.document_type) {
-        const requiredTypes = await getRequiredDocumentTypeCodes();
-        patch.is_required = requiredTypes.includes(patch.document_type);
-    }
+    if (patch.document_type) patch.is_required = REQUIRED_DO_DOCUMENT_TYPES.includes(patch.document_type);
     return repo.update(collections.deliveryOrderDocuments, documentId, patch);
 }
 
@@ -2740,26 +2715,18 @@ export async function listShipments(query = {}) {
 
 export async function getShipment(id) {
     const shipment = await requireRecord(collections.shipments, id, "Shipment not found");
-    const [lines, milestones, documents, containers, declarations, costs, deliveryOrderDocuments, requiredDocumentTypes] = await Promise.all([
+    const [lines, milestones, documents, containers, declarations, costs] = await Promise.all([
         active(collections.shipmentLines),
         active(collections.shipmentMilestones),
         active(collections.shipmentDocuments),
         active(collections.shipmentContainers),
         active(collections.customsDeclarations),
-        active(collections.shipmentCosts),
-        active(collections.deliveryOrderDocuments),
-        getRequiredDocumentTypeCodes()
+        active(collections.shipmentCosts)
     ]);
     const finalQuotation = shipment.final_quotation_id ? await getQuotation(shipment.final_quotation_id) : null;
-    // Mirror the parent DO's derived "documents complete" gate onto the shipment so the
-    // milestone panel can show the badge without synthesizing it (source of truth = DO).
-    const documentsCompletion = shipment.delivery_order_id
-        ? computeDeliveryOrderDocumentsCompletion(shipment.delivery_order_id, deliveryOrderDocuments, requiredDocumentTypes)
-        : { documents_complete: true, documents_outstanding: [], documents_unverified: [] };
 
     return {
         ...shipment,
-        ...documentsCompletion,
         customs_channel: pickShipmentCustomsChannel(declarations, id),
         final_quotation: finalQuotation,
         lines: lines.filter((line) => line.shipment_id === id),
@@ -3366,8 +3333,11 @@ export async function getDomesticTransportOrder(id) {
 export async function listDomesticTransportOrders(query = {}) {
     const context = await getDomesticTransportOrderContext();
     const search = searchTerm(query);
+    // Metric-driven bucket filter (set by clicking a header metric). Applied after
+    // the summary so the metric counts stay stable when toggled.
+    const statusGroup = String(query.status_group || "").trim();
 
-    const items = context.domesticTransportOrders
+    const baseItems = context.domesticTransportOrders
         .filter((order) => {
             if (query.status && order.status !== query.status) return false;
             if (query.shipment_id) {
@@ -3396,7 +3366,30 @@ export async function listDomesticTransportOrders(query = {}) {
         .sort((left, right) => String(right.create_at || "").localeCompare(String(left.create_at || "")))
         .map((order) => enrichDomesticTransportOrder(order, context));
 
-    return paginateResult(items, query);
+    const groupStatuses = DTO_STATUS_GROUPS[statusGroup];
+    const items = groupStatuses
+        ? baseItems.filter((order) => groupStatuses.includes(order.status))
+        : baseItems;
+
+    return paginateResult(items, query, () => summarizeDomesticTransportOrders(baseItems));
+}
+
+// Operational buckets for the DTO header metrics. Statuses not listed (DELIVERED,
+// POD_RECEIVED, CANCELLED) are intentionally excluded from the clickable groups.
+const DTO_STATUS_GROUPS = {
+    awaiting_dispatch: ["DRAFT", "QUOTE_PENDING", "QUOTED", "QUOTE_CONFIRMED"],
+    in_transit: ["DISPATCHED", "IN_TRANSIT"],
+    closed: ["CLOSED"]
+};
+
+function summarizeDomesticTransportOrders(items) {
+    const countIn = (group) => items.filter((order) => DTO_STATUS_GROUPS[group].includes(order.status)).length;
+    return {
+        total: items.length,
+        awaiting_dispatch: countIn("awaiting_dispatch"),
+        in_transit: countIn("in_transit"),
+        closed: countIn("closed")
+    };
 }
 
 export async function updateDomesticTransportOrder(id, body) {
@@ -3800,6 +3793,14 @@ function searchTerm(query = {}) {
     return String(query.search || query.q || "").trim().toLowerCase();
 }
 
+// Truthy for `?flag=true`, `?flag=1`, or a bare `?flag`. Query values arrive as
+// strings, so a plain boolean check would treat "false" as truthy.
+function isTrueFlag(value) {
+    if (value === true) return true;
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
 // Pick the representative customs declaration for a shipment: skip cancelled
 // ones and prefer the most recently created/cleared. The channel (luong) is
 // assigned when a declaration is opened and persists after clearance, so it is
@@ -3817,7 +3818,11 @@ function positiveInteger(value, fallback) {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function paginateResult(items, query = {}) {
+// `summarize` (optional) receives the FULL, sorted item list (before the page
+// slice) and returns a `meta.summary` object with dataset-wide aggregates. This
+// is how header metrics stay global on paginated lists instead of counting only
+// the current page. A real backend fills the same field with COUNT/GROUP BY.
+function paginateResult(items, query = {}, summarize) {
     const total = items.length;
     const defaultLimit = total > 0 ? total : 20;
     const limit = positiveInteger(query.limit, defaultLimit);
@@ -3825,19 +3830,24 @@ function paginateResult(items, query = {}) {
     const page = Math.min(positiveInteger(query.page, 1), totalPages);
     const startIndex = (page - 1) * limit;
 
+    const meta = {
+        total,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1
+        }
+    };
+    if (typeof summarize === "function") {
+        meta.summary = summarize(items);
+    }
+
     return {
         data: items.slice(startIndex, startIndex + limit),
-        meta: {
-            total,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1
-            }
-        }
+        meta
     };
 }
 

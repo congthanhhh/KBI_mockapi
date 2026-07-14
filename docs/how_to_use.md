@@ -494,7 +494,7 @@ Nút ở phần header của DO detail (tùy trạng thái):
 
 - **Ready for quotation** — chỉ hiện khi DO ở `DRAFT`; chuyển DO sang `READY_FOR_QUOTATION` để bắt đầu lấy báo giá.
 - **Create Shipment** — hiện khi DO ở `QUOTATION_CONFIRMED`; mở modal tạo shipment prefill từ DO (xem mục 8.1).
-- **Close DO** — hiện khi DO ở `ASSIGNED_TO_SHIPMENT`; nhấn sẽ mở **hộp thoại xác nhận kèm checklist đóng DO** (đã link shipment, đủ chứng từ, không task blocked, task bắt buộc đã xong, đã có POD/nhập kho) trước khi đóng.
+- **Close DO** — hiện khi DO ở `ASSIGNED_TO_SHIPMENT`; nhấn sẽ mở **hộp thoại xác nhận kèm checklist đóng DO** (đã link shipment, không thiếu chứng từ, không task blocked, task bắt buộc đã xong, đã có POD/nhập kho) trước khi đóng.
 - **Cancel** — hiện khi DO ở `DRAFT`, `READY_FOR_QUOTATION` hoặc `QUOTATION_CONFIRMED`.
 
 Xác nhận báo giá (chuyển DO sang `QUOTATION_CONFIRMED`) **không** nằm ở header mà thực hiện trong tab `Quotations` bằng nút **Mark final** trên dòng quote.
