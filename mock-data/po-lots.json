@@ -1,7 +1,7 @@
 [
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-07-21T07:18:06.608Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_001",
@@ -19,7 +19,7 @@
   },
   {
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-12T00:00:00.000Z",
+    "update_at": "2026-07-21T07:18:06.611Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_002",

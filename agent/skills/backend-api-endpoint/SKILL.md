@@ -108,7 +108,7 @@ seed record shape, endpoint payload, or frontend-visible API surface:
 7. Validate cross-record references, for example PO lines to items, LOT lines to
    PO lines, delivery orders to LOTs, and shipments to delivery orders.
 8. Run `npm run mock:smoke` for flow-impacting changes.
-9. Update frontend DTOs, clients, or pages in `PROJECT-PRODUCT/frontend` when
+9. Update frontend DTOs, clients, or pages in `web` when
    the API surface changes.
 
 ## Endpoint Families

@@ -793,11 +793,12 @@ export async function createPurchaseOrder(body) {
 
 export async function getLotPlanning(id) {
     const purchaseOrder = await requireRecord(collections.purchaseOrders, id, "Purchase order not found");
-    const [poLines, lots, lotLines, items] = await Promise.all([
+    const [poLines, lots, lotLines, items, itemCustomsProfiles] = await Promise.all([
         getPurchaseOrderLines(id),
         active(collections.lots),
         active(collections.lotLines),
-        active(collections.items)
+        active(collections.items),
+        active(collections.itemCustomsProfiles)
     ]);
     const poLots = lots
         .filter((lot) => lot.purchase_order_id === id)
@@ -811,7 +812,7 @@ export async function getLotPlanning(id) {
             items: lotLines
                 .filter((line) => line.po_lot_id === lot.id)
                 .sort(bySortOrder)
-                .map((line) => enrichLotLine(line, poLines, items))
+                .map((line) => enrichLotLine(line, poLines, items, itemCustomsProfiles))
         }))
     };
 }
@@ -3891,10 +3892,14 @@ async function getPurchaseOrderLines(purchaseOrderId) {
         }));
 }
 
-function enrichLotLine(line, poLines, items) {
+// `poLines` may be raw collection rows (only `item_customs_profile_id`) or already
+// enriched ones carrying the resolved `item_customs_profile`; support both.
+function enrichLotLine(line, poLines, items, profiles = []) {
     const poLine = poLines.find((row) => row.id === line.purchase_order_line_id);
     const item = items.find((row) => row.id === line.item_id) || poLine?.item || null;
-    const customsProfile = poLine?.item_customs_profile || null;
+    const customsProfile = poLine?.item_customs_profile
+        || profiles.find((row) => row.id === poLine?.item_customs_profile_id)
+        || null;
 
     return {
         ...line,
@@ -3911,7 +3916,7 @@ function enrichLotLine(line, poLines, items) {
 }
 
 function enrichDeliveryOrderLine(line, context) {
-    const enrichedLine = enrichLotLine(line, context.lines, context.items);
+    const enrichedLine = enrichLotLine(line, context.lines, context.items, context.itemCustomsProfiles);
     const deliveryOrder = context.deliveryOrders.find((row) => row.id === line.delivery_order_id) || null;
     const lot = context.lots.find((row) => row.id === line.po_lot_id) || null;
     const shipmentLine = context.shipmentLines.find((row) => row.delivery_order_line_id === line.id) || null;

@@ -2,7 +2,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-07-21T07:17:58.122Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_001",
@@ -212,7 +212,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-07-21T07:17:58.124Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_016",
@@ -240,7 +240,7 @@
   {
     "notes": null,
     "create_at": "2026-06-12T00:00:00.000Z",
-    "update_at": "2026-06-30T00:00:00.000Z",
+    "update_at": "2026-07-21T07:17:58.126Z",
     "delete_at": null,
     "is_delete": false,
     "id": "lot_line_018",

@@ -21,7 +21,7 @@ ready for use as an agent skill.
 
 Skills in this repo live at `<project-root>/agent/skills/<skill-name>/SKILL.md` — e.g.
 `kbi-mock-api/agent/skills/backend-api-endpoint/`. The frontend keeps its skills under
-a hidden folder instead: `PROJECT-PRODUCT/frontend/.agents/skills/frontend-api-client/`.
+a hidden folder instead: `web/.claude/skills/frontend-api-client/`.
 
 - The folder name MUST equal the frontmatter `name` (both kebab-case, identical).
 - Use the two skills above as the canonical templates for any codebase-bound skill.
